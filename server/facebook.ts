@@ -5,7 +5,18 @@ import type { DiscoveryJob, Photo } from "./types.ts";
 const PHOTO_LINK_MARKERS = ["/photo/", "/photos/", "photo.php", "photo?fbid="];
 const ALBUM_PAGINATION_OPERATION = "ProfileCometLegacyAlbumGridViewPaginationQuery";
 const ALBUM_PAGINATION_DOC_ID = "34407011978913359";
-const shareAlbumCache = new Map<string, string>();
+const POST_MEDIA_OPERATION = "CometPhotoRootContentQuery";
+
+type PostMediaSet = {
+  token: string;
+  total: number;
+  photos: Photo[];
+  postUrl: string;
+};
+
+type SharedTarget = { albumUrl: string; postMediaSet?: PostMediaSet };
+
+const shareAlbumCache = new Map<string, SharedTarget>();
 
 const isPhotoPage = (href: string) => PHOTO_LINK_MARKERS.some((marker) => href.includes(marker));
 const isCdnImage = (src: string) => {
@@ -25,7 +36,14 @@ type AlbumGraphState = {
   hasNext: boolean;
 };
 
-function addGraphPhoto(state: AlbumGraphState, node: Record<string, unknown>) {
+type PostGraphState = {
+  photos: Map<string, Photo>;
+  template?: GraphTemplate;
+  nextId?: string;
+  queriedIds: Set<string>;
+};
+
+function addGraphPhoto(state: Pick<AlbumGraphState, "photos">, node: Record<string, unknown>) {
   const id = typeof node.id === "string" ? node.id : "";
   const image = node.image && typeof node.image === "object" ? node.image as Record<string, unknown> : null;
   const url = image && typeof image.uri === "string" ? image.uri : "";
@@ -240,6 +258,189 @@ function canonicalAlbumUrl(albumId: string) {
   return canonical.toString();
 }
 
+async function postMediaSetExposedByPage(page: Page): Promise<PostMediaSet | null> {
+  const result = await page.evaluate(() => {
+    type Candidate = {
+      token: string;
+      count: number;
+      postUrl: string;
+      photos: Array<{ id: string; url: string; width?: number; height?: number }>;
+    };
+    const candidates: Candidate[] = [];
+    for (const script of document.querySelectorAll<HTMLScriptElement>('script[type="application/json"]')) {
+      let root: unknown;
+      try {
+        root = JSON.parse(script.textContent ?? "") as unknown;
+      } catch {
+        continue;
+      }
+      const stack: unknown[] = [root];
+      while (stack.length > 0) {
+        const value = stack.pop();
+        if (!value || typeof value !== "object") continue;
+        if (Array.isArray(value)) {
+          stack.push(...value);
+          continue;
+        }
+        const record = value as Record<string, unknown>;
+        const token = typeof record.mediaset_token === "string" ? record.mediaset_token : "";
+        const connection = record.all_subattachments && typeof record.all_subattachments === "object"
+          ? record.all_subattachments as Record<string, unknown>
+          : null;
+        if (token.startsWith("pcb.") && connection && typeof connection.count === "number" && Array.isArray(connection.nodes)) {
+          const photos = connection.nodes.flatMap((entry) => {
+            if (!entry || typeof entry !== "object") return [];
+            const media = (entry as Record<string, unknown>).media;
+            if (!media || typeof media !== "object") return [];
+            const photo = media as Record<string, unknown>;
+            const image = photo.viewer_image && typeof photo.viewer_image === "object"
+              ? photo.viewer_image as Record<string, unknown>
+              : photo.image && typeof photo.image === "object" ? photo.image as Record<string, unknown> : null;
+            const id = typeof photo.id === "string" ? photo.id : "";
+            const url = image && typeof image.uri === "string" ? image.uri : "";
+            if (!id || !url) return [];
+            return [{
+              id,
+              url,
+              width: typeof image?.width === "number" ? image.width : undefined,
+              height: typeof image?.height === "number" ? image.height : undefined,
+            }];
+          });
+          candidates.push({
+            token,
+            count: connection.count,
+            postUrl: typeof record.url === "string" ? record.url : location.href,
+            photos,
+          });
+        }
+        stack.push(...Object.values(record));
+      }
+    }
+    return candidates.sort((left, right) => right.count - left.count || right.photos.length - left.photos.length)[0] ?? null;
+  }).catch(() => null);
+  if (!result || result.photos.length === 0) return null;
+  const photos = result.photos
+    .filter((photo) => isCdnImage(photo.url))
+    .map((photo) => ({
+      ...photo,
+      previewUrl: photo.url,
+      sourceUrl: `https://www.facebook.com/photo/?fbid=${photo.id}&set=${result.token}`,
+    }));
+  if (photos.length === 0) return null;
+  return {
+    token: result.token,
+    total: result.count,
+    photos,
+    postUrl: result.postUrl,
+  };
+}
+
+function ingestPostMediaPayload(body: string, state: PostGraphState) {
+  for (const line of body.split("\n").filter(Boolean)) {
+    let root: unknown;
+    try {
+      root = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!root || typeof root !== "object") continue;
+    const data = (root as Record<string, unknown>).data;
+    if (!data || typeof data !== "object") continue;
+    const record = data as Record<string, unknown>;
+    const current = record.currMedia;
+    if (current && typeof current === "object") addGraphPhoto(state, current as Record<string, unknown>);
+    if ("nextMediaAfterNodeId" in record) {
+      const next = record.nextMediaAfterNodeId;
+      state.nextId = next && typeof next === "object" && typeof (next as Record<string, unknown>).id === "string"
+        ? (next as Record<string, unknown>).id as string
+        : undefined;
+    }
+    if (process.env.ALBUM_DEBUG === "1" && (current || "nextMediaAfterNodeId" in record)) {
+      console.log("post-media-payload", JSON.stringify({
+        keys: Object.keys(record),
+        current: current && typeof current === "object" ? (current as Record<string, unknown>).id : undefined,
+        next: state.nextId,
+        photos: state.photos.size,
+      }));
+    }
+  }
+}
+
+async function discoverPostMediaSet(page: Page, mediaSet: PostMediaSet, job: DiscoveryJob) {
+  if (mediaSet.total > 2_000) throw new Error(`This Facebook post contains ${mediaSet.total.toLocaleString()} photos. The safety limit is 2,000.`);
+  const state: PostGraphState = {
+    photos: new Map(mediaSet.photos.map((photo) => [photo.id, photo])),
+    queriedIds: new Set(),
+  };
+  job.status = "working";
+  job.phase = `Reading post attachments · ${state.photos.size} of ${mediaSet.total}`;
+  job.current = state.photos.size;
+  job.total = mediaSet.total;
+
+  const firstPhoto = mediaSet.photos[0];
+  const viewerUrl = `https://www.facebook.com/photo/?fbid=${firstPhoto.id}&set=${mediaSet.token}`;
+  const [response] = await Promise.all([
+    page.waitForResponse((response) => {
+      if (!response.url().includes("/api/graphql")) return false;
+      const params = new URLSearchParams(response.request().postData() ?? "");
+      return params.get("fb_api_req_friendly_name") === POST_MEDIA_OPERATION;
+    }, { timeout: 30_000 }),
+    page.goto(viewerUrl, { waitUntil: "domcontentloaded", timeout: 45_000 }),
+  ]);
+  state.template = { url: response.url(), body: response.request().postData() ?? "" };
+  ingestPostMediaPayload(await response.text(), state);
+
+  let stalled = 0;
+  for (let attempt = 0; attempt < mediaSet.total && state.nextId && state.photos.size < mediaSet.total && stalled < 3; attempt += 1) {
+    if (job.controller.signal.aborted) throw new Error("Cancelled.");
+    const nodeId = state.nextId;
+    if (state.queriedIds.has(nodeId)) break;
+    state.queriedIds.add(nodeId);
+    const params = new URLSearchParams(state.template.body);
+    const variables = JSON.parse(params.get("variables") ?? "{}") as Record<string, unknown>;
+    variables.nodeID = nodeId;
+    variables.mediasetToken = mediaSet.token;
+    variables.scale = 3;
+    variables.shouldShowComments = false;
+    params.set("variables", JSON.stringify(variables));
+    params.set("__req", (attempt + 20).toString(36));
+    const before = state.photos.size;
+    const result = await page.evaluate(async ({ url, body, friendlyName, lsd }) => {
+      const response = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          "x-fb-friendly-name": friendlyName,
+          ...(lsd ? { "x-fb-lsd": lsd } : {}),
+        },
+        body,
+      });
+      return { ok: response.ok, status: response.status, body: await response.text() };
+    }, {
+      url: state.template.url,
+      body: params.toString(),
+      friendlyName: params.get("fb_api_req_friendly_name") ?? POST_MEDIA_OPERATION,
+      lsd: params.get("lsd") ?? "",
+    });
+    if (!result.ok) throw new Error(`Facebook post pagination failed (${result.status}).`);
+    const alreadyHadPhoto = state.photos.has(nodeId);
+    ingestPostMediaPayload(result.body, state);
+    stalled = state.photos.size === before && !alreadyHadPhoto ? stalled + 1 : 0;
+    job.current = state.photos.size;
+    job.phase = `Reading post attachments · ${state.photos.size} of ${mediaSet.total}`;
+  }
+
+  job.photos = [...state.photos.values()];
+  if (job.photos.length < mediaSet.total) {
+    throw new Error(`Facebook exposed only ${job.photos.length} of ${mediaSet.total} photos attached to this post. Please retry.`);
+  }
+  job.current = job.photos.length;
+  job.total = job.photos.length;
+  job.phase = `${job.photos.length} post photos ready`;
+  job.status = "ready";
+}
+
 async function albumUrlExposedByPage(page: Page) {
   const pageCandidates = await page.locator([
     'link[rel="canonical"]',
@@ -285,10 +486,17 @@ async function resolveSharedAlbumUrl(context: BrowserContext, shareUrl: string, 
       await page.goto(shareUrl, { waitUntil: "domcontentloaded", timeout: 20_000 }).catch(() => undefined);
       await dismissPrompts(page);
       for (let poll = 0; poll < 6; poll += 1) {
+        const postMediaSet = await postMediaSetExposedByPage(page);
+        if (postMediaSet) {
+          const target: SharedTarget = { albumUrl: postMediaSet.postUrl, postMediaSet };
+          shareAlbumCache.set(cacheKey.toString(), target);
+          return target;
+        }
         const resolved = await albumUrlExposedByPage(page);
         if (resolved) {
-          shareAlbumCache.set(cacheKey.toString(), resolved);
-          return resolved;
+          const target: SharedTarget = { albumUrl: resolved };
+          shareAlbumCache.set(cacheKey.toString(), target);
+          return target;
         }
         await page.waitForTimeout(500);
       }
@@ -401,6 +609,7 @@ async function resolvePhoto(context: BrowserContext, href: string, signal: Abort
 
 export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
   let albumUrl = parsePublicAlbumUrl(rawUrl);
+  let postMediaSet: PostMediaSet | undefined;
   const browser = await chromium.launch({
     headless: true,
     args: ["--disable-blink-features=AutomationControlled"],
@@ -415,10 +624,16 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
     });
     const isShareUrl = new URL(albumUrl).pathname.toLowerCase().includes("/share/");
     if (isShareUrl) {
-      albumUrl = await resolveSharedAlbumUrl(context, albumUrl, job);
+      const target = await resolveSharedAlbumUrl(context, albumUrl, job);
+      albumUrl = target.albumUrl;
+      postMediaSet = target.postMediaSet;
       job.albumUrl = albumUrl;
     }
     const page = await context.newPage();
+    if (postMediaSet) {
+      await discoverPostMediaSet(page, postMediaSet, job);
+      return;
+    }
     const albumId = new URL(albumUrl).searchParams.get("set")?.replace(/^a\./, "") ?? "";
     const graphState: AlbumGraphState = { photos: new Map(), hasNext: false };
     page.on("response", async (response) => {
@@ -449,6 +664,12 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
     job.phase = isShareUrl ? "Opening shared album" : "Opening public album";
     await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
     await dismissPrompts(page);
+    const directPostMediaSet = await postMediaSetExposedByPage(page);
+    if (directPostMediaSet) {
+      job.albumUrl = directPostMediaSet.postUrl;
+      await discoverPostMediaSet(page, directPostMediaSet, job);
+      return;
+    }
     const html = await page.content();
     seedGraphStateFromHtml(html, albumId, graphState);
     const { links: domLinks, thumbnails, expectedTotal } = await scanAlbum(page, job);

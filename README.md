@@ -1,4 +1,4 @@
-# Album Packer
+# BacII Result Search Engine
 
 A local-first web app for downloading public Facebook photo albums in bulk. It discovers photos with a headless browser, lets you select what to keep, then builds a numbered ZIP on disk.
 

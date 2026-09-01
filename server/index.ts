@@ -190,4 +190,4 @@ app.use((error: unknown, _request: express.Request, response: express.Response, 
   response.status(500).json({ error: error instanceof Error ? error.message : "Unexpected server error." });
 });
 
-app.listen(port, () => console.log(`Album Packer running at http://localhost:${port}`));
+app.listen(port, () => console.log(`BacII Result Search Engine running at http://localhost:${port}`));

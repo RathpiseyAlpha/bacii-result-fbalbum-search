@@ -22,7 +22,6 @@ import {
   ScanSearch,
   Search,
   ShieldCheck,
-  Sparkles,
   Sun,
   Languages,
   X,
@@ -120,11 +119,12 @@ function preferredLanguage(): Language {
 }
 
 const englishText = {
-  publicOnly: "Public albums only", how: "How it works", eyebrow: "Cambodia BacII result finder",
+  brandName: "BacII Result Search Engine",
+  how: "How it works",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
-  heroCopy: "Paste a province's public Facebook result album, detect its exam centers and tracks, then enter the table number from column one.",
-  albumLink: "Album link", photoLinks: "Photo links", provinceUrl: "Province result album URL", clearUrl: "Clear URL",
-  scanning: "Scanning…", scanAlbum: "Scan province album", publicNote: "Paste an album URL or the Share link copied from the Facebook app. Public albums only.",
+  heroCopy: "Paste the URL of BacII result from a MOEYS public Facebook result album, detect its exam centers and tracks, then enter the table number.",
+  albumLink: "Album link", photoLinks: "Photo links", provinceUrl: "Please enter URL of Photo Albums of the post or Share URL", clearUrl: "Clear URL",
+  scanning: "Scanning…", scanAlbum: "Scan album", publicNote: "Paste an album URL or the Share link copied from the Facebook app. Public albums only.",
   imageLinks: "Facebook image links, one per line", links: "links", fallback: "A reliable fallback when Facebook places the public album page behind a login wall.",
   largeAlbumWait: "This can take a few minutes for large albums.", upTo: "Up to 2,000 photos", quality: "Original available quality",
   autoZip: "Automatic ZIP packaging", readyPack: "Ready to pack", photosFound: "photos found", linksReady: "photo links ready",
@@ -142,12 +142,12 @@ const englishText = {
   threeSteps: "From album to archive in three steps.", pasteAlbum: "Paste the album", pasteAlbumHelp: "Use any Facebook album that is publicly visible without signing in.",
   choosePhotos: "Choose your photos", choosePhotosHelp: "Review the gallery and include everything—or pick only the keepers.", oneZip: "Download one ZIP",
   oneZipHelp: "We fetch, number, and package the photos without filling your downloads folder.", bigAlbums: "Built for big albums", noMarathon: "No tabs. No right-click marathon.",
-  details: "Album Packer uses a real browser to discover the photos Facebook shows publicly, then resolves the best available image before building your archive on disk.",
+  details: "BacII Result Search Engine uses a real browser to discover the photos Facebook shows publicly, then resolves the best available image before building your archive on disk.",
   hundreds: "Handles hundreds at once", hundredsHelp: "Large jobs run in the background with live progress.", skipsFailures: "Skips individual failures",
   skipsFailuresHelp: "One expired photo link won’t ruin the entire ZIP.", noPassword: "No Facebook password needed", noPasswordHelp: "Only public pages and Facebook CDN links are accepted.",
   tagline: "Save what matters. Keep it together.", legal: "For downloading photos you own or have permission to save. Not affiliated with Meta or Facebook.", backTop: "Back to top",
   preview: "Result sheet preview", previewHelp: "Use the original-size image to inspect the table.", closePreview: "Close preview", facebookSource: "Facebook source",
-  downloadPhoto: "Download photo", samplePhotos: "photos", home: "Album Packer home", resultImage: "BacII result sheet",
+  downloadPhoto: "Download photo", samplePhotos: "photos", home: "BacII Result Search Engine home", resultImage: "BacII result sheet",
   urlPlaceholder: "Facebook album or Share URL", switchLight: "Switch to light mode", switchDark: "Switch to dark mode",
   switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "Switch to English", cancel: "Cancel", cancelling: "Cancelling…",
   recognizeNames: "Also recognize Khmer names", recognizeNamesHelp: "Slower: reads every name row instead of only headers and numbers.",
@@ -157,11 +157,12 @@ const englishText = {
 type TranslationKey = keyof typeof englishText;
 
 const khmerText: Record<TranslationKey, string> = {
-  publicOnly: "អាល់ប៊ុមសាធារណៈប៉ុណ្ណោះ", how: "របៀបប្រើ", eyebrow: "កម្មវិធីស្វែងរកលទ្ធផលបាក់ឌុបកម្ពុជា",
-  hero1: "ស្វែងរកសន្លឹកលទ្ធផលត្រឹមត្រូវ។", hero2: "មិនចាំបាច់បើករូបម្តងមួយៗ។",
-  heroCopy: "បិទភ្ជាប់តំណអាល់ប៊ុមលទ្ធផលសាធារណៈរបស់ខេត្ត ដើម្បីស្វែងរកមណ្ឌលប្រឡង ផ្នែកសិក្សា និងលេខតុក្នុងជួរទីមួយ។",
-  albumLink: "តំណអាល់ប៊ុម", photoLinks: "តំណរូបភាព", provinceUrl: "តំណអាល់ប៊ុមលទ្ធផលតាមខេត្ត", clearUrl: "សម្អាតតំណ",
-  scanning: "កំពុងស្កេន…", scanAlbum: "ស្កេនអាល់ប៊ុមខេត្ត", publicNote: "បិទភ្ជាប់តំណអាល់ប៊ុម ឬតំណ Share ដែលចម្លងពីកម្មវិធី Facebook។ ប្រើបានតែអាល់ប៊ុមសាធារណៈ។",
+  brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប",
+  how: "របៀបប្រើ",
+  hero1: "ងាយស្រួលស្វែងរកលទ្ធផលបាក់ឌុប", hero2: "ដោយមិនចាំបាច់បើករូបហ្វេសប៊ុកម្ដងមួយៗ",
+  heroCopy: "ដាក់តំណភ្ជាប់់អាល់ប៊ុមលទ្ធផលសាធារណៈរបស់ខេត្ត រាជធានី ណាមួយ បន្ទាប់មកជ្រើសរើសមណ្ឌលប្រឡង ថ្នាក់វិទ្យាសាស្រ្ត ឬ សង្គុម និងលេខតុ",
+  albumLink: "តំណអាល់ប៊ុម", photoLinks: "តំណរូបភាព", provinceUrl: "សូមបញ្ចូល URL អាល់ប៊ុមរូបភាពនៃការបង្ហោះ ឬ Share URL", clearUrl: "សម្អាតតំណ",
+  scanning: "កំពុងស្កេន…", scanAlbum: "ស្កេនអាល់ប៊ុម", publicNote: "បិទភ្ជាប់តំណអាល់ប៊ុម ឬតំណ Share ដែលចម្លងពីកម្មវិធី Facebook។ ប្រើបានតែអាល់ប៊ុមសាធារណៈ។",
   imageLinks: "តំណរូបភាព Facebook មួយតំណក្នុងមួយបន្ទាត់", links: "តំណ", fallback: "ជម្រើសបម្រុង នៅពេល Facebook តម្រូវឱ្យចូលគណនីដើម្បីមើលអាល់ប៊ុមសាធារណៈ។",
   largeAlbumWait: "អាល់ប៊ុមធំអាចចំណាយពេលប៉ុន្មាននាទី។", upTo: "រហូតដល់ ២,០០០ រូប", quality: "រក្សាគុណភាពដើមដែលមាន",
   autoZip: "រៀបចំឯកសារ ZIP ដោយស្វ័យប្រវត្តិ", readyPack: "រួចរាល់សម្រាប់រៀបចំ", photosFound: "រូបត្រូវបានរកឃើញ", linksReady: "តំណរូបភាពរួចរាល់",
@@ -179,12 +180,12 @@ const khmerText: Record<TranslationKey, string> = {
   threeSteps: "ពីអាល់ប៊ុមទៅឯកសារ ZIP ក្នុងបីជំហាន។", pasteAlbum: "បិទភ្ជាប់អាល់ប៊ុម", pasteAlbumHelp: "ប្រើអាល់ប៊ុម Facebook សាធារណៈដែលអាចមើលបានដោយមិនចូលគណនី។",
   choosePhotos: "ជ្រើសរើសរូបភាព", choosePhotosHelp: "ពិនិត្យរូបទាំងអស់ រួចជ្រើសរើសទាំងអស់ ឬតែរូបដែលអ្នកត្រូវការ។", oneZip: "ទាញយកជា ZIP មួយ",
   oneZipHelp: "យើងទាញយក ដាក់លេខរៀង និងរៀបចំរូប ដោយមិនធ្វើឱ្យថត Downloads របស់អ្នករញ៉េរញ៉ៃ។", bigAlbums: "បង្កើតសម្រាប់អាល់ប៊ុមធំ", noMarathon: "មិនចាំបាច់បើកផ្ទាំងច្រើន ឬចុចទាញយកម្តងមួយៗ។",
-  details: "Album Packer ប្រើកម្មវិធីរុករកដើម្បីរករូបសាធារណៈដែល Facebook បង្ហាញ រួចជ្រើសគុណភាពរូបល្អបំផុតមុនបង្កើតឯកសារ ZIP។",
+  details: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប ប្រើកម្មវិធីរុករកដើម្បីរករូបសាធារណៈដែល Facebook បង្ហាញ រួចជ្រើសគុណភាពរូបល្អបំផុតមុនបង្កើតឯកសារ ZIP។",
   hundreds: "ដំណើរការរាប់រយរូបក្នុងពេលតែមួយ", hundredsHelp: "ការងារធំដំណើរការនៅផ្ទៃខាងក្រោយ និងបង្ហាញវឌ្ឍនភាពផ្ទាល់។", skipsFailures: "រំលងរូបដែលមានបញ្ហា",
   skipsFailuresHelp: "តំណរូបផុតកំណត់មួយ មិនធ្វើឱ្យ ZIP ទាំងមូលបរាជ័យទេ។", noPassword: "មិនត្រូវការពាក្យសម្ងាត់ Facebook", noPasswordHelp: "ទទួលយកតែទំព័រសាធារណៈ និងតំណរូបភាពពី Facebook CDN។",
   tagline: "រក្សាទុកអ្វីដែលសំខាន់។ រៀបចំឱ្យនៅជាមួយគ្នា។", legal: "សម្រាប់ទាញយករូបដែលអ្នកជាម្ចាស់ ឬមានការអនុញ្ញាត។ មិនមានទំនាក់ទំនងជាមួយ Meta ឬ Facebook ទេ។", backTop: "ត្រឡប់ទៅខាងលើ",
   preview: "មើលសន្លឹកលទ្ធផល", previewHelp: "ប្រើរូបទំហំដើមដើម្បីពិនិត្យតារាង។", closePreview: "បិទការមើលរូប", facebookSource: "ប្រភព Facebook",
-  downloadPhoto: "ទាញយករូប", samplePhotos: "រូប", home: "ទំព័រដើម Album Packer", resultImage: "សន្លឹកលទ្ធផលបាក់ឌុប",
+  downloadPhoto: "ទាញយករូប", samplePhotos: "រូប", home: "ទំព័រដើមប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", resultImage: "សន្លឹកលទ្ធផលបាក់ឌុប",
   urlPlaceholder: "តំណអាល់ប៊ុម Facebook ឬតំណ Share", switchLight: "ប្តូរទៅផ្ទៃភ្លឺ", switchDark: "ប្តូរទៅផ្ទៃងងឹត",
   switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "ប្តូរទៅភាសាអង់គ្លេស", cancel: "បោះបង់", cancelling: "កំពុងបោះបង់…",
   recognizeNames: "អានឈ្មោះជាភាសាខ្មែរផងដែរ", recognizeNamesHelp: "យឺតជាងមុន៖ អានឈ្មោះក្នុងគ្រប់ជួរ ជំនួសឱ្យតែចំណងជើង និងលេខតុ។",
@@ -515,10 +516,9 @@ function App() {
       <nav className="nav shell">
         <a className="brand" href="#top" aria-label={t("home")}>
           <span className="brand-mark"><Images size={20} strokeWidth={2.2} /></span>
-          <span>Album Packer</span>
+          <span>{t("brandName")}</span>
         </a>
         <div className="nav-pills">
-          <span><ShieldCheck size={15} /> {t("publicOnly")}</span>
           <button type="button" className="language-toggle" onClick={() => setLanguage((current) => current === "en" ? "km" : "en")}
             aria-label={language === "en" ? t("switchKhmer") : t("switchEnglish")} title={language === "en" ? t("switchKhmer") : t("switchEnglish")}>
             <Languages size={15} /> {language === "en" ? "ខ្មែរ" : "EN"}
@@ -532,8 +532,9 @@ function App() {
       </nav>
 
       <section className="hero shell" id="top">
-        <div className="eyebrow"><Sparkles size={14} /> {t("eyebrow")}</div>
-        <h1>{t("hero1")}<br /><em>{t("hero2")}</em></h1>
+        {language === "km"
+          ? <h1>{t("hero1")}{t("hero2")}</h1>
+          : <h1>{t("hero1")}<br /><em>{t("hero2")}</em></h1>}
         <p className="hero-copy">{t("heroCopy")}</p>
 
         <div className="workspace-card">
@@ -788,7 +789,7 @@ function App() {
 
       <footer>
         <div className="shell footer-inner">
-          <div><a className="brand" href="#top"><span className="brand-mark"><Images size={18} /></span><span>Album Packer</span></a><p>{t("tagline")}</p></div>
+          <div><a className="brand" href="#top"><span className="brand-mark"><Images size={18} /></span><span>{t("brandName")}</span></a><p>{t("tagline")}</p></div>
           <p className="legal">{t("legal")}</p>
           <a className="source-link" href="#top">{t("backTop")} <ChevronRight size={15} /></a>
         </div>

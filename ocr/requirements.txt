@@ -1,4 +1,6 @@
-numpy>=1.26,<3
+# NumPy 2.4+ Linux wheels require the x86-64-v2 CPU baseline. Keep OCR
+# deployable on older servers and virtual CPUs that do not expose SSE4.2.
+numpy==1.26.4
 pillow>=10,<13
 torch>=2.4,<3
 transformers==4.57.1

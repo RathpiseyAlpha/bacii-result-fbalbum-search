@@ -392,9 +392,11 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
     for (const candidate of candidates) {
       try {
         const parsed = new URL(candidate, page.url());
-        const set = parsed.searchParams.get("set");
-        if (set?.replace(/^a\./, "")) {
-          albumUrl = parsePublicAlbumUrl(parsed.toString());
+        const set = parsed.searchParams.get("set")?.replace(/^a\./, "");
+        if (set) {
+          const canonical = new URL("https://www.facebook.com/media/set/");
+          canonical.searchParams.set("set", `a.${set}`);
+          albumUrl = parsePublicAlbumUrl(canonical.toString());
           break;
         }
       } catch {

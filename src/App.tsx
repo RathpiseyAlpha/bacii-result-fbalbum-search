@@ -136,6 +136,7 @@ const englishText = {
   indexed: "indexed album photos", clearFilters: "Clear filters", detecting: "Detecting…", sheetsIndexed: "result sheets indexed locally.",
   restored: "restored from the database.", coverSkipped: "The cover is skipped automatically.", select: "Select", deselect: "Deselect", photo: "photo",
   view: "View", download: "Download", noMatch: "No matching result sheet", noMatchHelp: "Check the exam center, track, and exact number from column one.",
+  tableNotFound: "Table number {number} was not found in any photo.", tableNotFoundHelp: "Check the number and try again.",
   downloadName: "Name your download", downloadHelp: "A folder with numbered photos will be placed inside the ZIP.", packing: "Packing…", buildZip: "Build ZIP",
   zipReady: "ZIP ready", photosPacked: "photos packed", processed: "processed", downloadZip: "Download ZIP",
   skippedOne: "expired or unavailable photo was skipped.", skippedMany: "expired or unavailable photos were skipped.", simple: "Simple by design",
@@ -174,6 +175,7 @@ const khmerText: Record<TranslationKey, string> = {
   indexed: "រូបក្នុងអាល់ប៊ុមដែលបានរៀបចំ", clearFilters: "សម្អាតតម្រង", detecting: "កំពុងស្វែងរក…", sheetsIndexed: "សន្លឹកលទ្ធផលបានរៀបចំរួច។",
   restored: "បានយកពីមូលដ្ឋានទិន្នន័យ។", coverSkipped: "រូបគម្របត្រូវបានរំលងដោយស្វ័យប្រវត្តិ។", select: "ជ្រើសរើស", deselect: "ដកការជ្រើសរើស", photo: "រូប",
   view: "មើល", download: "ទាញយក", noMatch: "រកមិនឃើញសន្លឹកលទ្ធផលដែលត្រូវគ្នា", noMatchHelp: "សូមពិនិត្យមណ្ឌលប្រឡង ផ្នែកសិក្សា និងលេខតុក្នុងជួរទីមួយ។",
+  tableNotFound: "រកមិនឃើញលេខតុ {number} ក្នុងរូបភាពណាមួយទេ។", tableNotFoundHelp: "សូមពិនិត្យលេខតុ ហើយសាកល្បងម្តងទៀត។",
   downloadName: "ដាក់ឈ្មោះឯកសារទាញយក", downloadHelp: "ថតរូបដែលមានលេខរៀងនឹងត្រូវដាក់ក្នុងឯកសារ ZIP។", packing: "កំពុងរៀបចំ…", buildZip: "បង្កើត ZIP",
   zipReady: "ZIP រួចរាល់", photosPacked: "រូបបានរៀបចំ", processed: "បានដំណើរការ", downloadZip: "ទាញយក ZIP",
   skippedOne: "រូបដែលផុតកំណត់ ឬមិនអាចប្រើបានត្រូវបានរំលង។", skippedMany: "រូបដែលផុតកំណត់ ឬមិនអាចប្រើបានត្រូវបានរំលង។", simple: "ងាយស្រួលប្រើ",
@@ -499,6 +501,9 @@ function App() {
     [ocrJob?.results],
   );
   const filtersActive = Boolean(selectedCenter || selectedTrack || tableNumber);
+  const tableNumberFound = !tableNumber || (ocrJob?.results ?? []).some((result) =>
+    result.status === "ready" && result.rows.some((row) => row.number === tableNumber),
+  );
   const visiblePhotos = useMemo(() => {
     if (!filtersActive || ocrJob?.status !== "ready") return readyPhotos;
     return readyPhotos.filter((photo) => {
@@ -720,7 +725,13 @@ function App() {
                 );
               })}
               </div>
-              {filtersActive && visiblePhotos.length === 0 && <div className="no-matches"><Search size={22} /><strong>{t("noMatch")}</strong><span>{t("noMatchHelp")}</span></div>}
+              {filtersActive && visiblePhotos.length === 0 && (
+                <div className="no-matches">
+                  <Search size={22} />
+                  <strong>{tableNumber && !tableNumberFound ? t("tableNotFound").replace("{number}", tableNumber) : t("noMatch")}</strong>
+                  <span>{tableNumber && !tableNumberFound ? t("tableNotFoundHelp") : t("noMatchHelp")}</span>
+                </div>
+              )}
             </>
           )}
 

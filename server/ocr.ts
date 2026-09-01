@@ -43,7 +43,7 @@ function parseWorkerLine(line: string): OcrPhotoResult | null {
   }
 }
 
-async function downloadPhoto(photo: Photo, path: string, signal: AbortSignal) {
+async function downloadPhotoOnce(photo: Photo, path: string, signal: AbortSignal) {
   const response = await fetchFacebookImage(photo.url, signal);
   const size = Number(response.headers.get("content-length") || 0);
   if (size > 25 * 1024 * 1024) throw new Error("Photo exceeds the 25 MB OCR safety limit.");
@@ -68,6 +68,21 @@ async function downloadPhoto(photo: Photo, path: string, signal: AbortSignal) {
       reject(error);
     }
   });
+}
+
+async function downloadPhoto(photo: Photo, path: string, signal: AbortSignal) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    if (signal.aborted) throw new Error("Cancelled.");
+    try {
+      await downloadPhotoOnce(photo, path, signal);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await new Promise((resolvePromise) => setTimeout(resolvePromise, attempt * 500));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Could not download the Facebook photo.");
 }
 
 export function startOcr(photos: Photo[], includeNames: boolean) {
@@ -104,6 +119,7 @@ export function startOcr(photos: Photo[], includeNames: boolean) {
     const jobDir = join(OCR_TEMP_ROOT, id);
     await mkdir(jobDir, { recursive: true });
     const manifest: Array<{ photoId: string; photoIndex: number; path: string }> = [];
+    let lastDownloadError = "";
     job.status = "working";
     job.phase = job.cacheHits > 0
       ? `Preparing ${pending.length} uncached photos · ${job.cacheHits} reused`
@@ -118,6 +134,7 @@ export function startOcr(photos: Photo[], includeNames: boolean) {
           await downloadPhoto(photo, path, job.controller.signal);
           manifest.push({ photoId: photo.id, photoIndex, path });
         } catch (error) {
+          lastDownloadError = error instanceof Error ? error.message : "Could not download photo.";
           job.failures += 1;
           job.results.push({
             photoId: photo.id, photoIndex, status: "failed", headerText: "",
@@ -128,10 +145,7 @@ export function startOcr(photos: Photo[], includeNames: boolean) {
       }
 
       if (manifest.length === 0) {
-        if (job.results.length === 0) throw new Error("None of the selected photos could be downloaded for OCR.");
-        job.status = "ready";
-        job.phase = "Search index ready with download failures";
-        return;
+        throw new Error(`None of the ${pending.length} uncached photos could be downloaded for OCR.${lastDownloadError ? ` Facebook reported: ${lastDownloadError}` : ""}`);
       }
       const manifestPath = join(jobDir, "manifest.json");
       await writeFile(manifestPath, JSON.stringify(manifest), "utf8");

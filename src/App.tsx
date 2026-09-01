@@ -613,7 +613,12 @@ function App() {
                   </div>
                 )}
                 {ocrJob?.status === "ready" && (
-                  <p className="ocr-summary"><CheckCircle2 size={14} /> {ocrJob.results.filter((result) => result.status === "ready").length} {t("sheetsIndexed")} {ocrJob.cacheHits > 0 ? `${ocrJob.cacheHits} ${t("restored")}` : t("coverSkipped")}</p>
+                  <>
+                    <p className="ocr-summary"><CheckCircle2 size={14} /> {ocrJob.results.filter((result) => result.status === "ready").length} {t("sheetsIndexed")} {ocrJob.cacheHits > 0 ? `${ocrJob.cacheHits} ${t("restored")}` : t("coverSkipped")}</p>
+                    {ocrJob.failures > 0 && (
+                      <p className="failure-note">{ocrJob.failures} photos could not be read. {ocrJob.results.find((result) => result.status === "failed")?.error}</p>
+                    )}
+                  </>
                 )}
               </div>
 

@@ -25,6 +25,12 @@ import torch.nn.functional as F
 from PIL import Image, ImageOps
 from transformers import AutoModel, AutoTokenizer
 
+# oneDNN/MKLDNN can select CPU kernels that older physical or virtual CPUs do
+# not expose, raising "could not create a primitive" for every OCR crop. The
+# native PyTorch CPU kernels are slower but work on the legacy servers this app
+# targets. Newer hosts may explicitly opt back in with TORCH_MKLDNN=1.
+torch.backends.mkldnn.enabled = os.environ.get("TORCH_MKLDNN", "0") == "1"
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
@@ -388,7 +394,12 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     if args.check:
-        print(json.dumps({"ok": True, "model": MODEL_ID}))
+        with torch.inference_mode():
+            probe = torch.zeros((1, 1, 48, 100), dtype=torch.float32)
+            output = torch.nn.Conv2d(1, 8, kernel_size=3, padding=1)(probe)
+            if output.shape != (1, 8, 48, 100):
+                raise RuntimeError("PyTorch CPU inference probe returned an unexpected shape.")
+        print(json.dumps({"ok": True, "model": MODEL_ID, "mkldnn": torch.backends.mkldnn.enabled}))
         return 0
     if not args.manifest:
         parser.error("--manifest is required")

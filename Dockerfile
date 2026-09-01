@@ -14,6 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     DATABASE_PATH=/app/data/album-packer.sqlite \
     HF_HOME=/app/.cache/huggingface \
     TMPDIR=/app/tmp \
+    TORCH_MKLDNN=0 \
     PORT=8787
 
 RUN apt-get update \

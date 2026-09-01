@@ -18,6 +18,7 @@ services:
       TESSERACT_CMD: /usr/bin/tesseract
       HF_HOME: /app/.cache/huggingface
       TMPDIR: /app/tmp
+      TORCH_MKLDNN: "${TORCH_MKLDNN:-0}"
       ALBUM_CACHE_TTL_MINUTES: "${ALBUM_CACHE_TTL_MINUTES:-30}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://rathpiseyalpha.github.io}"
     volumes:

@@ -35,6 +35,8 @@ Restart the app, paste a province result-album URL, scan it, and choose **Detect
 
 The fast number-column pass also requires Tesseract 5 on `PATH`. On Windows the standard `C:\Program Files\Tesseract-OCR\tesseract.exe` location is detected automatically; set `TESSERACT_CMD` for a custom location. Set `OCR_PYTHON` to use a Python environment other than the project `.venv`, or `KHMER_OCR_MODEL` and `KHMER_OCR_REVISION` to test a compatible pinned model.
 
+MKLDNN/oneDNN is disabled by default so CPU OCR remains compatible with older servers and virtual CPUs. A modern host can opt back into the faster kernels with `TORCH_MKLDNN=1` after verifying OCR inference on that CPU.
+
 ## Persistent cache and search database
 
 The server stores album manifests, recognized photo metadata, and normalized table-number rows in `data/album-packer.sqlite`. Repeating the same album scan restores its ordered photo list without reopening Facebook, and repeating the same OCR mode restores matching results without rerunning the model. The cache survives application restarts.

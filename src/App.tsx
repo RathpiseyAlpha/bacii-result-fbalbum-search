@@ -91,6 +91,7 @@ type OcrJob = {
 
 type CenterOption = { id: string; label: string; photoIds: Set<string>; count: number };
 type Theme = "light" | "dark";
+type Language = "en" | "km";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
@@ -108,7 +109,17 @@ function preferredTheme(): Theme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-const text: Record<string, string> = {
+function preferredLanguage(): Language {
+  try {
+    const saved = window.localStorage.getItem("album-packer-language");
+    if (saved === "en" || saved === "km") return saved;
+  } catch {
+    // Storage is optional.
+  }
+  return navigator.language.toLowerCase().startsWith("km") ? "km" : "en";
+}
+
+const englishText = {
   publicOnly: "Public albums only", how: "How it works", eyebrow: "Cambodia BacII result finder",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
   heroCopy: "Paste a province's public Facebook result album, detect its exam centers and tracks, then enter the table number from column one.",
@@ -137,7 +148,50 @@ const text: Record<string, string> = {
   tagline: "Save what matters. Keep it together.", legal: "For downloading photos you own or have permission to save. Not affiliated with Meta or Facebook.", backTop: "Back to top",
   preview: "Result sheet preview", previewHelp: "Use the original-size image to inspect the table.", closePreview: "Close preview", facebookSource: "Facebook source",
   downloadPhoto: "Download photo", samplePhotos: "photos", home: "Album Packer home", resultImage: "BacII result sheet",
+  urlPlaceholder: "Facebook album or Share URL", switchLight: "Switch to light mode", switchDark: "Switch to dark mode",
+  switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "Switch to English", cancel: "Cancel", cancelling: "Cancelling…",
+  recognizeNames: "Also recognize Khmer names", recognizeNamesHelp: "Slower: reads every name row instead of only headers and numbers.",
+  detectCenters: "Detect centers in", photos: "photos", photosUnread: "photos could not be read.",
+} as const;
+
+type TranslationKey = keyof typeof englishText;
+
+const khmerText: Record<TranslationKey, string> = {
+  publicOnly: "អាល់ប៊ុមសាធារណៈប៉ុណ្ណោះ", how: "របៀបប្រើ", eyebrow: "កម្មវិធីស្វែងរកលទ្ធផលបាក់ឌុបកម្ពុជា",
+  hero1: "ស្វែងរកសន្លឹកលទ្ធផលត្រឹមត្រូវ។", hero2: "មិនចាំបាច់បើករូបម្តងមួយៗ។",
+  heroCopy: "បិទភ្ជាប់តំណអាល់ប៊ុមលទ្ធផលសាធារណៈរបស់ខេត្ត ដើម្បីស្វែងរកមណ្ឌលប្រឡង ផ្នែកសិក្សា និងលេខតុក្នុងជួរទីមួយ។",
+  albumLink: "តំណអាល់ប៊ុម", photoLinks: "តំណរូបភាព", provinceUrl: "តំណអាល់ប៊ុមលទ្ធផលតាមខេត្ត", clearUrl: "សម្អាតតំណ",
+  scanning: "កំពុងស្កេន…", scanAlbum: "ស្កេនអាល់ប៊ុមខេត្ត", publicNote: "បិទភ្ជាប់តំណអាល់ប៊ុម ឬតំណ Share ដែលចម្លងពីកម្មវិធី Facebook។ ប្រើបានតែអាល់ប៊ុមសាធារណៈ។",
+  imageLinks: "តំណរូបភាព Facebook មួយតំណក្នុងមួយបន្ទាត់", links: "តំណ", fallback: "ជម្រើសបម្រុង នៅពេល Facebook តម្រូវឱ្យចូលគណនីដើម្បីមើលអាល់ប៊ុមសាធារណៈ។",
+  largeAlbumWait: "អាល់ប៊ុមធំអាចចំណាយពេលប៉ុន្មាននាទី។", upTo: "រហូតដល់ ២,០០០ រូប", quality: "រក្សាគុណភាពដើមដែលមាន",
+  autoZip: "រៀបចំឯកសារ ZIP ដោយស្វ័យប្រវត្តិ", readyPack: "រួចរាល់សម្រាប់រៀបចំ", photosFound: "រូបត្រូវបានរកឃើញ", linksReady: "តំណរូបភាពរួចរាល់",
+  chooseZip: "ជ្រើសរើសរូបដែលអ្នកចង់ដាក់ក្នុង ZIP។", validateLinks: "យើងនឹងផ្ទៀងផ្ទាត់តំណនីមួយៗពេលបង្កើត ZIP។", deselectAll: "ដកការជ្រើសរើសទាំងអស់", selectAll: "ជ្រើសរើសទាំងអស់",
+  finderTitle: "ស្វែងរកសន្លឹកលទ្ធផលបាក់ឌុប", finderHelp: "ស្វែងរកមណ្ឌលប្រឡង និងផ្នែកសិក្សាពីគ្រប់រូប បន្ទាប់មកបញ្ចូលលេខតុត្រឹមត្រូវ។",
+  provinceUnknown: "មិនអាចកំណត់ខេត្តបានច្បាស់", examCenter: "មណ្ឌលប្រឡង", examCenters: "មណ្ឌលប្រឡង", examCenterStep: "១. មណ្ឌលប្រឡង",
+  allCenters: "មណ្ឌលប្រឡងទាំងអស់", trackStep: "២. ផ្នែកសិក្សា", allTracks: "ផ្នែកទាំងអស់", science: "វិទ្យាសាស្ត្រ",
+  social: "វិទ្យាសាស្ត្រសង្គម", tableStep: "៣. លេខតុ", tableExample: "ឧ. 41", matching: "រូបលទ្ធផលដែលត្រូវគ្នា",
+  indexed: "រូបក្នុងអាល់ប៊ុមដែលបានរៀបចំ", clearFilters: "សម្អាតតម្រង", detecting: "កំពុងស្វែងរក…", sheetsIndexed: "សន្លឹកលទ្ធផលបានរៀបចំរួច។",
+  restored: "បានយកពីមូលដ្ឋានទិន្នន័យ។", coverSkipped: "រូបគម្របត្រូវបានរំលងដោយស្វ័យប្រវត្តិ។", select: "ជ្រើសរើស", deselect: "ដកការជ្រើសរើស", photo: "រូប",
+  view: "មើល", download: "ទាញយក", noMatch: "រកមិនឃើញសន្លឹកលទ្ធផលដែលត្រូវគ្នា", noMatchHelp: "សូមពិនិត្យមណ្ឌលប្រឡង ផ្នែកសិក្សា និងលេខតុក្នុងជួរទីមួយ។",
+  downloadName: "ដាក់ឈ្មោះឯកសារទាញយក", downloadHelp: "ថតរូបដែលមានលេខរៀងនឹងត្រូវដាក់ក្នុងឯកសារ ZIP។", packing: "កំពុងរៀបចំ…", buildZip: "បង្កើត ZIP",
+  zipReady: "ZIP រួចរាល់", photosPacked: "រូបបានរៀបចំ", processed: "បានដំណើរការ", downloadZip: "ទាញយក ZIP",
+  skippedOne: "រូបដែលផុតកំណត់ ឬមិនអាចប្រើបានត្រូវបានរំលង។", skippedMany: "រូបដែលផុតកំណត់ ឬមិនអាចប្រើបានត្រូវបានរំលង។", simple: "ងាយស្រួលប្រើ",
+  threeSteps: "ពីអាល់ប៊ុមទៅឯកសារ ZIP ក្នុងបីជំហាន។", pasteAlbum: "បិទភ្ជាប់អាល់ប៊ុម", pasteAlbumHelp: "ប្រើអាល់ប៊ុម Facebook សាធារណៈដែលអាចមើលបានដោយមិនចូលគណនី។",
+  choosePhotos: "ជ្រើសរើសរូបភាព", choosePhotosHelp: "ពិនិត្យរូបទាំងអស់ រួចជ្រើសរើសទាំងអស់ ឬតែរូបដែលអ្នកត្រូវការ។", oneZip: "ទាញយកជា ZIP មួយ",
+  oneZipHelp: "យើងទាញយក ដាក់លេខរៀង និងរៀបចំរូប ដោយមិនធ្វើឱ្យថត Downloads របស់អ្នករញ៉េរញ៉ៃ។", bigAlbums: "បង្កើតសម្រាប់អាល់ប៊ុមធំ", noMarathon: "មិនចាំបាច់បើកផ្ទាំងច្រើន ឬចុចទាញយកម្តងមួយៗ។",
+  details: "Album Packer ប្រើកម្មវិធីរុករកដើម្បីរករូបសាធារណៈដែល Facebook បង្ហាញ រួចជ្រើសគុណភាពរូបល្អបំផុតមុនបង្កើតឯកសារ ZIP។",
+  hundreds: "ដំណើរការរាប់រយរូបក្នុងពេលតែមួយ", hundredsHelp: "ការងារធំដំណើរការនៅផ្ទៃខាងក្រោយ និងបង្ហាញវឌ្ឍនភាពផ្ទាល់។", skipsFailures: "រំលងរូបដែលមានបញ្ហា",
+  skipsFailuresHelp: "តំណរូបផុតកំណត់មួយ មិនធ្វើឱ្យ ZIP ទាំងមូលបរាជ័យទេ។", noPassword: "មិនត្រូវការពាក្យសម្ងាត់ Facebook", noPasswordHelp: "ទទួលយកតែទំព័រសាធារណៈ និងតំណរូបភាពពី Facebook CDN។",
+  tagline: "រក្សាទុកអ្វីដែលសំខាន់។ រៀបចំឱ្យនៅជាមួយគ្នា។", legal: "សម្រាប់ទាញយករូបដែលអ្នកជាម្ចាស់ ឬមានការអនុញ្ញាត។ មិនមានទំនាក់ទំនងជាមួយ Meta ឬ Facebook ទេ។", backTop: "ត្រឡប់ទៅខាងលើ",
+  preview: "មើលសន្លឹកលទ្ធផល", previewHelp: "ប្រើរូបទំហំដើមដើម្បីពិនិត្យតារាង។", closePreview: "បិទការមើលរូប", facebookSource: "ប្រភព Facebook",
+  downloadPhoto: "ទាញយករូប", samplePhotos: "រូប", home: "ទំព័រដើម Album Packer", resultImage: "សន្លឹកលទ្ធផលបាក់ឌុប",
+  urlPlaceholder: "តំណអាល់ប៊ុម Facebook ឬតំណ Share", switchLight: "ប្តូរទៅផ្ទៃភ្លឺ", switchDark: "ប្តូរទៅផ្ទៃងងឹត",
+  switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "ប្តូរទៅភាសាអង់គ្លេស", cancel: "បោះបង់", cancelling: "កំពុងបោះបង់…",
+  recognizeNames: "អានឈ្មោះជាភាសាខ្មែរផងដែរ", recognizeNamesHelp: "យឺតជាងមុន៖ អានឈ្មោះក្នុងគ្រប់ជួរ ជំនួសឱ្យតែចំណងជើង និងលេខតុ។",
+  detectCenters: "ស្វែងរកមណ្ឌលក្នុង", photos: "រូប", photosUnread: "រូបមិនអាចអានបាន។",
 };
+
+const translations: Record<Language, Record<TranslationKey, string>> = { en: englishText, km: khmerText };
 
 
 function normalizedCenter(value: string) {
@@ -212,6 +266,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 
 function App() {
   const [theme, setTheme] = useState<Theme>(preferredTheme);
+  const [language, setLanguage] = useState<Language>(preferredLanguage);
   const [mode, setMode] = useState<"album" | "links">("album");
   const [albumUrl, setAlbumUrl] = useState("");
   const [manualLinks, setManualLinks] = useState("");
@@ -230,7 +285,7 @@ function App() {
   const [error, setError] = useState("");
   const resultsRef = useRef<HTMLElement>(null);
   const autoOcrDiscoveryRef = useRef<string | null>(null);
-  const t = (key: string) => text[key] ?? key;
+  const t = (key: TranslationKey) => translations[language][key];
 
   const parsedLinks = useMemo(() => manualLinks.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), [manualLinks]);
   const busy = submittingScan || discovery?.status === "queued" || discovery?.status === "working";
@@ -241,6 +296,12 @@ function App() {
     document.documentElement.dataset.theme = theme;
     try { window.localStorage.setItem("album-packer-theme", theme); } catch { /* Storage is optional. */ }
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dataset.language = language;
+    try { window.localStorage.setItem("album-packer-language", language); } catch { /* Storage is optional. */ }
+  }, [language]);
 
   useEffect(() => {
     if (!discovery || !["queued", "working"].includes(discovery.status)) return;
@@ -458,8 +519,12 @@ function App() {
         </a>
         <div className="nav-pills">
           <span><ShieldCheck size={15} /> {t("publicOnly")}</span>
+          <button type="button" className="language-toggle" onClick={() => setLanguage((current) => current === "en" ? "km" : "en")}
+            aria-label={language === "en" ? t("switchKhmer") : t("switchEnglish")} title={language === "en" ? t("switchKhmer") : t("switchEnglish")}>
+            <Languages size={15} /> {language === "en" ? "ខ្មែរ" : "EN"}
+          </button>
           <button type="button" className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+            aria-label={theme === "dark" ? t("switchLight") : t("switchDark")} title={theme === "dark" ? t("switchLight") : t("switchDark")}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <a href="#how-it-works">{t("how")}</a>
@@ -488,12 +553,12 @@ function App() {
                 <div className="field-with-icon">
                   <Link2 size={19} />
                   <input id="album-url" type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)}
-                    placeholder="Facebook album or Share URL" onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
+                    placeholder={t("urlPlaceholder")} onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
                   {albumUrl && <button type="button" className="clear-button" onClick={() => setAlbumUrl("")} aria-label={t("clearUrl")}><X size={16} /></button>}
                 </div>
                 <button className="primary-button" onClick={() => void scanAlbum()} disabled={busy}>
                   {busy ? <LoaderCircle className="spin" size={19} /> : <ScanSearch size={19} />}
-                  {busy ? "Scanning…" : "Scan province album"}
+                  {busy ? t("scanning") : t("scanAlbum")}
                 </button>
               </div>
               <p className="field-note"><ShieldCheck size={14} /> {t("publicNote")}</p>
@@ -516,11 +581,11 @@ function App() {
             <div className="job-panel">
               <div className="job-heading">
                 <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
-                <div><strong>{discovery.phase}</strong><span>This can take a few minutes for large albums.</span></div>
+                <div><strong>{discovery.phase}</strong><span>{t("largeAlbumWait")}</span></div>
                 <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
                 <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
                   {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
-                  {cancellingScan ? "Cancelling…" : "Cancel"}
+                  {cancellingScan ? t("cancelling") : t("cancel")}
                 </button>
               </div>
               <ProgressBar current={discovery.current} total={discovery.total} />
@@ -598,11 +663,11 @@ function App() {
                   <div className="ocr-actions">
                     <label className="check-option">
                       <input type="checkbox" checked={includeNames} onChange={(event) => setIncludeNames(event.target.checked)} disabled={ocrBusy} />
-                      <span><b>Also recognize Khmer names</b><small>Slower: reads every name row instead of only headers and numbers.</small></span>
+                      <span><b>{t("recognizeNames")}</b><small>{t("recognizeNamesHelp")}</small></span>
                     </label>
                     <button className="secondary-button" onClick={() => void analyzeResults()} disabled={ocrBusy || readyPhotos.length === 0}>
                       {ocrBusy ? <LoaderCircle className="spin" size={18} /> : <ScanSearch size={18} />}
-                      {ocrBusy ? "Detecting…" : `Detect centers in ${readyPhotos.length.toLocaleString()} photos`}
+                      {ocrBusy ? t("detecting") : `${t("detectCenters")} ${readyPhotos.length.toLocaleString()} ${t("photos")}`}
                     </button>
                   </div>
                 )}
@@ -616,7 +681,7 @@ function App() {
                   <>
                     <p className="ocr-summary"><CheckCircle2 size={14} /> {ocrJob.results.filter((result) => result.status === "ready").length} {t("sheetsIndexed")} {ocrJob.cacheHits > 0 ? `${ocrJob.cacheHits} ${t("restored")}` : t("coverSkipped")}</p>
                     {ocrJob.failures > 0 && (
-                      <p className="failure-note">{ocrJob.failures} photos could not be read. {ocrJob.results.find((result) => result.status === "failed")?.error}</p>
+                      <p className="failure-note">{ocrJob.failures} {t("photosUnread")} {ocrJob.results.find((result) => result.status === "failed")?.error}</p>
                     )}
                   </>
                 )}

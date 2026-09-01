@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Kantumruy+Pro:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,500&display=swap');
 
 :root {
-  font-family: "Manrope", sans-serif;
+  font-family: "Inter", "Kantumruy Pro", sans-serif;
   color: #20231d;
   background: #f6f4ee;
   font-synthesis: none;
@@ -50,6 +50,8 @@ a { color: inherit; text-decoration: none; }
 .nav-pills span { display: inline-flex; align-items: center; gap: 7px; background: #ebe9e1; padding: 8px 13px; border-radius: 50px; }
 .nav-pills a { border-bottom: 1px solid transparent; }
 .nav-pills a:hover { border-color: currentColor; }
+.language-toggle { min-width: 74px; height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 50px; color: var(--ink); background: var(--card); cursor: pointer; font-weight: 700; transition: .2s; }
+.language-toggle:hover { transform: translateY(-1px); border-color: var(--green); }
 .theme-toggle { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--ink); background: var(--card); cursor: pointer; transition: .2s; }
 .theme-toggle:hover { transform: translateY(-1px); border-color: var(--green); }
 
@@ -61,6 +63,12 @@ a { color: inherit; text-decoration: none; }
 h1 { font-size: clamp(48px, 7vw, 84px); line-height: .98; letter-spacing: -.065em; margin: 25px auto 24px; max-width: 930px; }
 h1 em { font-family: "Newsreader", serif; font-weight: 500; color: var(--green); }
 .hero-copy { max-width: 680px; margin: 0 auto; color: var(--muted); font-size: 17px; line-height: 1.7; }
+
+:root[data-language="km"] { font-family: "Kantumruy Pro", "Inter", sans-serif; }
+:root[data-language="km"] h1 { max-width: 1000px; font-size: clamp(42px, 6vw, 72px); line-height: 1.28; letter-spacing: -.035em; }
+:root[data-language="km"] h1 em { font-family: "Kantumruy Pro", sans-serif; font-style: normal; }
+:root[data-language="km"] .eyebrow,
+:root[data-language="km"] .section-kicker { font-family: "Kantumruy Pro", sans-serif; letter-spacing: .06em; }
 
 .workspace-card { text-align: left; width: min(870px, 100%); margin: 48px auto 0; background: var(--card); border: 1px solid #d9d8ce; border-radius: 22px; box-shadow: var(--shadow); overflow: hidden; }
 .mode-tabs { display: flex; padding: 7px; background: #eeece5; border-bottom: 1px solid var(--line); }
@@ -295,9 +303,12 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 @media (max-width: 520px) {
   .shell { width: min(100% - 24px, 1160px); }
   .nav { height: 70px; }
+  .nav-pills { gap: 8px; }
   .nav-pills a { display: none; }
+  .language-toggle { min-width: 64px; padding-inline: 9px; }
   .hero { padding-top: 42px; }
   h1 { font-size: 45px; }
+  :root[data-language="km"] h1 { font-size: 38px; }
   .hero-copy { font-size: 14px; }
   .workspace-card { margin-top: 34px; border-radius: 16px; }
   .input-pane { padding: 18px; }

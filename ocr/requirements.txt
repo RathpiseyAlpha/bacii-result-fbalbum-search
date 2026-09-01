@@ -1,0 +1,6 @@
+numpy>=1.26,<3
+pillow>=10,<13
+torch>=2.4,<3
+transformers==4.57.1
+safetensors>=0.4
+huggingface-hub>=0.27

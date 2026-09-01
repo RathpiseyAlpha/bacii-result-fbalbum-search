@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.venv/
+.hf-cache/
+__pycache__/
+*.pyc
+data/*.sqlite*
+*.log
+*.tsbuildinfo
+.DS_Store

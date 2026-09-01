@@ -61,3 +61,52 @@ The server stores album manifests, recognized photo metadata, and normalized tab
 - Facebook changes its public markup frequently. The fallback exists because some public albums are still gated by region, consent state, or automated-access checks.
 - A deployed server needs enough temporary disk for concurrent archives and must have Playwright Chromium installed. On Linux, use `npx playwright install --with-deps chromium` during setup.
 - Only download photos you own or have permission to save. This project does not bypass privacy controls and does not request Facebook credentials.
+
+## Deploy with Docker Compose
+
+The production image contains the compiled React app, Express API, Playwright Chromium, CPU-only PyTorch OCR, and Tesseract. SQLite data and the downloaded Hugging Face model are kept in named Docker volumes.
+
+On a Linux server with Docker and Docker Compose installed:
+
+```bash
+git clone https://github.com/RathpiseyAlpha/bacii-result-fbalbum-search.git
+cd bacii-result-fbalbum-search
+cp .env.example .env
+docker compose up -d --build
+docker compose ps
+docker compose logs -f app
+```
+
+The Compose file binds the application to `127.0.0.1:8787`, so expose it through an HTTPS reverse proxy. For example, an Nginx virtual host can proxy to `http://127.0.0.1:8787`:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8787;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300s;
+}
+```
+
+Useful deployment commands:
+
+```bash
+# Rebuild after pulling an update
+git pull
+docker compose up -d --build
+
+# Check health and logs
+curl http://127.0.0.1:8787/api/health
+docker compose logs --tail=200 app
+
+# Back up the persistent SQLite database volume
+docker compose stop app
+docker run --rm -v bacii-result-fbalbum-search_app_data:/data -v "$PWD":/backup ubuntu:24.04 \
+  tar czf /backup/album-packer-data.tar.gz -C /data .
+docker compose start app
+```
+
+The first image build downloads the CPU PyTorch runtime and can take several minutes. The Khmer model downloads on the first uncached OCR job and is then retained in the `hf_cache` volume. Do not run multiple app replicas against the same SQLite volume; migrate to PostgreSQL before horizontal scaling.

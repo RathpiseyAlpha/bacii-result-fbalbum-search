@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        PLAYWRIGHT_VERSION: "1.62.1"
+    image: bacii-result-fbalbum-search:latest
+    restart: unless-stopped
+    init: true
+    ipc: host
+    ports:
+      - "127.0.0.1:${APP_PORT:-8787}:8787"
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      DATABASE_PATH: /app/data/album-packer.sqlite
+      OCR_PYTHON: /app/.venv/bin/python
+      TESSERACT_CMD: /usr/bin/tesseract
+      HF_HOME: /app/.cache/huggingface
+      TMPDIR: /app/tmp
+      ALBUM_CACHE_TTL_MINUTES: "${ALBUM_CACHE_TTL_MINUTES:-30}"
+    volumes:
+      - app_data:/app/data
+      - hf_cache:/app/.cache/huggingface
+      - temp_jobs:/app/tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8787/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  app_data:
+    name: bacii-result-fbalbum-search_app_data
+  hf_cache:
+    name: bacii-result-fbalbum-search_hf_cache
+  temp_jobs:
+    name: bacii-result-fbalbum-search_temp_jobs

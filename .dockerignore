@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.venv
+.hf-cache
+data
+dist
+node_modules
+**/__pycache__
+**/*.pyc
+*.log
+*.tsbuildinfo
+.DS_Store

@@ -5,6 +5,7 @@ import type { DiscoveryJob, Photo } from "./types.ts";
 const PHOTO_LINK_MARKERS = ["/photo/", "/photos/", "photo.php", "photo?fbid="];
 const ALBUM_PAGINATION_OPERATION = "ProfileCometLegacyAlbumGridViewPaginationQuery";
 const ALBUM_PAGINATION_DOC_ID = "34407011978913359";
+const shareAlbumCache = new Map<string, string>();
 
 const isPhotoPage = (href: string) => PHOTO_LINK_MARKERS.some((marker) => href.includes(marker));
 const isCdnImage = (src: string) => {
@@ -233,6 +234,71 @@ async function dismissPrompts(page: Page) {
   }
 }
 
+function canonicalAlbumUrl(albumId: string) {
+  const canonical = new URL("https://www.facebook.com/media/set/");
+  canonical.searchParams.set("set", `a.${albumId.replace(/^a\./, "")}`);
+  return canonical.toString();
+}
+
+async function albumUrlExposedByPage(page: Page) {
+  const pageCandidates = await page.locator([
+    'link[rel="canonical"]',
+    'meta[property="og:url"]',
+    'a[href*="/media/set/"]',
+    'a[href*="set=a."]',
+  ].join(",")).evaluateAll((nodes) => nodes.map((node) =>
+    node instanceof HTMLMetaElement ? node.content : node.getAttribute("href") ?? "",
+  )).catch(() => [] as string[]);
+
+  for (const candidate of [page.url(), ...pageCandidates]) {
+    try {
+      const parsed = new URL(candidate, page.url());
+      const set = parsed.searchParams.get("set")?.replace(/^a\./, "");
+      if (set && /^\d+$/.test(set)) return canonicalAlbumUrl(set);
+    } catch {
+      // Ignore malformed links embedded in Facebook's page markup.
+    }
+  }
+
+  const html = (await page.content().catch(() => ""))
+    .replaceAll("\\u0026", "&")
+    .replaceAll("\\u003d", "=")
+    .replaceAll("\\/", "/")
+    .replaceAll("&amp;", "&");
+  const serializedSet = html.match(/[?&]set=a\.(\d{6,})/i)?.[1]
+    ?? html.match(/["']set["']\s*:\s*["']a\.(\d{6,})/i)?.[1];
+  return serializedSet ? canonicalAlbumUrl(serializedSet) : null;
+}
+
+async function resolveSharedAlbumUrl(context: BrowserContext, shareUrl: string, job: DiscoveryJob) {
+  const cacheKey = new URL(shareUrl);
+  cacheKey.search = "";
+  cacheKey.hash = "";
+  const cached = shareAlbumCache.get(cacheKey.toString());
+  if (cached) return cached;
+
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    if (job.controller.signal.aborted) throw new Error("Cancelled.");
+    job.phase = `Resolving Facebook Share link · attempt ${attempt} of 5`;
+    const page = await context.newPage();
+    try {
+      await page.goto(shareUrl, { waitUntil: "domcontentloaded", timeout: 20_000 }).catch(() => undefined);
+      await dismissPrompts(page);
+      for (let poll = 0; poll < 6; poll += 1) {
+        const resolved = await albumUrlExposedByPage(page);
+        if (resolved) {
+          shareAlbumCache.set(cacheKey.toString(), resolved);
+          return resolved;
+        }
+        await page.waitForTimeout(500);
+      }
+    } finally {
+      await page.close().catch(() => undefined);
+    }
+  }
+  throw new Error("Facebook did not expose an album link from this shared story after 5 automatic attempts. Confirm the post and album are public.");
+}
+
 async function scanAlbum(page: Page, job: DiscoveryJob) {
   const links = new Map<string, string>();
   const thumbnails = new Map<string, { url: string; width: number; height: number }>();
@@ -347,8 +413,13 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
       deviceScaleFactor: 3,
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
     });
+    const isShareUrl = new URL(albumUrl).pathname.toLowerCase().includes("/share/");
+    if (isShareUrl) {
+      albumUrl = await resolveSharedAlbumUrl(context, albumUrl, job);
+      job.albumUrl = albumUrl;
+    }
     const page = await context.newPage();
-    let albumId = "";
+    const albumId = new URL(albumUrl).searchParams.get("set")?.replace(/^a\./, "") ?? "";
     const graphState: AlbumGraphState = { photos: new Map(), hasNext: false };
     page.on("response", async (response) => {
       if (!response.url().includes("/api/graphql")) return;
@@ -375,41 +446,9 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
       }
     });
     job.status = "working";
-    job.phase = new URL(albumUrl).pathname.toLowerCase().includes("/share/")
-      ? "Resolving Facebook share link"
-      : "Opening public album";
+    job.phase = isShareUrl ? "Opening shared album" : "Opening public album";
     await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
     await dismissPrompts(page);
-    const pageCandidates = await page.locator([
-      'link[rel="canonical"]',
-      'meta[property="og:url"]',
-      'a[href*="/media/set/"]',
-      'a[href*="set=a."]',
-    ].join(",")).evaluateAll((nodes) => nodes.map((node) =>
-      node instanceof HTMLMetaElement ? node.content : node.getAttribute("href") ?? "",
-    )).catch(() => [] as string[]);
-    const candidates = [page.url(), ...pageCandidates];
-    for (const candidate of candidates) {
-      try {
-        const parsed = new URL(candidate, page.url());
-        const set = parsed.searchParams.get("set")?.replace(/^a\./, "");
-        if (set) {
-          const canonical = new URL("https://www.facebook.com/media/set/");
-          canonical.searchParams.set("set", `a.${set}`);
-          albumUrl = parsePublicAlbumUrl(canonical.toString());
-          break;
-        }
-      } catch {
-        // Ignore malformed links embedded in Facebook's page markup.
-      }
-    }
-    job.albumUrl = albumUrl;
-    albumId = new URL(albumUrl).searchParams.get("set")?.replace(/^a\./, "") ?? "";
-    if (albumId && page.url() !== albumUrl) {
-      job.phase = "Opening shared album";
-      await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
-      await dismissPrompts(page);
-    }
     const html = await page.content();
     seedGraphStateFromHtml(html, albumId, graphState);
     const { links: domLinks, thumbnails, expectedTotal } = await scanAlbum(page, job);

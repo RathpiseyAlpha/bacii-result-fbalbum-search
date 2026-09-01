@@ -202,6 +202,7 @@ function App() {
   const [albumUrl, setAlbumUrl] = useState("");
   const [manualLinks, setManualLinks] = useState("");
   const [albumName, setAlbumName] = useState("my-facebook-album");
+  const [submittingScan, setSubmittingScan] = useState(false);
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [zipJob, setZipJob] = useState<ZipJob | null>(null);
   const [ocrJob, setOcrJob] = useState<OcrJob | null>(null);
@@ -216,7 +217,7 @@ function App() {
   const t = (key: string) => text[key] ?? key;
 
   const parsedLinks = useMemo(() => manualLinks.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), [manualLinks]);
-  const busy = discovery?.status === "queued" || discovery?.status === "working";
+  const busy = submittingScan || discovery?.status === "queued" || discovery?.status === "working";
   const zipBusy = zipJob?.status === "queued" || zipJob?.status === "working";
   const ocrBusy = ocrJob?.status === "queued" || ocrJob?.status === "working";
 
@@ -277,6 +278,7 @@ function App() {
     setTableNumber("");
     setViewingPhoto(null);
     if (!albumUrl.trim()) return setError("Paste a public Facebook album or Share URL first.");
+    setSubmittingScan(true);
     try {
       const job = await api<Discovery>("/api/discover", {
         method: "POST",
@@ -285,6 +287,8 @@ function App() {
       setDiscovery(job);
     } catch (scanError) {
       setError(scanError instanceof Error ? scanError.message : "Could not start the album scan.");
+    } finally {
+      setSubmittingScan(false);
     }
   }
 

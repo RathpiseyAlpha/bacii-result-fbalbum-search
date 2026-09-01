@@ -21,23 +21,25 @@ export function startDiscovery(url: string, forceRefresh = false) {
     createdAt: Date.now(), controller: new AbortController(),
   };
   discoveries.set(job.id, job);
-  void (async () => {
-    const cacheMinutes = Math.max(1, Number(process.env.ALBUM_CACHE_TTL_MINUTES || 30));
-    const cached = forceRefresh ? null : loadAlbumManifest(albumUrl, cacheMinutes * 60_000);
-    if (cached) {
-      job.photos = cached;
-      job.current = cached.length;
-      job.total = cached.length;
-      job.cacheHit = true;
-      job.status = "ready";
-      job.phase = `${cached.length} photos restored from cache`;
-      return;
-    }
-    await discoverPublicAlbum(albumUrl, job);
-    saveAlbumManifest(albumUrl, job.photos);
-  })().catch((error: unknown) => {
-    job.status = job.controller.signal.aborted ? "cancelled" : "failed";
-    job.error = error instanceof Error ? error.message : "Album discovery failed.";
+  setImmediate(() => {
+    void (async () => {
+      const cacheMinutes = Math.max(1, Number(process.env.ALBUM_CACHE_TTL_MINUTES || 30));
+      const cached = forceRefresh ? null : loadAlbumManifest(albumUrl, cacheMinutes * 60_000);
+      if (cached) {
+        job.photos = cached;
+        job.current = cached.length;
+        job.total = cached.length;
+        job.cacheHit = true;
+        job.status = "ready";
+        job.phase = `${cached.length} photos restored from cache`;
+        return;
+      }
+      await discoverPublicAlbum(albumUrl, job);
+      saveAlbumManifest(albumUrl, job.photos);
+    })().catch((error: unknown) => {
+      job.status = job.controller.signal.aborted ? "cancelled" : "failed";
+      job.error = error instanceof Error ? error.message : "Album discovery failed.";
+    });
   });
   return job;
 }

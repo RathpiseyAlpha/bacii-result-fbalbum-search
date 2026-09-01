@@ -9,7 +9,26 @@ import type { Photo } from "./types.ts";
 
 const app = express();
 const port = Number(process.env.PORT || 8787);
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+);
 app.disable("x-powered-by");
+app.use((request, response, next) => {
+  const origin = request.headers.origin?.replace(/\/$/, "");
+  if (origin && allowedOrigins.has(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    response.setHeader("Vary", "Origin");
+  }
+  if (request.method === "OPTIONS") {
+    return response.sendStatus(origin && allowedOrigins.has(origin) ? 204 : 403);
+  }
+  next();
+});
 app.use(express.json({ limit: "2mb" }));
 
 function publicDiscovery(job: NonNullable<ReturnType<typeof discoveries.get>>) {

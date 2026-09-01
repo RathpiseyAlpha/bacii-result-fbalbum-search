@@ -89,6 +89,12 @@ type OcrJob = {
 
 type CenterOption = { id: string; label: string; photoIds: Set<string>; count: number };
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+function apiUrl(path: string) {
+  return `${API_BASE_URL}${path}`;
+}
+
 const text: Record<string, string> = {
   publicOnly: "Public albums only", how: "How it works", eyebrow: "Cambodia BacII result finder",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
@@ -166,7 +172,7 @@ function groupExamCenters(results: OcrPhotoResult[]): CenterOption[] {
 }
 
 async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers: { "content-type": "application/json", ...options?.headers },
   });
@@ -532,7 +538,7 @@ function App() {
                         <Eye size={16} /> <b>{t("view")}</b>
                       </button>
                       <a title={t("downloadPhoto")} aria-label={`${t("downloadPhoto")} ${index + 1}`}
-                        href={`/api/discover/${discovery?.id}/photo/${encodeURIComponent(photo.id)}/download`}>
+                        href={apiUrl(`/api/discover/${discovery?.id}/photo/${encodeURIComponent(photo.id)}/download`)}>
                         <Download size={16} /> <b>{t("download")}</b>
                       </a>
                     </div>
@@ -565,7 +571,7 @@ function App() {
                     <strong>{zipJob.status === "failed" ? zipJob.error : zipJob.status === "ready" ? t("zipReady") : t("packing")}</strong>
                     <span>{zipJob.status === "ready" ? `${formatBytes(zipJob.bytes)} · ${zipJob.total - zipJob.failures} ${t("photosPacked")}` : `${zipJob.current}/${zipJob.total} ${t("processed")} · ${formatBytes(zipJob.bytes)}`}</span>
                   </div>
-                  {zipJob.status === "ready" && <a className="download-button" href={`/api/zip/${zipJob.id}/download`}><Download size={18} /> {t("downloadZip")}</a>}
+                  {zipJob.status === "ready" && <a className="download-button" href={apiUrl(`/api/zip/${zipJob.id}/download`)}><Download size={18} /> {t("downloadZip")}</a>}
                 </div>
                 {zipBusy && <ProgressBar current={zipJob.current} total={zipJob.total} />}
                 {zipJob.failures > 0 && <p className="failure-note">{zipJob.failures} {zipJob.failures === 1 ? t("skippedOne") : t("skippedMany")}</p>}
@@ -625,7 +631,7 @@ function App() {
             <div className="photo-modal-image"><img src={viewingPhoto.url} alt={t("resultImage")} /></div>
             <div className="photo-modal-actions">
               {viewingPhoto.sourceUrl && <a href={viewingPhoto.sourceUrl} target="_blank" rel="noreferrer"><ExternalLink size={17} /> {t("facebookSource")}</a>}
-              <a className="download-button" href={`/api/discover/${discovery?.id}/photo/${encodeURIComponent(viewingPhoto.id)}/download`}>
+              <a className="download-button" href={apiUrl(`/api/discover/${discovery?.id}/photo/${encodeURIComponent(viewingPhoto.id)}/download`)}>
                 <Download size={17} /> {t("downloadPhoto")}
               </a>
             </div>

@@ -110,3 +110,21 @@ docker compose start app
 ```
 
 The first image build downloads the CPU PyTorch runtime and can take several minutes. The Khmer model downloads on the first uncached OCR job and is then retained in the `hf_cache` volume. Do not run multiple app replicas against the same SQLite volume; migrate to PostgreSQL before horizontal scaling.
+
+## GitHub Pages frontend
+
+GitHub Pages hosts only the static React frontend. Album scanning, OCR, caching, and ZIP creation continue to run on your server. The public frontend URL is:
+
+```text
+https://rathpiseyalpha.github.io/bacii-result-fbalbum-search/
+```
+
+Before enabling Pages:
+
+1. Expose the server API over HTTPS. An HTTP IP address will be blocked by browsers because the Pages site uses HTTPS.
+2. In the GitHub repository, open **Settings > Secrets and variables > Actions > Variables** and create `API_BASE_URL` with the HTTPS server origin, for example `https://203.0.113.10` (no trailing slash and no `/api`).
+3. Open **Settings > Pages** and set **Source** to **GitHub Actions**.
+4. In the server `.env`, keep `ALLOWED_ORIGINS=https://rathpiseyalpha.github.io`, then rebuild with `docker compose up -d --build`.
+5. Push to `main`, or run the **Deploy frontend to GitHub Pages** workflow manually.
+
+The workflow builds with `/bacii-result-fbalbum-search/` as Vite's base path while local development continues to use `/` and the port `5173` proxy.

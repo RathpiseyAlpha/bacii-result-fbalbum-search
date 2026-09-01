@@ -19,6 +19,7 @@ services:
       HF_HOME: /app/.cache/huggingface
       TMPDIR: /app/tmp
       ALBUM_CACHE_TTL_MINUTES: "${ALBUM_CACHE_TTL_MINUTES:-30}"
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://rathpiseyalpha.github.io}"
     volumes:
       - app_data:/app/data
       - hf_cache:/app/.cache/huggingface

@@ -47,7 +47,7 @@ The server stores album manifests, recognized photo metadata, and normalized tab
 
 ## How it works
 
-- The album URL must use HTTPS on `facebook.com` and be publicly visible without signing in.
+- The album URL or Facebook-app Share URL must use HTTPS on `facebook.com` and be publicly visible without signing in. Share links are resolved to their canonical album before pagination.
 - The browser worker scrolls the album, collects photo pages, and resolves their best exposed image.
 - ZIP jobs download one photo at a time and write to the system temporary directory, avoiding large in-memory archives.
 - Finished jobs expire after one hour and their temporary ZIP is removed.

@@ -334,7 +334,7 @@ async function resolvePhoto(context: BrowserContext, href: string, signal: Abort
 }
 
 export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
-  const albumUrl = parsePublicAlbumUrl(rawUrl);
+  let albumUrl = parsePublicAlbumUrl(rawUrl);
   const browser = await chromium.launch({
     headless: true,
     args: ["--disable-blink-features=AutomationControlled"],
@@ -348,7 +348,7 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
     });
     const page = await context.newPage();
-    const albumId = new URL(albumUrl).searchParams.get("set")?.replace(/^a\./, "") ?? "";
+    let albumId = "";
     const graphState: AlbumGraphState = { photos: new Map(), hasNext: false };
     page.on("response", async (response) => {
       if (!response.url().includes("/api/graphql")) return;
@@ -375,9 +375,39 @@ export async function discoverPublicAlbum(rawUrl: string, job: DiscoveryJob) {
       }
     });
     job.status = "working";
-    job.phase = "Opening public album";
+    job.phase = new URL(albumUrl).pathname.toLowerCase().includes("/share/")
+      ? "Resolving Facebook share link"
+      : "Opening public album";
     await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
     await dismissPrompts(page);
+    const pageCandidates = await page.locator([
+      'link[rel="canonical"]',
+      'meta[property="og:url"]',
+      'a[href*="/media/set/"]',
+      'a[href*="set=a."]',
+    ].join(",")).evaluateAll((nodes) => nodes.map((node) =>
+      node instanceof HTMLMetaElement ? node.content : node.getAttribute("href") ?? "",
+    )).catch(() => [] as string[]);
+    const candidates = [page.url(), ...pageCandidates];
+    for (const candidate of candidates) {
+      try {
+        const parsed = new URL(candidate, page.url());
+        const set = parsed.searchParams.get("set");
+        if (set?.replace(/^a\./, "")) {
+          albumUrl = parsePublicAlbumUrl(parsed.toString());
+          break;
+        }
+      } catch {
+        // Ignore malformed links embedded in Facebook's page markup.
+      }
+    }
+    job.albumUrl = albumUrl;
+    albumId = new URL(albumUrl).searchParams.get("set")?.replace(/^a\./, "") ?? "";
+    if (albumId && page.url() !== albumUrl) {
+      job.phase = "Opening shared album";
+      await page.goto(albumUrl, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      await dismissPrompts(page);
+    }
     const html = await page.content();
     seedGraphStateFromHtml(html, albumId, graphState);
     const { links: domLinks, thumbnails, expectedTotal } = await scanAlbum(page, job);

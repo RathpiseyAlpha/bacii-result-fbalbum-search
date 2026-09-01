@@ -100,7 +100,7 @@ const text: Record<string, string> = {
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
   heroCopy: "Paste a province's public Facebook result album, detect its exam centers and tracks, then enter the table number from column one.",
   albumLink: "Album link", photoLinks: "Photo links", provinceUrl: "Province result album URL", clearUrl: "Clear URL",
-  scanning: "Scanning…", scanAlbum: "Scan province album", publicNote: "Works with albums visible in a private/incognito browser window.",
+  scanning: "Scanning…", scanAlbum: "Scan province album", publicNote: "Paste an album URL or the Share link copied from the Facebook app. Public albums only.",
   imageLinks: "Facebook image links, one per line", links: "links", fallback: "A reliable fallback when Facebook places the public album page behind a login wall.",
   largeAlbumWait: "This can take a few minutes for large albums.", upTo: "Up to 2,000 photos", quality: "Original available quality",
   autoZip: "Automatic ZIP packaging", readyPack: "Ready to pack", photosFound: "photos found", linksReady: "photo links ready",
@@ -276,7 +276,7 @@ function App() {
     setSelectedTrack("");
     setTableNumber("");
     setViewingPhoto(null);
-    if (!albumUrl.trim()) return setError("Paste a public Facebook album URL first.");
+    if (!albumUrl.trim()) return setError("Paste a public Facebook album or Share URL first.");
     try {
       const job = await api<Discovery>("/api/discover", {
         method: "POST",
@@ -389,7 +389,7 @@ function App() {
                 <div className="field-with-icon">
                   <Link2 size={19} />
                   <input id="album-url" type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)}
-                    placeholder="https://www.facebook.com/media/set/?set=..." onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
+                    placeholder="Facebook album or Share URL" onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
                   {albumUrl && <button type="button" className="clear-button" onClick={() => setAlbumUrl("")} aria-label={t("clearUrl")}><X size={16} /></button>}
                 </div>
                 <button className="primary-button" onClick={() => void scanAlbum()} disabled={busy}>

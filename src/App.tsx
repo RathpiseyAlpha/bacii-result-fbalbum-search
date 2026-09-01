@@ -16,12 +16,14 @@ import {
   LoaderCircle,
   MapPin,
   MousePointer2,
+  Moon,
   PackageCheck,
   RefreshCw,
   ScanSearch,
   Search,
   ShieldCheck,
   Sparkles,
+  Sun,
   Languages,
   X,
   Zap,
@@ -88,11 +90,22 @@ type OcrJob = {
 };
 
 type CenterOption = { id: string; label: string; photoIds: Set<string>; count: number };
+type Theme = "light" | "dark";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 function apiUrl(path: string) {
   return `${API_BASE_URL}${path}`;
+}
+
+function preferredTheme(): Theme {
+  try {
+    const saved = window.localStorage.getItem("album-packer-theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch {
+    // Storage may be disabled; system preference still works.
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 const text: Record<string, string> = {
@@ -198,11 +211,13 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 function App() {
+  const [theme, setTheme] = useState<Theme>(preferredTheme);
   const [mode, setMode] = useState<"album" | "links">("album");
   const [albumUrl, setAlbumUrl] = useState("");
   const [manualLinks, setManualLinks] = useState("");
   const [albumName, setAlbumName] = useState("my-facebook-album");
   const [submittingScan, setSubmittingScan] = useState(false);
+  const [cancellingScan, setCancellingScan] = useState(false);
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
   const [zipJob, setZipJob] = useState<ZipJob | null>(null);
   const [ocrJob, setOcrJob] = useState<OcrJob | null>(null);
@@ -214,6 +229,7 @@ function App() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
   const resultsRef = useRef<HTMLElement>(null);
+  const autoOcrDiscoveryRef = useRef<string | null>(null);
   const t = (key: string) => text[key] ?? key;
 
   const parsedLinks = useMemo(() => manualLinks.split(/\r?\n/).map((line) => line.trim()).filter(Boolean), [manualLinks]);
@@ -222,21 +238,49 @@ function App() {
   const ocrBusy = ocrJob?.status === "queued" || ocrJob?.status === "working";
 
   useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { window.localStorage.setItem("album-packer-theme", theme); } catch { /* Storage is optional. */ }
+  }, [theme]);
+
+  useEffect(() => {
     if (!discovery || !["queued", "working"].includes(discovery.status)) return;
-    const timer = window.setTimeout(async () => {
+    let stopped = false;
+    let timer = 0;
+    const schedule = (delay: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void poll(), delay);
+    };
+    const poll = async () => {
       try {
         const next = await api<Discovery>(`/api/discover/${discovery.id}`);
+        if (stopped) return;
+        setError("");
         setDiscovery(next);
         if (next.status === "ready") {
           setSelected(new Set(next.photos.map((photo) => photo.id)));
           window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+        } else if (["queued", "working"].includes(next.status)) {
+          schedule(1_000);
         }
       } catch (pollError) {
+        if (stopped) return;
         setError(pollError instanceof Error ? pollError.message : "Lost connection to the scan.");
+        schedule(2_500);
       }
-    }, 1_000);
-    return () => window.clearTimeout(timer);
-  }, [discovery]);
+    };
+    const resume = () => {
+      if (document.visibilityState === "visible" && !stopped) schedule(0);
+    };
+    schedule(1_000);
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("online", resume);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("online", resume);
+    };
+  }, [discovery?.id, discovery?.status]);
 
   useEffect(() => {
     if (!zipJob || !["queued", "working"].includes(zipJob.status)) return;
@@ -252,15 +296,45 @@ function App() {
 
   useEffect(() => {
     if (!ocrJob || !["queued", "working"].includes(ocrJob.status)) return;
-    const timer = window.setTimeout(async () => {
+    let stopped = false;
+    let timer = 0;
+    const schedule = (delay: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void poll(), delay);
+    };
+    const poll = async () => {
       try {
-        setOcrJob(await api<OcrJob>(`/api/ocr/${ocrJob.id}`));
+        const next = await api<OcrJob>(`/api/ocr/${ocrJob.id}`);
+        if (stopped) return;
+        setError("");
+        setOcrJob(next);
+        if (["queued", "working"].includes(next.status)) schedule(1_000);
       } catch (pollError) {
+        if (stopped) return;
         setError(pollError instanceof Error ? pollError.message : "Lost connection to the OCR job.");
+        schedule(2_500);
       }
-    }, 1_000);
-    return () => window.clearTimeout(timer);
-  }, [ocrJob]);
+    };
+    const resume = () => {
+      if (document.visibilityState === "visible" && !stopped) schedule(0);
+    };
+    schedule(1_000);
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("online", resume);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("online", resume);
+    };
+  }, [ocrJob?.id, ocrJob?.status]);
+
+  useEffect(() => {
+    if (discovery?.status !== "ready" || discovery.photos.length === 0 || ocrJob) return;
+    if (autoOcrDiscoveryRef.current === discovery.id) return;
+    autoOcrDiscoveryRef.current = discovery.id;
+    void analyzeResults();
+  }, [discovery?.id, discovery?.status, ocrJob]);
 
   useEffect(() => {
     if (!viewingPhoto) return;
@@ -277,6 +351,7 @@ function App() {
     setSelectedTrack("");
     setTableNumber("");
     setViewingPhoto(null);
+    autoOcrDiscoveryRef.current = null;
     if (!albumUrl.trim()) return setError("Paste a public Facebook album or Share URL first.");
     setSubmittingScan(true);
     try {
@@ -289,6 +364,22 @@ function App() {
       setError(scanError instanceof Error ? scanError.message : "Could not start the album scan.");
     } finally {
       setSubmittingScan(false);
+    }
+  }
+
+  async function cancelScan() {
+    if (!discovery || !["queued", "working"].includes(discovery.status)) return;
+    setCancellingScan(true);
+    setError("");
+    try {
+      await api(`/api/discover/${discovery.id}`, { method: "DELETE" });
+      setDiscovery((current) => current?.id === discovery.id
+        ? { ...current, status: "cancelled", phase: "Scan cancelled" }
+        : current);
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : "Could not cancel the scan.");
+    } finally {
+      setCancellingScan(false);
     }
   }
 
@@ -367,6 +458,10 @@ function App() {
         </a>
         <div className="nav-pills">
           <span><ShieldCheck size={15} /> {t("publicOnly")}</span>
+          <button type="button" className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <a href="#how-it-works">{t("how")}</a>
         </div>
       </nav>
@@ -423,6 +518,10 @@ function App() {
                 <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
                 <div><strong>{discovery.phase}</strong><span>This can take a few minutes for large albums.</span></div>
                 <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
+                <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
+                  {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
+                  {cancellingScan ? "Cancelling…" : "Cancel"}
+                </button>
               </div>
               <ProgressBar current={discovery.current} total={discovery.total} />
             </div>

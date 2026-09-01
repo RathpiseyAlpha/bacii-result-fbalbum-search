@@ -102,6 +102,8 @@ app.delete("/api/discover/:id", (request, response) => {
   const job = discoveries.get(request.params.id);
   if (!job) return response.status(404).json({ error: "Discovery job not found." });
   job.controller.abort();
+  job.status = "cancelled";
+  job.phase = "Scan cancelled";
   response.status(204).end();
 });
 

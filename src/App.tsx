@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Activity,
   Archive,
   ArrowDownToLine,
   Check,
@@ -88,6 +89,13 @@ type OcrJob = {
   error?: string;
 };
 
+type ServerLoad = {
+  status: "busy" | "normal" | "idle";
+  currentRequests: number;
+  queuedRequests: number;
+  updatedAt: number;
+};
+
 type CenterOption = { id: string; label: string; photoIds: Set<string>; count: number };
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -153,6 +161,8 @@ const englishText = {
   switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "Switch to English", cancel: "Cancel", cancelling: "Cancelling…",
   recognizeNames: "Also recognize Khmer names", recognizeNamesHelp: "Slower: reads every name row instead of only headers and numbers.",
   detectCenters: "Detect centers in", photos: "photos", photosUnread: "photos could not be read.",
+  serverStatus: "Server status", statusBusy: "Busy", statusNormal: "Normal", statusIdle: "Idle", statusChecking: "Checking", statusUnavailable: "Unavailable",
+  activeRequests: "active requests", queuedRequests: "waiting in queue",
 } as const;
 
 type TranslationKey = keyof typeof englishText;
@@ -192,6 +202,8 @@ const khmerText: Record<TranslationKey, string> = {
   switchKhmer: "ប្តូរទៅភាសាខ្មែរ", switchEnglish: "ប្តូរទៅភាសាអង់គ្លេស", cancel: "បោះបង់", cancelling: "កំពុងបោះបង់…",
   recognizeNames: "អានឈ្មោះជាភាសាខ្មែរផងដែរ", recognizeNamesHelp: "យឺតជាងមុន៖ អានឈ្មោះក្នុងគ្រប់ជួរ ជំនួសឱ្យតែចំណងជើង និងលេខតុ។",
   detectCenters: "ស្វែងរកមណ្ឌលក្នុង", photos: "រូប", photosUnread: "រូបមិនអាចអានបាន។",
+  serverStatus: "ស្ថានភាពម៉ាស៊ីនមេ", statusBusy: "រវល់", statusNormal: "ធម្មតា", statusIdle: "ទំនេរ", statusChecking: "កំពុងពិនិត្យ", statusUnavailable: "មិនអាចភ្ជាប់បាន",
+  activeRequests: "សំណើកំពុងដំណើរការ", queuedRequests: "សំណើកំពុងរង់ចាំ",
 };
 
 const translations: Record<Language, Record<TranslationKey, string>> = { en: englishText, km: khmerText };
@@ -286,6 +298,8 @@ function App() {
   const [viewingPhoto, setViewingPhoto] = useState<Photo | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+  const [serverLoad, setServerLoad] = useState<ServerLoad | null>(null);
+  const [serverStatusFailed, setServerStatusFailed] = useState(false);
   const resultsRef = useRef<HTMLElement>(null);
   const autoOcrDiscoveryRef = useRef<string | null>(null);
   const t = (key: TranslationKey) => translations[language][key];
@@ -305,6 +319,46 @@ function App() {
     document.documentElement.dataset.language = language;
     try { window.localStorage.setItem("album-packer-language", language); } catch { /* Storage is optional. */ }
   }, [language]);
+
+  useEffect(() => {
+    let stopped = false;
+    let timer = 0;
+    const schedule = (delay: number) => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void refresh(), delay);
+    };
+    const refresh = async () => {
+      if (document.visibilityState !== "visible") return schedule(15_000);
+      try {
+        const response = await fetch(apiUrl("/api/server/status"), {
+          cache: "no-store",
+          headers: { accept: "application/json" },
+        });
+        if (!response.ok) throw new Error("Server status unavailable.");
+        const next = await response.json() as ServerLoad;
+        if (stopped) return;
+        setServerLoad(next);
+        setServerStatusFailed(false);
+      } catch {
+        if (stopped) return;
+        setServerLoad(null);
+        setServerStatusFailed(true);
+      }
+      schedule(15_000 + Math.round(Math.random() * 5_000));
+    };
+    const resume = () => {
+      if (document.visibilityState === "visible" && !stopped) schedule(0);
+    };
+    void refresh();
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("online", resume);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("online", resume);
+    };
+  }, []);
 
   useEffect(() => {
     if (!discovery || !["queued", "working"].includes(discovery.status)) return;
@@ -515,6 +569,10 @@ function App() {
       return true;
     });
   }, [readyPhotos, filtersActive, ocrJob?.status, ocrByPhoto, centerFilter, selectedTrack, tableNumber]);
+  const serverState = serverLoad?.status ?? (serverStatusFailed ? "unavailable" : "checking");
+  const serverStatusLabel = serverLoad
+    ? t(serverLoad.status === "busy" ? "statusBusy" : serverLoad.status === "normal" ? "statusNormal" : "statusIdle")
+    : t(serverStatusFailed ? "statusUnavailable" : "statusChecking");
 
   return (
     <main>
@@ -597,6 +655,14 @@ function App() {
               <ProgressBar current={discovery.current} total={discovery.total} />
             </div>
           )}
+        </div>
+
+        <div className={`server-indicator ${serverState}`} role="status" aria-live="polite">
+          <span className="server-state"><i aria-hidden="true" /><Activity size={15} /> {t("serverStatus")}: <strong>{serverStatusLabel}</strong></span>
+          <span className="server-metrics">
+            <span><b>{serverLoad?.currentRequests ?? "—"}</b> {t("activeRequests")}</span>
+            {(serverLoad?.queuedRequests ?? 0) > 0 && <span><b>{serverLoad?.queuedRequests}</b> {t("queuedRequests")}</span>}
+          </span>
         </div>
 
         <div className="trust-row">

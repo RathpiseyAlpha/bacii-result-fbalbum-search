@@ -1,5 +1,6 @@
 import express from "express";
 import { existsSync, createReadStream } from "node:fs";
+import { availableParallelism, loadavg } from "node:os";
 import { join } from "node:path";
 import { discoveries, getZipSize, photosFromUrls, startDiscovery, startZip, zipJobs } from "./jobs.ts";
 import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
@@ -56,6 +57,19 @@ function publicOcr(job: NonNullable<ReturnType<typeof ocrJobs.get>>) {
 
 app.get("/api/health", (_request, response) => response.json({ ok: true }));
 app.get("/api/ocr/status", (_request, response) => response.json(ocrRuntimeStatus()));
+app.get("/api/server/status", (_request, response) => {
+  const ocr = ocrRuntimeStatus();
+  const discoveriesRunning = [...discoveries.values()].filter((job) => job.status === "queued" || job.status === "working").length;
+  const zipsRunning = [...zipJobs.values()].filter((job) => job.status === "queued" || job.status === "working").length;
+  const currentRequests = discoveriesRunning + zipsRunning + ocr.running;
+  const queuedRequests = ocr.queued;
+  const loadRatio = loadavg()[0] / Math.max(1, availableParallelism());
+  const status = queuedRequests > 0 || loadRatio >= 0.9
+    ? "busy"
+    : currentRequests > 0 || loadRatio >= 0.35 ? "normal" : "idle";
+  response.setHeader("Cache-Control", "no-store");
+  response.json({ status, currentRequests, queuedRequests, updatedAt: Date.now() });
+});
 app.get("/api/database/stats", (_request, response) => response.json(databaseStats()));
 
 app.post("/api/discover", (request, response) => {

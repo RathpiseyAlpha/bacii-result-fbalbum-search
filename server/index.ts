@@ -2,7 +2,7 @@ import express from "express";
 import { existsSync, createReadStream } from "node:fs";
 import { join } from "node:path";
 import { discoveries, getZipSize, photosFromUrls, startDiscovery, startZip, zipJobs } from "./jobs.ts";
-import { ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
+import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
 import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
 import type { Photo } from "./types.ts";
@@ -163,7 +163,9 @@ app.post("/api/ocr", (request, response) => {
     const job = startOcr(photos, request.body?.includeNames === true);
     response.status(202).json(publicOcr(job));
   } catch (error) {
-    response.status(400).json({ error: error instanceof Error ? error.message : "Could not start Khmer OCR." });
+    if (error instanceof OcrQueueFullError) response.setHeader("Retry-After", "30");
+    response.status(error instanceof OcrQueueFullError ? 429 : 400)
+      .json({ error: error instanceof Error ? error.message : "Could not start Khmer OCR." });
   }
 });
 
@@ -176,7 +178,7 @@ app.get("/api/ocr/:id", (request, response) => {
 app.delete("/api/ocr/:id", (request, response) => {
   const job = ocrJobs.get(request.params.id);
   if (!job) return response.status(404).json({ error: "OCR job not found." });
-  job.controller.abort();
+  cancelOcr(job);
   response.status(204).end();
 });
 

@@ -44,7 +44,10 @@ The server stores album manifests, recognized photo metadata, and normalized tab
 - Album manifests refresh after 30 minutes by default. Set `ALBUM_CACHE_TTL_MINUTES` to change that interval.
 - Set `DATABASE_PATH` to place the SQLite database elsewhere, including on a persistent deployment volume.
 - A changed photo or OCR pipeline version creates a new OCR record automatically, so stale recognition is not reused.
+- Identical OCR requests share one active job, preventing simultaneous users from processing the same uncached album more than once.
+- Uncached OCR jobs use a bounded queue. `OCR_MAX_CONCURRENT` controls active Python workers and `OCR_MAX_QUEUE` controls how many jobs may wait.
 - `GET /api/database/stats` reports stored album, photo, OCR-result, searchable-row, and cache hit/miss counts.
+- `GET /api/ocr/status` reports the configured concurrency plus current running and queued job counts.
 - Send `{ "url": "...", "forceRefresh": true }` to `POST /api/discover` when an album must be rescanned immediately.
 
 ## How it works
@@ -62,6 +65,7 @@ The server stores album manifests, recognized photo metadata, and normalized tab
 - A ZIP can contain up to 2,000 photos; each photo has a 50 MB safety limit.
 - Facebook changes its public markup frequently. The fallback exists because some public albums are still gated by region, consent state, or automated-access checks.
 - A deployed server needs enough temporary disk for concurrent archives and must have Playwright Chromium installed. On Linux, use `npx playwright install --with-deps chromium` during setup.
+- The Docker defaults run one OCR worker with six PyTorch CPU threads, suitable for an 8-vCPU host. Tune `OCR_TORCH_THREADS`, `OMP_NUM_THREADS`, and `MKL_NUM_THREADS` together if the server has a different CPU count.
 - Only download photos you own or have permission to save. This project does not bypass privacy controls and does not request Facebook credentials.
 
 ## Deploy with Docker Compose

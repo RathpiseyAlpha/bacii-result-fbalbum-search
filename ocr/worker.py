@@ -31,6 +31,19 @@ from transformers import AutoModel, AutoTokenizer
 # targets. Newer hosts may explicitly opt back in with TORCH_MKLDNN=1.
 torch.backends.mkldnn.enabled = os.environ.get("TORCH_MKLDNN", "0") == "1"
 
+
+def positive_int(value: str | None, fallback: int) -> int:
+    try:
+        return max(1, int(value or ""))
+    except ValueError:
+        return fallback
+
+
+TORCH_THREADS = positive_int(os.environ.get("OCR_TORCH_THREADS"), min(4, os.cpu_count() or 1))
+TORCH_INTEROP_THREADS = positive_int(os.environ.get("TORCH_NUM_INTEROP_THREADS"), 1)
+torch.set_num_threads(TORCH_THREADS)
+torch.set_num_interop_threads(TORCH_INTEROP_THREADS)
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):

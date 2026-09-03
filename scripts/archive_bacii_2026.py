@@ -59,7 +59,7 @@ PROVINCES = [
     ("kep26", "កែប"),
     ("mondulkiri26", "មណ្ឌលគិរី"),
 ]
-USER_AGENT = "bacii-result-archiver/1.0 (+https://moeys.gov.kh/)"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
 OFFICIAL_GRADE_TOTALS = {"A": 2022, "B": 8848, "C": 23422, "D": 44869, "E": 46814}
 
 
@@ -71,8 +71,11 @@ def fetch_json(url: str) -> dict:
 
 def head_size(url: str) -> int:
     request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return int(response.headers.get("Content-Length") or 0)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return int(response.headers.get("Content-Length") or 0)
+    except Exception:
+        return 0
 
 
 def sha256_file(path: Path) -> str:

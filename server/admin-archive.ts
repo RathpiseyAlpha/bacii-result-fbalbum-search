@@ -187,7 +187,9 @@ function googleDriveDownload(destination: URL) {
 
 async function resolveGovernmentPdf(shortUrl: string) {
   const response = await fetch(shortUrl, {
-    redirect: "manual", headers: { "user-agent": "bacii-result-archiver/1.0" }, signal: AbortSignal.timeout(30_000),
+    redirect: "manual",
+    headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" },
+    signal: AbortSignal.timeout(30_000),
   });
   if (response.status < 300 || response.status >= 400) {
     throw new Error(`Government document link did not redirect (${response.status}): ${shortUrl}`);
@@ -205,7 +207,9 @@ async function resolveGovernmentPdf(shortUrl: string) {
 
 async function resolveLegacy2023Pdf(shortUrl: string) {
   const response = await fetch(shortUrl, {
-    redirect: "manual", headers: { "user-agent": "bacii-result-archiver/1.0" }, signal: AbortSignal.timeout(30_000),
+    redirect: "manual",
+    headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36" },
+    signal: AbortSignal.timeout(30_000),
   });
   if (response.status < 300 || response.status >= 400) {
     throw new Error(`Official 2023 document link did not redirect (${response.status}): ${shortUrl}`);
@@ -268,9 +272,21 @@ export async function discoverArchiveDocuments(postUrl: string, year: number, jo
       const province = provinceNames[base];
       if (!province) throw new Error(`Unknown province document slug: ${slug}`);
       const apiUrl = `https://moeys.gov.kh/api/v1/web/get-document-detail-with-category/bacii/${slug}`;
-      const response = await fetch(apiUrl, { headers: { accept: "application/json", "user-agent": "bacii-result-archiver/1.0" } });
+      const response = await fetch(apiUrl, {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+        },
+        signal: AbortSignal.timeout(30_000),
+      });
       if (!response.ok) throw new Error(`MOEYS metadata request failed for ${slug} (${response.status}).`);
-      const payload = await response.json() as { documentDetail?: Record<string, unknown> };
+      const responseText = await response.text();
+      let payload: { documentDetail?: Record<string, unknown> };
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        throw new Error(`MOEYS metadata API for ${slug} returned HTML or invalid JSON (${response.status}). The server or firewall may be blocking non-browser requests.`);
+      }
       const detail = payload.documentDetail;
       const file = detail?.document_file as Record<string, unknown> | undefined;
       if (!detail || typeof detail.id !== "number" || typeof detail.title !== "string" || typeof file?.kh !== "string") {

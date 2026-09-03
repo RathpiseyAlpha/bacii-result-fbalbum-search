@@ -70,12 +70,24 @@ def fetch_json(url: str) -> dict:
 
 
 def head_size(url: str) -> int:
-    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return int(response.headers.get("Content-Length") or 0)
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(request, timeout=20) as response:
+            size = int(response.headers.get("Content-Length") or 0)
+            if size > 0:
+                return size
     except Exception:
-        return 0
+        pass
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Range": "bytes=0-0"})
+        with urllib.request.urlopen(request, timeout=20) as response:
+            content_range = response.headers.get("Content-Range") or ""
+            match = re.search(r"/(\d+)$", content_range)
+            if match:
+                return int(match.group(1))
+    except Exception:
+        pass
+    return 0
 
 
 def sha256_file(path: Path) -> str:
@@ -93,7 +105,10 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
     if parsed.scheme != "https" or not any(hostname == host or hostname.endswith(f".{host}") for host in allowed_hosts):
         raise RuntimeError(f"Refusing an unapproved archive PDF host: {parsed.hostname or 'invalid URL'}")
     target.parent.mkdir(parents=True, exist_ok=True)
-    for attempt in range(1, 31):
+    if not expected_size:
+        expected_size = head_size(url)
+
+    for attempt in range(1, 40):
         current = target.stat().st_size if target.exists() else 0
         if expected_size and current == expected_size:
             return
@@ -101,27 +116,44 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
             target.unlink()
             current = 0
 
-        print(f"    transfer attempt {attempt}, existing {current:,} bytes", flush=True)
+        print(f"    transfer attempt {attempt}, existing {current:,}/{expected_size:,} bytes", flush=True)
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         if current > 0:
             req.add_header("Range", f"bytes={current}-")
 
+        completed_cleanly = False
         try:
             with urllib.request.urlopen(req, timeout=45) as response:
                 mode = "ab" if response.status == 206 else "wb"
                 if mode == "wb" and current > 0:
                     current = 0
-                
+
                 with target.open(mode) as f:
                     while True:
-                        chunk = response.read(1024 * 512)
-                        if not chunk:
+                        try:
+                            chunk = response.read(1024 * 512)
+                            if not chunk:
+                                completed_cleanly = True
+                                break
+                            f.write(chunk)
+                        except (http.client.IncompleteRead, urllib.error.URLError, TimeoutError) as chunk_err:
+                            if hasattr(chunk_err, "partial") and chunk_err.partial:
+                                f.write(chunk_err.partial)
+                            print(f"    chunk interrupted: {chunk_err}", flush=True)
                             break
-                        f.write(chunk)
-            
+
             size = target.stat().st_size if target.exists() else 0
-            if not expected_size or size == expected_size:
+            if expected_size > 0 and size == expected_size:
                 return
+            if expected_size == 0 and completed_cleanly:
+                try:
+                    doc = pymupdf.open(target)
+                    if doc.page_count > 0:
+                        doc.close()
+                        return
+                    doc.close()
+                except Exception:
+                    pass
         except Exception as error:
             print(f"    transfer interrupted: {error}", flush=True)
 

@@ -21,6 +21,39 @@ npm start
 
 Open `http://localhost:8787`.
 
+## Annual BacII results archive
+
+Open `http://localhost:5173/#archive` in development or `http://localhost:8787/#archive` after a production build. The archive page discovers every available year, supports exact table-number search with province, exam-center, and track filters, and visualizes published passing candidates across Cambodia's 25 provinces and capital.
+
+Archive files are deliberately excluded from Git. Keep each year in its own directory:
+
+```text
+data/
+  bacii-2026/
+    bacii-2026.sqlite
+    labels.json
+    pdfs/
+      *.pdf
+```
+
+The API opens archive databases in read-only mode. The current archive contains only the candidates MOEYS published as passing, so the dashboard reports passing-candidate counts rather than pass rates. Because the source PDFs have broken Khmer character mappings, result cards render the exact name and school cells from the official PDF instead of displaying corrupted extracted text. These crops are created lazily only for search results, cached under `data/archive-name-crops`, and linked to the matching official PDF page for verification. Date of birth is intentionally omitted from both archive search responses and result cards.
+
+Build the exam-center label cache once before packaging or transferring a year:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\ocr_archive_centers.py --archive data\bacii-2026
+```
+
+On Linux, use `.venv/bin/python` instead. The command OCRs one official header per distinct exam center, writes proper Unicode Khmer labels incrementally to `labels.json`, and resumes unfinished work on the next run. The original extracted center value remains the internal search key, so a display-label correction cannot break filtering. Transfer `labels.json` with the SQLite file and PDFs; the production API reloads it when the file changes and never runs this batch during a user request.
+
+To rebuild the searchable database and CSV from already downloaded PDFs without making network requests:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\archive_bacii_2026.py --archive-dir data\bacii-2026 --reindex-only
+```
+
+The importer verifies each province against the passing total printed on its official PDF summary page, then verifies the national A–E totals. It stops with an error instead of accepting a partial archive when any total differs.
+
 ## Khmer BacII OCR search
 
 The result gallery can build a local search index for Cambodia BacII result sheets. The fast default reads the repeated header (exam center, province, and science/social-science track) plus the first table-number column. Enable **Also recognize Khmer names** only when name search is needed, because it runs the recognizer on every student row.
@@ -116,6 +149,34 @@ docker compose start app
 ```
 
 The first image build downloads the CPU PyTorch runtime and can take several minutes. The Khmer model downloads on the first uncached OCR job and is then retained in the `hf_cache` volume. Do not run multiple app replicas against the same SQLite volume; migrate to PostgreSQL before horizontal scaling.
+
+### Transfer archive data without Git
+
+Create a host-only archive directory and transfer the generated archive independently of the source repository:
+
+```bash
+# On the server
+sudo mkdir -p /srv/bacii-archive
+sudo chown "$USER":"$USER" /srv/bacii-archive
+```
+
+From the development machine, package and upload one year (PowerShell):
+
+```powershell
+tar -czf bacii-2026.tar.gz -C data bacii-2026
+scp bacii-2026.tar.gz USER@SERVER:/tmp/
+```
+
+Then install it atomically on the server:
+
+```bash
+mkdir -p /srv/bacii-archive/.incoming
+tar -xzf /tmp/bacii-2026.tar.gz -C /srv/bacii-archive/.incoming
+mv /srv/bacii-archive/.incoming/bacii-2026 /srv/bacii-archive/bacii-2026
+rm -f /tmp/bacii-2026.tar.gz
+```
+
+Set `BACII_ARCHIVE_HOST_PATH=/srv/bacii-archive` in the server `.env`, then run `docker compose up -d --build`. Compose mounts this directory at `/app/archive` read-only. Future years can be added beside `bacii-2026` without rebuilding the image; restart the app once so it discovers the new year.
 
 ## GitHub Pages frontend
 

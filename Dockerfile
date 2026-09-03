@@ -42,10 +42,12 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY ocr/requirements.txt ./ocr/requirements.txt
+COPY scripts/requirements-archive.txt ./scripts/requirements-archive.txt
 RUN python3 -m venv "$VIRTUAL_ENV" \
     && pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu "torch>=2.4,<3" \
-    && pip install --no-cache-dir -r ocr/requirements.txt
+    && pip install --no-cache-dir -r ocr/requirements.txt \
+    && pip install --no-cache-dir -r scripts/requirements-archive.txt
 
 COPY . .
 RUN npm run build \

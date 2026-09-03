@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Archive,
+  BarChart3,
   ArrowDownToLine,
   Check,
   CheckCircle2,
@@ -128,6 +129,7 @@ function preferredLanguage(): Language {
 
 const englishText = {
   brandName: "BacII Result Search Engine",
+  facebookSearch: "Facebook search", resultsArchive: "Results archive", insightsMenu: "Insights",
   how: "How it works",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
   heroCopy: "Paste the URL of BacII result from a MOEYS public Facebook result album, detect its exam centers and tracks, then enter the table number.",
@@ -169,6 +171,7 @@ type TranslationKey = keyof typeof englishText;
 
 const khmerText: Record<TranslationKey, string> = {
   brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប",
+  facebookSearch: "ស្វែងរកតាម Facebook", resultsArchive: "បណ្ណសារលទ្ធផល", insightsMenu: "ទិន្នន័យវិភាគ",
   how: "របៀបប្រើ",
   hero1: "ងាយស្រួលស្វែងរកលទ្ធផលបាក់ឌុប", hero2: "ដោយមិនចាំបាច់បើករូបហ្វេសប៊ុកម្ដងមួយៗ",
   heroCopy: "ដាក់តំណភ្ជាប់់អាល់ប៊ុមលទ្ធផលសាធារណៈរបស់ខេត្ត រាជធានី ណាមួយ បន្ទាប់មកជ្រើសរើសមណ្ឌលប្រឡង ថ្នាក់វិទ្យាសាស្រ្ត ឬ សង្គុម និងលេខតុ",
@@ -576,21 +579,27 @@ function App() {
 
   return (
     <main>
-      <nav className="nav shell">
+      <nav className="nav site-header shell">
         <a className="brand" href="#top" aria-label={t("home")}>
           <span className="brand-mark"><Images size={20} strokeWidth={2.2} /></span>
           <span>{t("brandName")}</span>
         </a>
-        <div className="nav-pills">
-          <button type="button" className="language-toggle" onClick={() => setLanguage((current) => current === "en" ? "km" : "en")}
-            aria-label={language === "en" ? t("switchKhmer") : t("switchEnglish")} title={language === "en" ? t("switchKhmer") : t("switchEnglish")}>
-            <Languages size={15} /> {language === "en" ? "ខ្មែរ" : "EN"}
-          </button>
-          <button type="button" className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
-            aria-label={theme === "dark" ? t("switchLight") : t("switchDark")} title={theme === "dark" ? t("switchLight") : t("switchDark")}>
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <a href="#how-it-works">{t("how")}</a>
+        <div className="site-header-right">
+          <div className="primary-nav">
+            <a className="active" href="#top" aria-current="page" aria-label={t("facebookSearch")}><Images size={15} /><span>{t("facebookSearch")}</span></a>
+            <a href="#archive" aria-label={t("resultsArchive")}><Archive size={15} /><span>{t("resultsArchive")}</span></a>
+            <a href="#insights" aria-label={t("insightsMenu")}><BarChart3 size={15} /><span>{t("insightsMenu")}</span></a>
+          </div>
+          <div className="header-actions">
+            <button type="button" className="language-toggle" onClick={() => setLanguage((current) => current === "en" ? "km" : "en")}
+              aria-label={language === "en" ? t("switchKhmer") : t("switchEnglish")} title={language === "en" ? t("switchKhmer") : t("switchEnglish")}>
+              <Languages size={15} /> {language === "en" ? "ខ្មែរ" : "EN"}
+            </button>
+            <button type="button" className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+              aria-label={theme === "dark" ? t("switchLight") : t("switchDark")} title={theme === "dark" ? t("switchLight") : t("switchDark")}>
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -599,6 +608,7 @@ function App() {
           ? <h1>{t("hero1")}{t("hero2")}</h1>
           : <h1>{t("hero1")}<br /><em>{t("hero2")}</em></h1>}
         <p className="hero-copy">{t("heroCopy")}</p>
+        <a className="hero-how-link" href="#how-it-works">{t("how")} <ChevronRight size={15} /></a>
 
         <div className="workspace-card">
           <div className="mode-tabs" role="tablist">

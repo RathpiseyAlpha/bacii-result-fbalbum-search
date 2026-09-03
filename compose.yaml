@@ -14,6 +14,8 @@ services:
       NODE_ENV: production
       PORT: "8787"
       DATABASE_PATH: /app/data/album-packer.sqlite
+      BACII_ARCHIVE_ROOT: /app/archive
+      ARCHIVE_CROP_CACHE_ROOT: /app/data/archive-name-crops
       OCR_PYTHON: /app/.venv/bin/python
       TESSERACT_CMD: /usr/bin/tesseract
       HF_HOME: /app/.cache/huggingface
@@ -32,6 +34,7 @@ services:
       - app_data:/app/data
       - hf_cache:/app/.cache/huggingface
       - temp_jobs:/app/tmp
+      - "${BACII_ARCHIVE_HOST_PATH:-./data}:/app/archive:ro"
     security_opt:
       - no-new-privileges:true
     cap_drop:

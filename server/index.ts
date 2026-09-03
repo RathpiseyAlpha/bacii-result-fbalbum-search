@@ -6,6 +6,9 @@ import { discoveries, getZipSize, photosFromUrls, startDiscovery, startZip, zipJ
 import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
 import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
+import { getArchiveCenters, getArchivePdf, getArchiveSummary, listArchiveYears, searchArchive } from "./archive.ts";
+import { getArchiveNameImage } from "./archive-images.ts";
+import { getArchiveSchoolImage } from "./archive-school-images.ts";
 import type { Photo } from "./types.ts";
 
 const app = express();
@@ -71,6 +74,87 @@ app.get("/api/server/status", (_request, response) => {
   response.json({ status, currentRequests, queuedRequests, updatedAt: Date.now() });
 });
 app.get("/api/database/stats", (_request, response) => response.json(databaseStats()));
+
+app.get("/api/archive/years", (_request, response) => {
+  response.setHeader("Cache-Control", "public, max-age=300");
+  response.json({ years: listArchiveYears() });
+});
+
+app.get("/api/archive/:year/summary", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    response.json(getArchiveSummary(request.params.year));
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/centers", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    response.json({ centers: getArchiveCenters(request.params.year, String(request.query.province || "") || undefined) });
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/search", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "private, no-store");
+    const track = request.query.track === "science" || request.query.track === "social-science" ? request.query.track : undefined;
+    const results = searchArchive(request.params.year, {
+      tableNumber: String(request.query.tableNumber || ""),
+      province: String(request.query.province || "") || undefined,
+      center: String(request.query.center || "") || undefined,
+      track,
+    });
+    response.json({ results, count: results.length });
+  } catch (error) {
+    response.status(400).json({ error: error instanceof Error ? error.message : "Search failed." });
+  }
+});
+
+app.get("/api/archive/:year/documents/:documentId/pdf", (request, response) => {
+  try {
+    const documentId = Number(request.params.documentId);
+    if (!Number.isSafeInteger(documentId)) return response.status(400).json({ error: "Invalid document." });
+    const file = getArchivePdf(request.params.year, documentId);
+    if (!file) return response.status(404).json({ error: "PDF not found." });
+    response.setHeader("Cache-Control", "public, max-age=86400");
+    response.setHeader("Content-Disposition", `inline; filename="bacii-${request.params.year}-${documentId}.pdf"`);
+    response.sendFile(file);
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "PDF not found." });
+  }
+});
+
+app.get("/api/archive/:year/students/:studentId/name-image", async (request, response) => {
+  try {
+    const studentId = Number(request.params.studentId);
+    if (!Number.isSafeInteger(studentId)) return response.status(400).json({ error: "Invalid student." });
+    const file = await getArchiveNameImage(request.params.year, studentId);
+    if (!file) return response.status(404).json({ error: "Student name image not found." });
+    response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    response.setHeader("Content-Type", "image/png");
+    response.sendFile(file);
+  } catch (error) {
+    response.status(500).json({ error: error instanceof Error ? error.message : "Could not render the official name." });
+  }
+});
+
+app.get("/api/archive/:year/students/:studentId/school-image", async (request, response) => {
+  try {
+    const studentId = Number(request.params.studentId);
+    if (!Number.isSafeInteger(studentId)) return response.status(400).json({ error: "Invalid student." });
+    const file = await getArchiveSchoolImage(request.params.year, studentId);
+    if (!file) return response.status(404).json({ error: "Student school image not found." });
+    response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    response.setHeader("Content-Type", "image/png");
+    response.sendFile(file);
+  } catch (error) {
+    response.status(500).json({ error: error instanceof Error ? error.message : "Could not render the official school name." });
+  }
+});
 
 app.post("/api/discover", (request, response) => {
   try {

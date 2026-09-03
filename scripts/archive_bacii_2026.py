@@ -108,6 +108,19 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
     if not expected_size:
         expected_size = head_size(url)
 
+    if target.exists():
+        is_valid_pdf = False
+        try:
+            with target.open("rb") as check_f:
+                if check_f.read(4) == b"%PDF":
+                    is_valid_pdf = True
+        except Exception:
+            is_valid_pdf = False
+
+        if not is_valid_pdf or (expected_size > 0 and target.stat().st_size > expected_size):
+            print(f"    removing invalid/corrupted staging PDF file: {target.name}", flush=True)
+            target.unlink()
+
     for attempt in range(1, 40):
         current = target.stat().st_size if target.exists() else 0
         if expected_size and current == expected_size:
@@ -147,11 +160,13 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
                 return
             if expected_size == 0 and completed_cleanly:
                 try:
-                    doc = pymupdf.open(target)
-                    if doc.page_count > 0:
-                        doc.close()
-                        return
-                    doc.close()
+                    with target.open("rb") as check_f:
+                        if check_f.read(4) == b"%PDF":
+                            doc = pymupdf.open(target)
+                            if doc.page_count > 1:
+                                doc.close()
+                                return
+                            doc.close()
                 except Exception:
                     pass
         except Exception as error:
@@ -328,9 +343,18 @@ def printed_passing_total(document: pymupdf.Document) -> int:
         and re.fullmatch(r"\d{3,6}", str(word[4]).strip())
     ]
     if len(candidates) != 1:
+        fallback = [
+            int(word[4])
+            for word in normalized_page_words(page)
+            if width * 0.45 <= float(word[0]) < width * 0.88
+            and float(word[1]) < height * 0.35
+            and re.fullmatch(r"\d{3,6}", str(word[4]).strip())
+        ]
+        if len(fallback) == 1:
+            return fallback[0]
         raise RuntimeError(
             "Could not uniquely read the official passing total from the final PDF page "
-            f"(found {candidates})."
+            f"(found {candidates}, fallback {fallback})."
         )
     return candidates[0]
 

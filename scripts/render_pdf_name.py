@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pymupdf
 from PIL import Image, ImageDraw
+from archive_bacii_2026 import normalized_page_words
 
 
 def find_row(words: list[tuple], table_number: str) -> list[tuple]:
@@ -55,7 +56,7 @@ def main() -> None:
         if args.page > document.page_count:
             raise RuntimeError("PDF page is out of range.")
         page = document[args.page - 1]
-        row = find_row(page.get_text("words", sort=False), args.table_number)
+        row = find_row(normalized_page_words(page), args.table_number)
         name_words = [word for word in row if 80 <= word[0] < 175 and word[4].strip()]
         if not name_words:
             raise RuntimeError("The matching row has no name text.")

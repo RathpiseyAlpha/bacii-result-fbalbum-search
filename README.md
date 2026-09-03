@@ -176,7 +176,26 @@ mv /srv/bacii-archive/.incoming/bacii-2026 /srv/bacii-archive/bacii-2026
 rm -f /tmp/bacii-2026.tar.gz
 ```
 
-Set `BACII_ARCHIVE_HOST_PATH=/srv/bacii-archive` in the server `.env`, then run `docker compose up -d --build`. Compose mounts this directory at `/app/archive` read-only. Future years can be added beside `bacii-2026` without rebuilding the image; restart the app once so it discovers the new year.
+Set `BACII_ARCHIVE_HOST_PATH=/srv/bacii-archive` in the server `.env`, then run `docker compose up -d --build`. The public API still opens published SQLite archives read-only, while the protected importer has write access to this directory. Future years appear automatically after atomic publication.
+
+### Automated archive import
+
+Generate a strong token and put it in the production `.env` (never commit the token):
+
+```bash
+openssl rand -hex 32
+# Edit .env and set ADMIN_TOKEN to the generated value.
+sudo mkdir -p /srv/bacii-archive/.imports
+sudo chown -R root:root /srv/bacii-archive
+sudo chmod -R u+rwX,go+rX /srv/bacii-archive
+docker compose up -d --build
+```
+
+Open `https://YOUR-API-DOMAIN/admin`. This route is intentionally absent from public navigation. Enter the admin token, archive year, and official public MOEYS Facebook or Telegram post URL. Telegram links may use either `https://t.me/channel/message` or `https://t.me/s/channel/message`. The importer requires exactly 25 recognized province/capital links, supports both current `moeys.gov.kh/bacii` documents and the 2025 `go.gov.kh` links, validates every redirect against a small government/Google Drive host allowlist, validates each PDF against its printed candidate total, builds the search database and CSV, OCRs center labels, and publishes the completed year atomically. Only one import can run at a time.
+
+The token protects the API, not merely the hidden page address. It is held in browser `sessionStorage` for the current tab session. Back up `/srv/bacii-archive` regularly; the automated importer intentionally refuses to overwrite an existing year.
+
+For local imports, the server automatically uses `.venv/Scripts/python.exe` on Windows or `.venv/bin/python` on Linux when `OCR_PYTHON` is not set. Docker explicitly uses `/app/.venv/bin/python`. This keeps the archive parser and Khmer center OCR on the environment containing PyTorch and the OCR dependencies. Failed or cancelled jobs retain their per-year staging data under `.imports`, so retrying the same year resumes completed PDF downloads and OCR labels instead of starting from zero. Staging is removed automatically after publication.
 
 ## GitHub Pages frontend
 

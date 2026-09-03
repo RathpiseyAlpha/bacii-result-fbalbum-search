@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,web -c cyan,magenta \"tsx watch server/index.ts\" \"vite\"",
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"tsx watch --env-file-if-exists=.env server/index.ts\" \"vite\"",
     "build": "tsc -b && vite build",
-    "start": "tsx server/index.ts",
+    "start": "tsx --env-file-if-exists=.env server/index.ts",
     "check": "tsc -b",
     "ocr:setup": "node ocr/setup.mjs"
   },

@@ -19,7 +19,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 try:
     import pymupdf
@@ -84,6 +84,11 @@ def sha256_file(path: Path) -> str:
 
 
 def download_pdf(url: str, target: Path, expected_size: int) -> None:
+    parsed = urlparse(url)
+    allowed_hosts = {"moeys.gov.kh", "file.go.gov.kh", "drive.usercontent.google.com"}
+    hostname = parsed.hostname or ""
+    if parsed.scheme != "https" or not any(hostname == host or hostname.endswith(f".{host}") for host in allowed_hosts):
+        raise RuntimeError(f"Refusing an unapproved archive PDF host: {parsed.hostname or 'invalid URL'}")
     target.parent.mkdir(parents=True, exist_ok=True)
     for attempt in range(1, 16):
         current = target.stat().st_size if target.exists() else 0
@@ -112,6 +117,23 @@ def cell(words: list[tuple], start: float, end: float) -> str:
     selected = [word for word in words if start <= word[0] < end]
     selected.sort(key=lambda word: (round(word[1], 1), word[0]))
     return " ".join(word[4].strip() for word in selected if word[4].strip()).strip()
+
+
+def normalized_page_words(page: pymupdf.Page) -> list[tuple]:
+    """Return word boxes in the visible page coordinate system.
+
+    The 2023 archive stores landscape tables as portrait pages rotated 90
+    degrees, while newer archives store landscape coordinates directly.
+    Normalizing rotated boxes lets the same column parser validate both.
+    """
+    words = page.get_text("words", sort=False)
+    if not page.rotation:
+        return words
+    normalized = []
+    for word in words:
+        box = pymupdf.Rect(*word[:4]) * page.rotation_matrix
+        normalized.append((box.x0, box.y0, box.x1, box.y1, *word[4:]))
+    return normalized
 
 
 def page_context(words: list[tuple]) -> tuple[str, str, list[str]]:
@@ -249,6 +271,13 @@ def printed_passing_total(document: pymupdf.Document) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--archive-dir", type=Path, default=Path("data/bacii-2026"))
+    parser.add_argument("--year", type=int, default=2026)
+    parser.add_argument("--post-url", default=POST_URL)
+    parser.add_argument(
+        "--manifest-input",
+        type=Path,
+        help="Download and index documents described by an admin-generated JSON manifest.",
+    )
     parser.add_argument("--download-only", action="store_true")
     parser.add_argument(
         "--reindex-only",
@@ -261,7 +290,39 @@ def main() -> None:
     root.mkdir(parents=True, exist_ok=True)
 
     manifest_path = root / "manifest.json"
-    if args.reindex_only:
+    if args.manifest_input:
+        seed_manifest = json.loads(args.manifest_input.read_text(encoding="utf-8"))
+        if len(seed_manifest) != len(PROVINCES):
+            raise RuntimeError(f"Expected {len(PROVINCES)} archive documents, found {len(seed_manifest)}.")
+        manifest = []
+        for ordinal, seed in enumerate(seed_manifest, 1):
+            slug = str(seed["slug"])
+            province = str(seed["province"])
+            pdf_url = str(seed["pdf_url"])
+            print(f"[{ordinal:02d}/25] {slug}: downloading official PDF", flush=True)
+            expected_size = head_size(pdf_url)
+            target = pdf_dir / f"{ordinal:02d}-{slug}.pdf"
+            download_pdf(pdf_url, target, expected_size)
+            document = pymupdf.open(target)
+            item = {
+                "ordinal": ordinal,
+                "document_id": int(seed["document_id"]),
+                "slug": slug,
+                "province": province,
+                "title": str(seed["title"]),
+                "source_page_url": str(seed["source_page_url"]),
+                "pdf_url": pdf_url,
+                "local_path": target.relative_to(root).as_posix(),
+                "byte_size": target.stat().st_size,
+                "sha256": sha256_file(target),
+                "page_count": document.page_count,
+                "downloaded_at": datetime.now(timezone.utc).isoformat(),
+            }
+            document.close()
+            manifest.append(item)
+            manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"Downloaded {len(manifest)} PDFs ({sum(item['byte_size'] for item in manifest):,} bytes).", flush=True)
+    elif args.reindex_only:
         if not manifest_path.exists():
             raise RuntimeError(f"Archive manifest not found: {manifest_path}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -293,7 +354,7 @@ def main() -> None:
                 "title": detail["title"],
                 "source_page_url": BASE_URL + f"bacii/{slug}",
                 "pdf_url": pdf_url,
-                "local_path": str(target.relative_to(root)),
+                "local_path": target.relative_to(root).as_posix(),
                 "byte_size": target.stat().st_size,
                 "sha256": sha256_file(target),
                 "page_count": document.page_count,
@@ -307,14 +368,14 @@ def main() -> None:
     if args.download_only:
         return
 
-    db_path = root / "bacii-2026.sqlite"
+    db_path = root / f"bacii-{args.year}.sqlite"
     db = sqlite3.connect(db_path)
     create_schema(db)
     db.execute("DELETE FROM students")
     db.execute("DELETE FROM pages")
     db.execute("DELETE FROM documents")
-    db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("source_post_url", POST_URL))
-    db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("exam_session", "10 August 2026"))
+    db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("source_post_url", args.post_url))
+    db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("exam_year", str(args.year)))
     db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("scope", "Passing candidates published by MOEYS"))
     db.execute("INSERT OR REPLACE INTO archive_info VALUES (?,?)", ("text_quality", "Raw PDF text; Khmer shaping may be imperfect"))
 
@@ -343,7 +404,7 @@ def main() -> None:
         official_total = printed_passing_total(document)
         indexed = 0
         for page_index, page in enumerate(document):
-            words = page.get_text("words", sort=False)
+            words = normalized_page_words(page)
             center, track, headers = page_context(words)
             text_raw = page.get_text("text", sort=True)
             page_cursor = db.execute(
@@ -381,11 +442,17 @@ def main() -> None:
         str(grade): int(count)
         for grade, count in db.execute("SELECT grade_raw, COUNT(*) FROM students GROUP BY grade_raw")
     }
-    if grade_totals != OFFICIAL_GRADE_TOTALS:
+    student_total = int(db.execute("SELECT COUNT(*) FROM students").fetchone()[0])
+    if not set(grade_totals).issubset({"A", "B", "C", "D", "E"}) or sum(grade_totals.values()) != student_total:
+        raise RuntimeError(f"Grade validation failed: indexed {grade_totals} for {student_total:,} students.")
+    if args.year == 2026 and grade_totals != OFFICIAL_GRADE_TOTALS:
         raise RuntimeError(
             f"Official grade validation failed: indexed {grade_totals}, expected {OFFICIAL_GRADE_TOTALS}."
         )
-    print(f"Grade totals match the official national summary: {grade_totals}", flush=True)
+    if args.year == 2026:
+        print(f"Grade totals match the official national summary: {grade_totals}", flush=True)
+    else:
+        print(f"Indexed national grade totals: {grade_totals}", flush=True)
 
     write_csv(db, root / "students.csv")
     stats = {
@@ -396,6 +463,9 @@ def main() -> None:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     (root / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
+    db.commit()
+    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    db.execute("PRAGMA journal_mode=DELETE")
     db.close()
     print(json.dumps(stats, ensure_ascii=False, indent=2), flush=True)
 

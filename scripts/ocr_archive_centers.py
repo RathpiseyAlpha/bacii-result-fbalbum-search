@@ -50,13 +50,20 @@ def raw_center(text: str) -> str:
 def representative_pages(database: sqlite3.Connection) -> dict[str, dict[str, object]]:
     pages: dict[str, dict[str, object]] = {}
     query = """
-        SELECT p.text_raw, p.page_number, d.local_path, d.id AS document_id,
+        SELECT p.exam_center_raw, p.text_raw, p.page_number, d.local_path, d.id AS document_id,
                d.province
         FROM pages p JOIN documents d ON d.id = p.document_id
         ORDER BY d.ordinal, p.page_number
     """
-    for text, page_number, local_path, document_id, province in database.execute(query):
-        center = raw_center(text or "")
+    for stored_center, text, page_number, local_path, document_id, province in database.execute(query):
+        stored = str(stored_center or "").strip()
+        # Summary/footer pages can place totals in the same geometric band as
+        # the center field. They are not valid center labels.
+        if len(stored) > 100 or re.search(r"\d", stored) or "សរុបចំនួន" in stored:
+            stored = ""
+        center = stored or raw_center(text or "")
+        if len(center) > 100 or re.search(r"\d", center) or "សរុបចំនួន" in center:
+            center = ""
         if center and center not in pages:
             pages[center] = {
                 "pageNumber": int(page_number),
@@ -72,6 +79,21 @@ def center_crop(pdf: Path, page_number: int, raw: str, scale: float) -> Image.Im
     try:
         page = document[page_number - 1]
         width, height = page.rect.width, page.rect.height
+        if page.rotation:
+            words = page.get_text("words", sort=False)
+            visible_words = []
+            for word in words:
+                box = pymupdf.Rect(*word[:4]) * page.rotation_matrix
+                visible_words.append((box.x0, box.y0, box.x1, box.y1, *word[4:]))
+            table_numbers = [
+                word for word in visible_words
+                if 45 <= word[0] < 80 and 40 <= word[1] < 565 and re.fullmatch(r"\d{1,4}", word[4].strip())
+            ]
+            first_row_y = min((float(word[1]) for word in table_numbers), default=75.0)
+            clip = pymupdf.Rect(548, max(0, first_row_y - 44), 675, min(height, first_row_y - 15))
+            pixmap = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), clip=clip, alpha=False)
+            image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
+            return ImageOps.expand(ImageOps.autocontrast(image.convert("L")), border=12, fill=255)
         # The first result page has a report title, while continuation pages do
         # not, so their center headers have different vertical positions. Find
         # the text block instead of cropping a fixed y coordinate.

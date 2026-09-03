@@ -30,11 +30,12 @@ services:
       OPENBLAS_NUM_THREADS: "${OPENBLAS_NUM_THREADS:-1}"
       ALBUM_CACHE_TTL_MINUTES: "${ALBUM_CACHE_TTL_MINUTES:-30}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-https://rathpiseyalpha.github.io}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-}"
     volumes:
       - app_data:/app/data
       - hf_cache:/app/.cache/huggingface
       - temp_jobs:/app/tmp
-      - "${BACII_ARCHIVE_HOST_PATH:-./data}:/app/archive:ro"
+      - "${BACII_ARCHIVE_HOST_PATH:-./data}:/app/archive:rw"
     security_opt:
       - no-new-privileges:true
     cap_drop:

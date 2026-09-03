@@ -9,6 +9,9 @@ import { databaseStats } from "./database.ts";
 import { getArchiveCenters, getArchivePdf, getArchiveSummary, listArchiveYears, searchArchive } from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
+import {
+  archiveImportJobs, cancelArchiveImport, publicArchiveImport, requireAdmin, startArchiveImport,
+} from "./admin-archive.ts";
 import type { Photo } from "./types.ts";
 
 const app = express();
@@ -25,7 +28,7 @@ app.use((request, response, next) => {
   if (origin && allowedOrigins.has(origin)) {
     response.setHeader("Access-Control-Allow-Origin", origin);
     response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     response.setHeader("Vary", "Origin");
   }
   if (request.method === "OPTIONS") {
@@ -64,16 +67,46 @@ app.get("/api/server/status", (_request, response) => {
   const ocr = ocrRuntimeStatus();
   const discoveriesRunning = [...discoveries.values()].filter((job) => job.status === "queued" || job.status === "working").length;
   const zipsRunning = [...zipJobs.values()].filter((job) => job.status === "queued" || job.status === "working").length;
-  const currentRequests = discoveriesRunning + zipsRunning + ocr.running;
+  const archiveImportsRunning = [...archiveImportJobs.values()].filter((job) => job.status === "queued" || job.status === "working").length;
+  const currentRequests = discoveriesRunning + zipsRunning + ocr.running + archiveImportsRunning;
   const queuedRequests = ocr.queued;
   const loadRatio = loadavg()[0] / Math.max(1, availableParallelism());
-  const status = queuedRequests > 0 || loadRatio >= 0.9
+  const status = archiveImportsRunning > 0 || queuedRequests > 0 || loadRatio >= 0.9
     ? "busy"
     : currentRequests > 0 || loadRatio >= 0.35 ? "normal" : "idle";
   response.setHeader("Cache-Control", "no-store");
   response.json({ status, currentRequests, queuedRequests, updatedAt: Date.now() });
 });
 app.get("/api/database/stats", (_request, response) => response.json(databaseStats()));
+
+app.get("/api/admin/archive-imports", requireAdmin, (_request, response) => {
+  response.setHeader("Cache-Control", "private, no-store");
+  response.json({ jobs: [...archiveImportJobs.values()].slice(-20).reverse().map(publicArchiveImport) });
+});
+
+app.post("/api/admin/archive-imports", requireAdmin, (request, response) => {
+  try {
+    const job = startArchiveImport(String(request.body?.postUrl || ""), request.body?.year);
+    response.status(202).json(publicArchiveImport(job));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not start the archive import.";
+    response.status(message.includes("already running") ? 409 : 400).json({ error: message });
+  }
+});
+
+app.get("/api/admin/archive-imports/:id", requireAdmin, (request, response) => {
+  const job = archiveImportJobs.get(String(request.params.id));
+  if (!job) return response.status(404).json({ error: "Archive import not found." });
+  response.setHeader("Cache-Control", "private, no-store");
+  response.json(publicArchiveImport(job));
+});
+
+app.delete("/api/admin/archive-imports/:id", requireAdmin, (request, response) => {
+  const job = archiveImportJobs.get(String(request.params.id));
+  if (!job) return response.status(404).json({ error: "Archive import not found." });
+  if (job.status === "queued" || job.status === "working") cancelArchiveImport(job);
+  response.status(204).end();
+});
 
 app.get("/api/archive/years", (_request, response) => {
   response.setHeader("Cache-Control", "public, max-age=300");

@@ -260,12 +260,30 @@ def write_csv(db: sqlite3.Connection, target: Path) -> None:
 
 
 def printed_passing_total(document: pymupdf.Document) -> int:
-    """Read the passing-candidate total from the official final summary page."""
-    text = document[-1].get_text("text", sort=True)
-    numbers = [int(value) for value in re.findall(r"(?<!\d)(\d{3,6})(?!\d)", text)]
-    if len(numbers) < 3:
-        raise RuntimeError("Could not read the official passing total from the final PDF page.")
-    return numbers[2]
+    """Read the passing-candidate total from the official final summary page.
+
+    The summary has four visual columns: all candidates, female candidates,
+    passing candidates, and passing female candidates. Some older PDFs render
+    an overflowing value as ``#####``, so selecting the third numeric token is
+    unsafe: in Phnom Penh 2023 it selected the passing-female subtotal. Locate
+    the passing-total column geometrically instead, after normalizing rotated
+    2023 page coordinates.
+    """
+    page = document[-1]
+    width, height = page.rect.width, page.rect.height
+    candidates = [
+        int(word[4])
+        for word in normalized_page_words(page)
+        if width * 0.55 <= float(word[0]) < width * 0.82
+        and float(word[1]) < height * 0.25
+        and re.fullmatch(r"\d{3,6}", str(word[4]).strip())
+    ]
+    if len(candidates) != 1:
+        raise RuntimeError(
+            "Could not uniquely read the official passing total from the final PDF page "
+            f"(found {candidates})."
+        )
+    return candidates[0]
 
 
 def main() -> None:

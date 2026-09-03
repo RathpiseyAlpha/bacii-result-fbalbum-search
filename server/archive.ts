@@ -113,6 +113,13 @@ function provinceId(slug: string, year: string) {
   return slug.endsWith(suffix) ? slug.slice(0, -suffix.length) : slug;
 }
 
+function archivePdfFileName(storedPath: string) {
+  // Archives may be generated on Windows and later served from Linux.
+  // Normalize separators before taking the basename so both platforms resolve
+  // the same file under the archive's pdfs directory.
+  return basename(storedPath.replace(/\\/g, "/"));
+}
+
 export function listArchiveYears() {
   if (!existsSync(archiveRoot)) return [];
   const years = new Set<string>();
@@ -284,7 +291,7 @@ export function getArchivePdf(year: string, documentId: number) {
   if (!row) return undefined;
   const directory = archiveDirectory(year);
   if (!directory) return undefined;
-  const fileName = basename(row.localPath);
+  const fileName = archivePdfFileName(row.localPath);
   const candidate = resolve(directory, "pdfs", fileName);
   return existsSync(candidate) ? candidate : undefined;
 }
@@ -299,6 +306,6 @@ export function getArchiveNameLocator(year: string, studentId: number) {
   if (!row) return undefined;
   const directory = archiveDirectory(year);
   if (!directory) return undefined;
-  const pdf = resolve(directory, "pdfs", basename(row.localPath));
+  const pdf = resolve(directory, "pdfs", archivePdfFileName(row.localPath));
   return existsSync(pdf) ? { pdf, pageNumber: row.pageNumber, tableNumber: String(row.tableNumber) } : undefined;
 }

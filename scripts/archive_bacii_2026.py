@@ -93,26 +93,40 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
     if parsed.scheme != "https" or not any(hostname == host or hostname.endswith(f".{host}") for host in allowed_hosts):
         raise RuntimeError(f"Refusing an unapproved archive PDF host: {parsed.hostname or 'invalid URL'}")
     target.parent.mkdir(parents=True, exist_ok=True)
-    for attempt in range(1, 16):
+    for attempt in range(1, 31):
         current = target.stat().st_size if target.exists() else 0
         if expected_size and current == expected_size:
             return
         if expected_size and current > expected_size:
             target.unlink()
+            current = 0
+
         print(f"    transfer attempt {attempt}, existing {current:,} bytes", flush=True)
-        result = subprocess.run(
-            [
-                "curl.exe" if sys.platform == "win32" else "curl",
-                "-L", "--fail", "--silent", "--show-error", "--retry", "5",
-                "--retry-all-errors", "--retry-delay", "2", "-C", "-",
-                "-A", USER_AGENT, url, "-o", str(target),
-            ],
-            check=False,
-        )
-        size = target.stat().st_size if target.exists() else 0
-        if result.returncode == 0 and (not expected_size or size == expected_size):
-            return
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        if current > 0:
+            req.add_header("Range", f"bytes={current}-")
+
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                mode = "ab" if response.status == 206 else "wb"
+                if mode == "wb" and current > 0:
+                    current = 0
+                
+                with target.open(mode) as f:
+                    while True:
+                        chunk = response.read(1024 * 512)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            
+            size = target.stat().st_size if target.exists() else 0
+            if not expected_size or size == expected_size:
+                return
+        except Exception as error:
+            print(f"    transfer interrupted: {error}", flush=True)
+
         time.sleep(min(attempt * 2, 15))
+
     raise RuntimeError(f"Incomplete download for {url}: {target.stat().st_size if target.exists() else 0}/{expected_size}")
 
 

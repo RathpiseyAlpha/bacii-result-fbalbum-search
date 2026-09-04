@@ -10,12 +10,14 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import http.client
 import json
 import re
 import sqlite3
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -60,6 +62,20 @@ PROVINCES = [
     ("mondulkiri26", "មណ្ឌលគិរី"),
 ]
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+BROWSER_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,application/pdf,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,km;q=0.8",
+    "Referer": "https://moeys.gov.kh/",
+    "Sec-Ch-Ua": '"Chromium";v="138", "Google Chrome";v="138", "Not?A_Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"' if sys.platform == "win32" else '"Linux"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
 OFFICIAL_GRADE_TOTALS = {"A": 2022, "B": 8848, "C": 23422, "D": 44869, "E": 46814}
 
 
@@ -72,7 +88,7 @@ def fetch_json(url: str) -> dict:
 def head_size(url: str) -> int:
     MIN_VALID_PDF_SIZE = 100_000
     try:
-        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+        request = urllib.request.Request(url, method="HEAD", headers=BROWSER_HEADERS)
         with urllib.request.urlopen(request, timeout=20) as response:
             content_type = (response.headers.get("Content-Type") or "").lower()
             size = int(response.headers.get("Content-Length") or 0)
@@ -81,7 +97,9 @@ def head_size(url: str) -> int:
     except Exception:
         pass
     try:
-        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Range": "bytes=0-0"})
+        range_headers = dict(BROWSER_HEADERS)
+        range_headers["Range"] = "bytes=0-0"
+        request = urllib.request.Request(url, headers=range_headers)
         with urllib.request.urlopen(request, timeout=20) as response:
             content_type = (response.headers.get("Content-Type") or "").lower()
             content_range = response.headers.get("Content-Range") or ""
@@ -130,13 +148,25 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
             print(f"    removing invalid/corrupted staging PDF file: {target.name}", flush=True)
             target.unlink()
 
-    for attempt in range(1, 40):
+    curl_bin = "curl.exe" if sys.platform == "win32" else "curl"
+    has_curl = False
+    try:
+        test_run = subprocess.run([curl_bin, "--version"], capture_output=True, check=False)
+        has_curl = (test_run.returncode == 0)
+    except Exception:
+        has_curl = False
+
+    for attempt in range(1, 50):
         current = target.stat().st_size if target.exists() else 0
         if expected_size >= 100_000 and current == expected_size:
             try:
                 with target.open("rb") as check_f:
                     if check_f.read(4) == b"%PDF":
-                        return
+                        doc = pymupdf.open(target)
+                        if doc.page_count >= 1:
+                            doc.close()
+                            return
+                        doc.close()
             except Exception:
                 pass
             target.unlink()
@@ -147,77 +177,115 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
             current = 0
 
         print(f"    transfer attempt {attempt}, existing {current:,}/{expected_size:,} bytes", flush=True)
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        if current > 0:
-            req.add_header("Range", f"bytes={current}-")
 
-        completed_cleanly = False
-        try:
-            with urllib.request.urlopen(req, timeout=45) as response:
-                if response.status == 200:
-                    mode = "wb"
-                    if current > 0:
-                        current = 0
-                    cl = int(response.headers.get("Content-Length") or 0)
-                    if cl >= 100_000 and (expected_size == 0 or expected_size < 100_000):
-                        expected_size = cl
-                elif response.status == 206:
-                    mode = "ab"
-                    cr = response.headers.get("Content-Range") or ""
-                    match = re.search(r"/(\d+)$", cr)
-                    if match:
-                        total_sz = int(match.group(1))
-                        if total_sz >= 100_000 and (expected_size == 0 or expected_size < 100_000):
-                            expected_size = total_sz
-                else:
-                    mode = "wb"
-                    current = 0
+        if has_curl:
+            cmd = [
+                curl_bin,
+                "-L",
+                "--silent",
+                "--show-error",
+                "-C", "-",
+                "-A", USER_AGENT,
+                "-e", "https://moeys.gov.kh/",
+                "-H", "Accept: application/pdf,text/html,application/xhtml+xml,*/*",
+                "-H", "Accept-Language: en-US,en;q=0.9,km;q=0.8",
+                "--connect-timeout", "20",
+                url,
+                "-o", str(target),
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.stderr and "transfer closed" not in res.stderr and "curl: (18)" not in res.stderr:
+                print(f"    curl log: {res.stderr.strip()}", flush=True)
+        else:
+            req = urllib.request.Request(url, headers=BROWSER_HEADERS)
+            if current > 0:
+                req.add_header("Range", f"bytes={current}-")
 
-                with target.open(mode) as f:
-                    while True:
-                        try:
-                            chunk = response.read(1024 * 512)
-                            if not chunk:
-                                completed_cleanly = True
-                                break
-                            f.write(chunk)
-                        except (http.client.IncompleteRead, urllib.error.URLError, TimeoutError) as chunk_err:
-                            if hasattr(chunk_err, "partial") and chunk_err.partial:
-                                f.write(chunk_err.partial)
-                            print(f"    chunk interrupted: {chunk_err}", flush=True)
-                            break
-
-            size = target.stat().st_size if target.exists() else 0
-            is_valid_pdf = False
             try:
-                with target.open("rb") as check_f:
-                    if check_f.read(4) == b"%PDF":
-                        is_valid_pdf = True
-            except Exception:
-                is_valid_pdf = False
+                with urllib.request.urlopen(req, timeout=45) as response:
+                    if response.status == 200:
+                        mode = "wb"
+                        if current > 0:
+                            current = 0
+                        cl = int(response.headers.get("Content-Length") or 0)
+                        if cl >= 100_000 and (expected_size == 0 or expected_size < 100_000):
+                            expected_size = cl
+                    elif response.status == 206:
+                        mode = "ab"
+                        cr = response.headers.get("Content-Range") or ""
+                        match = re.search(r"/(\d+)$", cr)
+                        if match:
+                            total_sz = int(match.group(1))
+                            if total_sz >= 100_000 and (expected_size == 0 or expected_size < 100_000):
+                                expected_size = total_sz
+                    else:
+                        mode = "wb"
+                        current = 0
 
-            if not is_valid_pdf:
-                print(f"    downloaded non-PDF content for {url}, removing target", flush=True)
-                target.unlink()
-                time.sleep(min(attempt * 2, 15))
-                continue
+                    with target.open(mode) as f:
+                        while True:
+                            try:
+                                chunk = response.read(1024 * 512)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                            except (http.client.IncompleteRead, urllib.error.URLError, TimeoutError) as chunk_err:
+                                if hasattr(chunk_err, "partial") and chunk_err.partial:
+                                    f.write(chunk_err.partial)
+                                print(f"    chunk interrupted: {chunk_err}", flush=True)
+                                break
+            except Exception as error:
+                print(f"    transfer interrupted: {error}", flush=True)
 
-            if expected_size >= 100_000 and size == expected_size:
-                return
+        size = target.stat().st_size if target.exists() else 0
+        if size == 0:
+            time.sleep(min(attempt * 2, 10))
+            continue
 
-            if expected_size == 0 and completed_cleanly and is_valid_pdf:
-                try:
-                    doc = pymupdf.open(target)
-                    if doc.page_count >= 1:
-                        doc.close()
-                        return
+        is_valid_pdf = False
+        sample = b""
+        try:
+            with target.open("rb") as check_f:
+                magic = check_f.read(4)
+                if magic == b"%PDF":
+                    is_valid_pdf = True
+                else:
+                    check_f.seek(0)
+                    sample = check_f.read(150)
+        except Exception:
+            is_valid_pdf = False
+
+        if not is_valid_pdf:
+            print(f"    downloaded non-PDF content for {url} (sample: {sample!r}), removing target", flush=True)
+            target.unlink()
+            time.sleep(min(attempt * 2, 10))
+            continue
+
+        if expected_size >= 100_000 and size == expected_size:
+            try:
+                doc = pymupdf.open(target)
+                if doc.page_count >= 1:
                     doc.close()
-                except Exception:
-                    pass
-        except Exception as error:
-            print(f"    transfer interrupted: {error}", flush=True)
+                    return
+                doc.close()
+            except Exception:
+                pass
 
-        time.sleep(min(attempt * 2, 15))
+        if size >= 100_000:
+            try:
+                doc = pymupdf.open(target)
+                if doc.page_count >= 1 and not doc.is_repaired:
+                    with target.open("rb") as check_f:
+                        check_f.seek(max(0, size - 1024))
+                        tail = check_f.read()
+                        if b"%%EOF" in tail:
+                            doc.close()
+                            return
+                doc.close()
+            except Exception:
+                pass
+
+        time.sleep(min(attempt * 2, 10))
 
     raise RuntimeError(f"Incomplete download for {url}: {target.stat().st_size if target.exists() else 0}/{expected_size}")
 

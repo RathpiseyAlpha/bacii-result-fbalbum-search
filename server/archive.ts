@@ -394,6 +394,16 @@ export function classifySchoolType(name: string, raw?: string): "public" | "priv
     "េអស ជី Ǖយ េអស", "sgis",
     "ឃីងគƚរី", "kingsbury",
     "េជភីេអ", "jpa",
+    // Don Bosco
+    "ដុនបូស្កូ", "ដុនបូសžូ", "ដុនបូស", "ដុន បូស្កូ", "don bosco", "bosco",
+    // Saint Francois
+    "សនƎȜហƛង់សƛ័រ", "សនƎȜហƛង់", "សនƎហƛង់", "សន្តហ្វ្រង់ស័រ", "សន្តហ្វ្រង់", "saint francois", "st. francois", "francois", "françois",
+    // Bethel
+    "បេតអែល", "េបតែអល", "េបតអែល", "bethel",
+    // Methodist School of Cambodia
+    "មេត្តូឌីស្ត", "មេតូឌីស្ត", "េមតូឌីសƐ", "េមតូឌីស", "េមតƎូឌីស", "methodist",
+    // Nation Line High School
+    "ណាត្យូនឡាញន៍", "ណាត្យូន", "ណតƞន៍ǔញន៍", "ណតƞន៍", "nation line",
     "សនƎǒវីេយ", "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
     "ǒǎេរȢន", "សាលារៀន", "ǒǎ", "វិ.សាលា", "Ǖƴេដមី", "អាខាដេមី", "ƙគីប", "គ្រីប",
     "ឯកជន", "private", "school",
@@ -719,6 +729,93 @@ export function resolveSchoolBranch(
     };
   }
 
+  // 14. Don Bosco (វិ.ដុនបូស្កូ)
+  if (
+    raw.includes("ដុនបូសžូ") ||
+    raw.includes("ដុនបូស្កូ") ||
+    raw.includes("ដុនបូស") ||
+    raw.toLowerCase().includes("don bosco")
+  ) {
+    const baseName = "វិ.ដុនបូស្កូ";
+    let branch: string | undefined;
+    if (raw.includes("ទឹកǃƚ") || raw.includes("ទឹកថ្លា") || province.includes("ភ្នំពេញ")) {
+      branch = "សាខាទឹកថ្លា (ភ្នំពេញ)";
+    } else if (raw.includes("Ǉត់ដំបង") || raw.includes("បាត់ដំបង") || province.includes("បាត់ដំបង")) {
+      branch = "សាខាបាត់ដំបង";
+    } else if (raw.includes("ǒƴេǇ៉យែប៉ត") || raw.includes("ប៉ោយប៉ែត") || province.includes("បន្ទាយមានជ័យ")) {
+      branch = "សាខាប៉ោយប៉ែត";
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch || ""}`,
+    };
+  }
+
+  // 15. Saint Francois (វិ.សន្តហ្វ្រង់ស័រ)
+  if (
+    raw.includes("សនƎȜហƛង់សƛ័រ") ||
+    raw.includes("សនƎȜហƛង់") ||
+    raw.includes("សនƎហƛង់") ||
+    raw.includes("សន្តហ្វ្រង់ស័រ") ||
+    raw.toLowerCase().includes("francois") ||
+    raw.toLowerCase().includes("françois")
+  ) {
+    const baseName = "វិ.សន្តហ្វ្រង់ស័រ";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 16. Methodist School of Cambodia (វិ.មេត្តូឌីស្តកម្ពុជា)
+  if (
+    raw.includes("េមតូឌីសƐកមƕុƺ") ||
+    raw.includes("េមតូឌីស") ||
+    raw.includes("មេត្តូឌីស្ត") ||
+    raw.includes("មេតូឌីស្ត") ||
+    raw.toLowerCase().includes("methodist")
+  ) {
+    const baseName = "វិ.មេត្តូឌីស្តកម្ពុជា";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 17. Nation Line High School (វិ.ណាត្យូនឡាញន៍)
+  if (
+    raw.includes("ណតƞន៍ǔញន៍") ||
+    raw.includes("ណតƞន៍") ||
+    raw.includes("ណាត្យូនឡាញន៍") ||
+    raw.includes("ណាត្យូន") ||
+    raw.toLowerCase().includes("nation line")
+  ) {
+    const baseName = "វិ.ណាត្យូនឡាញន៍";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 18. Bethel High School (វិ.បេតអែល)
+  if (
+    raw.includes("េបតែអល") ||
+    raw.includes("េបតអែល") ||
+    raw.includes("បេតអែល") ||
+    raw.toLowerCase().includes("bethel")
+  ) {
+    const baseName = "វិ.បេតអែល";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
   // Generic parenthetical branch or province codes
   if (raw.includes("ជ័យវរƗ័ន") || raw.includes("ជ័យវរ្ម័ន")) {
     return {
@@ -883,6 +980,8 @@ export function detectPhnomPenhKhan(
     text.includes("ទួលប្រាសាទ") ||
     text.includes("បឹងឈូក") ||
     text.includes("ដីហុយ") ||
+    text.includes("ទឹកថ្លា") ||
+    text.includes("ទឹកǃƚ") ||
     text.includes("ទី១២") ||
     text.includes("ទី 12") ||
     text.includes("ទី១៩")

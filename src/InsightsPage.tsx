@@ -48,6 +48,7 @@ type Summary = {
 type SchoolAnalysis = {
   name: string;
   province: string;
+  provinceId?: string;
   candidateCount: number;
   femaleCount: number;
   scienceCount: number;
@@ -333,11 +334,11 @@ export default function InsightsPage() {
     const term = schoolSearch.trim().toLowerCase();
     let list = schools;
     if (schoolProvince !== "all") {
-      list = list.filter((s) => s.province === schoolProvince);
+      list = list.filter((s) => s.provinceId === schoolProvince || s.province === schoolProvince);
     }
     if (term) {
       list = list.filter((s) => {
-        const engProv = provinceEnglish[s.province]?.toLowerCase() || "";
+        const engProv = provinceEnglish[s.provinceId || s.province]?.toLowerCase() || "";
         return s.name.toLowerCase().includes(term) || s.province.toLowerCase().includes(term) || engProv.includes(term);
       });
     }
@@ -547,11 +548,13 @@ export default function InsightsPage() {
                       champion.candidateCount > 0
                         ? Math.round((champion.femaleCount / champion.candidateCount) * 100)
                         : 0;
-                    const provObj = selected.provinces.find((p) => p.id === champion.province);
+                    const provObj = selected.provinces.find(
+                      (p) => p.id === champion.provinceId || p.id === champion.province || p.name === champion.province
+                    );
                     const provLabel =
                       language === "km"
                         ? provObj?.name || champion.province
-                        : provinceEnglish[champion.province] || champion.province;
+                        : provinceEnglish[champion.provinceId || champion.province] || champion.province;
 
                     return (
                       <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
@@ -665,11 +668,13 @@ export default function InsightsPage() {
                     school.candidateCount > 0
                       ? Math.round((school.femaleCount / school.candidateCount) * 100)
                       : 0;
-                  const provObj = selected.provinces.find((p) => p.id === school.province);
+                  const provObj = selected.provinces.find(
+                    (p) => p.id === school.provinceId || p.id === school.province || p.name === school.province
+                  );
                   const provLabel =
                     language === "km"
                       ? provObj?.name || school.province
-                      : provinceEnglish[school.province] || school.province;
+                      : provinceEnglish[school.provinceId || school.province] || school.province;
 
                   return (
                     <article key={`${school.province}-${school.name}`} className="school-row-card">

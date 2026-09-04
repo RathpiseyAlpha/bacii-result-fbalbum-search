@@ -238,12 +238,15 @@ export type SchoolAnalysis = {
   candidateCount: number;
   femaleCount: number;
   scienceCount: number;
+  socialCount: number;
   socialScienceCount: number;
   gradeA: number;
   gradeB: number;
   gradeC: number;
   gradeD: number;
   gradeE: number;
+  grades: { A: number; B: number; C: number; D: number; E: number };
+  gradeAPercent: number;
   gradeAPercentage: number;
   rank: number;
 };
@@ -295,7 +298,13 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
     allSchools = rows.map((row, index) => {
       const candidateCount = Number(row.candidateCount || 0);
       const gradeA = Number(row.gradeA || 0);
+      const gradeB = Number(row.gradeB || 0);
+      const gradeC = Number(row.gradeC || 0);
+      const gradeD = Number(row.gradeD || 0);
+      const gradeE = Number(row.gradeE || 0);
       const gradeAPercentage = candidateCount > 0 ? Number(((gradeA / candidateCount) * 100).toFixed(2)) : 0;
+      const scienceCount = Number(row.scienceCount || 0);
+      const socialScienceCount = Number(row.socialScienceCount || 0);
       return {
         name: String(row.name).trim(),
         sampleStudentId: Number(row.sampleStudentId),
@@ -303,13 +312,16 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
         provinceId: provinceId(String(row.slug), year),
         candidateCount,
         femaleCount: Number(row.femaleCount || 0),
-        scienceCount: Number(row.scienceCount || 0),
-        socialScienceCount: Number(row.socialScienceCount || 0),
+        scienceCount,
+        socialCount: socialScienceCount,
+        socialScienceCount,
         gradeA,
-        gradeB: Number(row.gradeB || 0),
-        gradeC: Number(row.gradeC || 0),
-        gradeD: Number(row.gradeD || 0),
-        gradeE: Number(row.gradeE || 0),
+        gradeB,
+        gradeC,
+        gradeD,
+        gradeE,
+        grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE },
+        gradeAPercent: gradeAPercentage,
         gradeAPercentage,
         rank: index + 1,
       };

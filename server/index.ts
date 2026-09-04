@@ -6,7 +6,7 @@ import { discoveries, getZipSize, photosFromUrls, startDiscovery, startZip, zipJ
 import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
 import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
-import { getArchiveCenters, getArchivePdf, getArchiveSummary, listArchiveYears, searchArchive } from "./archive.ts";
+import { getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveSummary, listArchiveYears, searchArchive } from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
 import {
@@ -126,6 +126,20 @@ app.get("/api/archive/:year/centers", (request, response) => {
   try {
     response.setHeader("Cache-Control", "public, max-age=300");
     response.json({ centers: getArchiveCenters(request.params.year, String(request.query.province || "") || undefined) });
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/schools", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const province = String(request.query.province || "") || undefined;
+    const search = String(request.query.search || "") || undefined;
+    const sort = String(request.query.sort || "") as "candidates" | "gradeA" | "gradeAPercent" | "name";
+    const limit = request.query.limit ? Number(request.query.limit) : undefined;
+    const schools = getArchiveSchools(request.params.year, { province, search, sort, limit });
+    response.json({ schools, count: schools.length });
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
   }

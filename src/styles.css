@@ -341,7 +341,122 @@
 .insights-footer { padding: 25px 0 45px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.6; }
 :root[data-theme="dark"] .insight-kpis svg { background: #19345c; }
 
+/* High school (អាគតដ្ឋាន) analysis styles */
+.school-analysis-section { padding: 10px 0 60px; }
+.school-section-header { margin-bottom: 24px; }
+.school-section-title-wrap .eyebrow { margin-bottom: 8px; }
+.school-section-title-wrap h2 { margin: 8px 0 6px; font-size: clamp(24px, 3.5vw, 36px); letter-spacing: -.03em; }
+.school-section-title-wrap p { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Champions Showcase (Top 3 Grade A) */
+.school-champions-block { margin-bottom: 36px; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); box-shadow: 0 16px 46px rgba(30, 64, 175, .05); }
+.champions-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.champions-trophy-icon { color: #f59e0b; flex-shrink: 0; }
+.champions-header h3 { margin: 0; font-size: 18px; }
+.champions-header p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.school-champions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.school-champion-card { position: relative; display: flex; flex-direction: column; padding: 20px; border-radius: 16px; border: 1px solid var(--line); background: var(--paper); transition: transform .2s ease, box-shadow .2s ease; }
+.school-champion-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 0, 0, .07); }
+.school-champion-card.medal-gold { border-color: rgba(245, 158, 11, .45); background: linear-gradient(170deg, rgba(254, 243, 199, .4), var(--paper) 60%); }
+.school-champion-card.medal-silver { border-color: rgba(148, 163, 184, .45); background: linear-gradient(170deg, rgba(241, 245, 249, .5), var(--paper) 60%); }
+.school-champion-card.medal-bronze { border-color: rgba(217, 119, 6, .35); background: linear-gradient(170deg, rgba(255, 237, 213, .35), var(--paper) 60%); }
+
+.champion-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.champion-rank-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.champion-rank-badge.rank-1 { color: #92400e; background: #fef3c7; border: 1px solid #fde68a; }
+.champion-rank-badge.rank-2 { color: #334155; background: #e2e8f0; border: 1px solid #cbd5e1; }
+.champion-rank-badge.rank-3 { color: #9a3412; background: #ffedd5; border: 1px solid #fed7aa; }
+
+.province-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; color: var(--muted); background: var(--card); border: 1px solid var(--line); font-size: 11px; font-weight: 600; }
+
+.champion-school-name-box { min-height: 44px; display: flex; align-items: center; margin-bottom: 14px; }
+.official-school-img-wrap { display: inline-block; max-width: 100%; }
+.official-school-img-wrap img { display: block; max-width: 100%; height: 36px; object-fit: contain; object-position: left center; filter: contrast(1.1); border-radius: 4px; }
+.official-school-text { font-weight: 700; font-size: 15px; }
+
+.champion-stat-hero { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.champion-stat-main { display: flex; align-items: baseline; gap: 8px; }
+.champion-stat-main strong { font: 800 32px "Inter", sans-serif; color: #d97706; line-height: 1; }
+.champion-stat-main span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.champion-stat-sub { text-align: right; display: flex; flex-direction: column; }
+.champion-stat-sub b { font-size: 14px; color: var(--ink); }
+.champion-stat-sub small { font-size: 10px; color: var(--muted); }
+
+.champion-footer-stats { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.gender-dot { font-weight: 600; color: #ec4899; }
+
+.champion-pills, .school-row-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pill-mini { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 5px; font: 11px "DM Mono", monospace; background: var(--card); border: 1px solid var(--line); }
+.pill-mini b { font-weight: 700; }
+.pill-a { color: #d97706; border-color: rgba(217, 119, 6, .3); background: rgba(254, 243, 199, .4); }
+.pill-b { color: #0284c7; border-color: rgba(2, 132, 199, .3); background: rgba(224, 242, 254, .4); }
+.pill-c { color: #db2777; border-color: rgba(219, 39, 119, .3); background: rgba(252, 231, 243, .4); }
+.pill-d { color: #2563eb; border-color: rgba(37, 99, 235, .3); background: rgba(219, 234, 254, .4); }
+.pill-e { color: #7c3aed; border-color: rgba(124, 58, 237, .3); background: rgba(237, 233, 254, .4); }
+
+/* Stacked grade distribution bar */
+.school-stacked-grade-bar { height: 14px; display: flex; overflow: hidden; border-radius: 999px; background: #e2e8f0; width: 100%; }
+.school-stacked-segment { height: 100%; display: flex; align-items: center; justify-content: center; min-width: 2px; transition: opacity .2s ease; }
+.school-stacked-segment:hover { opacity: .85; }
+.segment-label { font: 700 9px "DM Mono", monospace; color: #fff; white-space: nowrap; padding: 0 4px; }
+.grade-segment-a { background: #f59e0b; }
+.grade-segment-b { background: #0284c7; }
+.grade-segment-c { background: #db2777; }
+.grade-segment-d { background: #2563eb; }
+.grade-segment-e { background: #7c3aed; }
+
+/* School Explorer Toolbar */
+.school-explorer-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+.school-search-box { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px; padding: 0 12px; height: 42px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); color: var(--muted); }
+.school-search-box input { border: 0; outline: none; background: transparent; width: 100%; color: var(--ink); font-size: 13px; }
+.school-filter-selects { display: flex; gap: 10px; }
+.school-filter-item select { height: 42px; padding: 0 32px 0 12px; appearance: none; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; font-size: 12px; font-weight: 600; outline: none; }
+.school-count-chip { font: 600 11px "DM Mono", monospace; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+/* School List Cards */
+.school-list-grid { display: grid; gap: 12px; }
+.school-row-card { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 24px; padding: 18px 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); box-shadow: 0 6px 20px rgba(30, 64, 175, .03); align-items: center; transition: border-color .2s ease, box-shadow .2s ease; }
+.school-row-card:hover { border-color: rgba(37, 99, 235, .4); box-shadow: 0 8px 25px rgba(30, 64, 175, .08); }
+.school-row-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.school-rank-num { font: 700 14px "DM Mono", monospace; color: var(--muted); min-width: 24px; }
+.school-row-details { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.school-image-container { min-height: 32px; display: flex; align-items: center; }
+.school-tags-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--paper); border: 1px solid var(--line); color: var(--muted); }
+.gender-tag { color: #db2777; }
+.track-tag { color: var(--muted); }
+
+.school-row-right { display: flex; flex-direction: column; gap: 10px; }
+.school-row-key-metrics { display: flex; align-items: baseline; justify-content: space-between; }
+.school-metric-box { display: flex; align-items: baseline; gap: 8px; }
+.school-metric-box .metric-label { font-size: 11px; color: var(--muted); font-weight: 700; }
+.school-metric-box strong { font: 800 18px "Inter", sans-serif; color: var(--ink); }
+.grade-a-metric strong { color: #d97706; }
+.grade-a-metric strong small { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+/* Pagination */
+.school-pagination-wrap { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 24px; }
+.school-more-button, .school-all-button { height: 42px; padding: 0 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s ease; }
+.school-more-button { border: 0; color: #fff; background: var(--green); }
+.school-more-button:hover { background: var(--green-dark); }
+.school-all-button { border: 1px solid var(--line); color: var(--ink); background: var(--card); }
+.school-all-button:hover { background: var(--paper); }
+
+/* Dark mode adjustments */
+:root[data-theme="dark"] .school-champion-card { background: #0f192b; }
+:root[data-theme="dark"] .school-champion-card.medal-gold { border-color: rgba(245, 158, 11, .3); background: linear-gradient(170deg, rgba(245, 158, 11, .1), #0f192b 60%); }
+:root[data-theme="dark"] .school-champion-card.medal-silver { border-color: rgba(148, 163, 184, .3); background: linear-gradient(170deg, rgba(148, 163, 184, .1), #0f192b 60%); }
+:root[data-theme="dark"] .school-champion-card.medal-bronze { border-color: rgba(217, 119, 6, .3); background: linear-gradient(170deg, rgba(217, 119, 6, .1), #0f192b 60%); }
+:root[data-theme="dark"] .official-school-img-wrap img { background: #ffffff; padding: 2px 4px; }
+:root[data-theme="dark"] .school-stacked-grade-bar { background: #1e293b; }
+:root[data-theme="dark"] .pill-mini { background: #142036; }
+:root[data-theme="dark"] .champion-rank-badge.rank-1 { background: #451a03; color: #fde68a; border-color: #78350f; }
+:root[data-theme="dark"] .champion-rank-badge.rank-2 { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+:root[data-theme="dark"] .champion-rank-badge.rank-3 { background: #431407; color: #fed7aa; border-color: #7c2d12; }
+
 @media (max-width: 900px) {
+  .school-champions-grid { grid-template-columns: 1fr; }
+  .school-row-card { grid-template-columns: 1fr; }
   .insights-hero { align-items: stretch; flex-direction: column; gap: 28px; }
   .insight-controls { min-width: 0; width: min(500px, 100%); }
   .insight-kpis { grid-template-columns: repeat(2, 1fr); }

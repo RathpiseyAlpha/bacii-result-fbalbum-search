@@ -28,6 +28,7 @@ const archiveRoot = resolve(process.env.BACII_ARCHIVE_ROOT || "data");
 const databases = new Map<string, ArchiveDatabase>();
 const centerLabelCaches = new Map<string, { modifiedAt: number; labels: Map<string, string> }>();
 const summaryCaches = new Map<string, { modifiedAt: number; summary: Record<string, unknown> }>();
+const schoolCaches = new Map<string, { modifiedAt: number; schools: SchoolAnalysis[] }>();
 
 type CenterLabelsFile = {
   centers?: Record<string, { label?: unknown }>;
@@ -227,6 +228,118 @@ export function getArchiveCenters(year: string, province?: string) {
   return [...centers]
     .map(([name, count]) => ({ name, label: labels.get(name) || name, count }))
     .sort((left, right) => left.label.localeCompare(right.label, "km"));
+}
+
+export type SchoolAnalysis = {
+  name: string;
+  sampleStudentId: number;
+  province: string;
+  provinceId: string;
+  candidateCount: number;
+  femaleCount: number;
+  scienceCount: number;
+  socialScienceCount: number;
+  gradeA: number;
+  gradeB: number;
+  gradeC: number;
+  gradeD: number;
+  gradeE: number;
+  gradeAPercentage: number;
+  rank: number;
+};
+
+export type GetSchoolsOptions = {
+  province?: string;
+  search?: string;
+  sort?: "candidates" | "gradeA" | "gradeAPercent" | "name";
+  limit?: number;
+};
+
+export function getArchiveSchools(year: string, options: GetSchoolsOptions = {}) {
+  const directory = archiveDirectory(year);
+  if (!directory) throw new Error(`Archive ${year} is not available.`);
+  const modifiedAt = statSync(resolve(directory, `bacii-${year}.sqlite`)).mtimeMs;
+  let allSchools: SchoolAnalysis[];
+  const cached = schoolCaches.get(year);
+  if (cached?.modifiedAt === modifiedAt) {
+    allSchools = cached.schools;
+  } else {
+    const db = archiveDatabase(year);
+    const rows = db.prepare(`
+      SELECT
+        s.school_raw AS name,
+        MIN(s.id) AS sampleStudentId,
+        s.province AS province,
+        d.slug AS slug,
+        COUNT(s.id) AS candidateCount,
+        SUM(CASE WHEN s.gender_raw LIKE '%ស%' THEN 1 ELSE 0 END) AS femaleCount,
+        SUM(CASE WHEN ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceCount,
+        SUM(CASE WHEN ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialScienceCount,
+        SUM(CASE WHEN s.grade_raw = 'A' THEN 1 ELSE 0 END) AS gradeA,
+        SUM(CASE WHEN s.grade_raw = 'B' THEN 1 ELSE 0 END) AS gradeB,
+        SUM(CASE WHEN s.grade_raw = 'C' THEN 1 ELSE 0 END) AS gradeC,
+        SUM(CASE WHEN s.grade_raw = 'D' THEN 1 ELSE 0 END) AS gradeD,
+        SUM(CASE WHEN s.grade_raw = 'E' THEN 1 ELSE 0 END) AS gradeE
+      FROM students s
+      JOIN documents d ON d.id = s.document_id
+      JOIN pages p ON p.id = s.page_id
+      WHERE TRIM(COALESCE(s.school_raw, '')) != ''
+      GROUP BY s.school_raw, s.province, d.slug
+      ORDER BY candidateCount DESC
+    `).all() as Array<{
+      name: string; sampleStudentId: number; province: string; slug: string;
+      candidateCount: number; femaleCount: number; scienceCount: number; socialScienceCount: number;
+      gradeA: number; gradeB: number; gradeC: number; gradeD: number; gradeE: number;
+    }>;
+
+    allSchools = rows.map((row, index) => {
+      const candidateCount = Number(row.candidateCount || 0);
+      const gradeA = Number(row.gradeA || 0);
+      const gradeAPercentage = candidateCount > 0 ? Number(((gradeA / candidateCount) * 100).toFixed(2)) : 0;
+      return {
+        name: String(row.name).trim(),
+        sampleStudentId: Number(row.sampleStudentId),
+        province: String(row.province),
+        provinceId: provinceId(String(row.slug), year),
+        candidateCount,
+        femaleCount: Number(row.femaleCount || 0),
+        scienceCount: Number(row.scienceCount || 0),
+        socialScienceCount: Number(row.socialScienceCount || 0),
+        gradeA,
+        gradeB: Number(row.gradeB || 0),
+        gradeC: Number(row.gradeC || 0),
+        gradeD: Number(row.gradeD || 0),
+        gradeE: Number(row.gradeE || 0),
+        gradeAPercentage,
+        rank: index + 1,
+      };
+    });
+    schoolCaches.set(year, { modifiedAt, schools: allSchools });
+  }
+
+  let filtered = allSchools;
+  if (options.province) {
+    filtered = filtered.filter((s) => s.provinceId === options.province);
+  }
+  if (options.search) {
+    const q = options.search.trim().toLowerCase();
+    filtered = filtered.filter((s) => s.name.toLowerCase().includes(q) || s.province.toLowerCase().includes(q));
+  }
+
+  const sort = options.sort || "candidates";
+  if (sort === "gradeA") {
+    filtered = filtered.slice().sort((a, b) => b.gradeA - a.gradeA || b.candidateCount - a.candidateCount);
+  } else if (sort === "gradeAPercent") {
+    filtered = filtered.slice().sort((a, b) => b.gradeAPercentage - a.gradeAPercentage || b.gradeA - a.gradeA);
+  } else if (sort === "name") {
+    filtered = filtered.slice().sort((a, b) => a.name.localeCompare(b.name, "km"));
+  } else {
+    filtered = filtered.slice().sort((a, b) => b.candidateCount - a.candidateCount || b.gradeA - a.gradeA);
+  }
+
+  const ranked = filtered.map((s, idx) => ({ ...s, rank: idx + 1 }));
+  const limit = options.limit && options.limit > 0 ? options.limit : undefined;
+  return limit ? ranked.slice(0, limit) : ranked;
 }
 
 export type ArchiveSearch = {

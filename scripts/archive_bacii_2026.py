@@ -152,6 +152,7 @@ def download_parallel_segments(url: str, target: Path, expected_size: int, num_w
             try:
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     if resp.status not in (200, 206):
+                        print(f"        [worker {worker_id}] HTTP status {resp.status} for range {start}-{end}", flush=True)
                         return False
                     data = resp.read()
                     if len(data) == expected_len:
@@ -160,7 +161,10 @@ def download_parallel_segments(url: str, target: Path, expected_size: int, num_w
                             f.write(data)
                         downloaded[worker_id] = len(data)
                         return True
-            except Exception:
+                    else:
+                        print(f"        [worker {worker_id}] partial read: received {len(data):,} of {expected_len:,} bytes", flush=True)
+            except Exception as err:
+                print(f"        [worker {worker_id}] attempt {retry} failed: {err}", flush=True)
                 time.sleep(1)
         stop_event = True
         return False
@@ -182,6 +186,7 @@ def download_parallel_segments(url: str, target: Path, expected_size: int, num_w
     try:
         with target.open("rb") as f:
             if f.read(4) != b"%PDF":
+                print(f"    parallel download finished but file does not start with %PDF", flush=True)
                 return False
         doc = pymupdf.open(target)
         if doc.page_count < 1:
@@ -189,7 +194,8 @@ def download_parallel_segments(url: str, target: Path, expected_size: int, num_w
             return False
         doc.close()
         return True
-    except Exception:
+    except Exception as err:
+        print(f"    parallel PDF validation error: {err}", flush=True)
         return False
 
 
@@ -221,8 +227,10 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
             target.unlink()
 
     # Fast path: multi-worker parallel range download for large files (>= 4MB)
-    if expected_size >= 4_000_000 and not target.exists():
+    if expected_size >= 4_000_000 and (not target.exists() or target.stat().st_size != expected_size):
         print(f"    starting multi-threaded range download ({expected_size:,} bytes)...", flush=True)
+        if target.exists():
+            target.unlink()
         if download_parallel_segments(url, target, expected_size, num_workers=6):
             print(f"    parallel download completed successfully ({expected_size:,} bytes).", flush=True)
             return

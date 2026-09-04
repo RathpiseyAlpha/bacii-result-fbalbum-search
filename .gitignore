@@ -7,6 +7,10 @@ dist/
 __pycache__/
 *.pyc
 data/*.sqlite*
+*.sqlite*
+*.tar.gz
+scratch/
+tmp/
 data/bacii-*/
 data/archive-name-crops/
 *.log

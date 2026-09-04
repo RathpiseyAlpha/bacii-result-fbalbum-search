@@ -8,7 +8,7 @@ import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
 import {
   getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveSubjectDetail,
-  getArchiveSubjectOverview, getArchiveSummary, listArchiveYears, searchArchive,
+  getArchiveSubjectOverview, getArchiveSummary, getPhnomPenhDistrictStats, listArchiveYears, searchArchive,
 } from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
@@ -138,13 +138,25 @@ app.get("/api/archive/:year/schools", (request, response) => {
   try {
     response.setHeader("Cache-Control", "public, max-age=300");
     const province = String(request.query.province || "") || undefined;
+    const khan = String(request.query.khan || "") || undefined;
+    const schoolType = (request.query.schoolType as "all" | "public" | "private") || undefined;
     const search = String(request.query.search || "") || undefined;
     const sort = String(request.query.sort || "") as "candidates" | "gradeA" | "gradeAPercent" | "name";
     const limit = request.query.limit ? Number(request.query.limit) : undefined;
-    const schools = getArchiveSchools(request.params.year, { province, search, sort, limit });
+    const schools = getArchiveSchools(request.params.year, { province, khan, schoolType, search, sort, limit });
     response.json({ schools, count: schools.length });
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/districts/phnom-penh", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const districts = getPhnomPenhDistrictStats(request.params.year);
+    response.json({ districts, count: districts.length });
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "District data not found." });
   }
 });
 
@@ -164,10 +176,11 @@ app.get("/api/archive/:year/subjects/detail", (request, response) => {
     const track = request.query.track === "social-science" ? "social-science" : "science";
     const subject = String(request.query.subject || "") as any;
     const province = String(request.query.province || "") || undefined;
+    const schoolType = (request.query.schoolType as "all" | "public" | "private") || undefined;
     const search = String(request.query.search || "") || undefined;
     const sort = String(request.query.sort || "") as any;
     const limit = request.query.limit ? Number(request.query.limit) : undefined;
-    const detail = getArchiveSubjectDetail(request.params.year, { track, subject, province, search, sort, limit });
+    const detail = getArchiveSubjectDetail(request.params.year, { track, subject, province, schoolType, search, sort, limit });
     response.json(detail);
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "Subject data not found." });

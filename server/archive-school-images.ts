@@ -6,8 +6,8 @@ import { getArchiveNameLocator } from "./archive.ts";
 
 const cacheRoot = resolve(process.env.ARCHIVE_CROP_CACHE_ROOT || "data/archive-name-crops");
 const CACHE_VERSION = "school-cell-v2";
-const MAX_CONCURRENT = 2;
-const MAX_QUEUE = 100;
+const MAX_CONCURRENT = 6;
+const MAX_QUEUE = 1000;
 let active = 0;
 const queue: Array<() => void> = [];
 const inflight = new Map<string, Promise<string>>();

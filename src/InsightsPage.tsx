@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import cambodia from "@svg-maps/cambodia";
+import phnomPenhSvg from "./data/phnomPenhSvg.json";
 import {
   Archive,
   Atom,
   Award,
   BarChart3,
   BookOpen,
+  Building2,
   Calculator,
   ChevronDown,
   ChevronUp,
@@ -38,7 +41,7 @@ type Grade = "A" | "B" | "C" | "D" | "E";
 type SubjectGrade = "A" | "B" | "C" | "D" | "E" | "F";
 type Metric = "candidates" | "A" | "B" | "C" | "D" | "E" | "centers" | "schools" | "pages";
 type GradeTotals = Record<Grade, number>;
-type TabMode = "overview" | "subjects";
+type TabMode = "overview" | "schools" | "subjects";
 
 type SubjectKey =
   | "math"
@@ -58,31 +61,111 @@ type ProvinceSummary = {
   candidateCount: number;
   centerCount: number;
   schoolCount: number;
-  pageCount: number;
-  grades: GradeTotals;
+  scienceCount: number;
+  socialScienceCount: number;
+  gradeA: number;
+  gradeAScience?: number;
+  gradeASocial?: number;
+  gradeB: number;
+  gradeC: number;
+  gradeD: number;
+  gradeE: number;
 };
 
 type Summary = {
   year: string;
   candidateCount: number;
-  pageCount: number;
   provinceCount: number;
   centerCount: number;
   schoolCount: number;
   grades: Array<{ grade: string; count: number }>;
+  gradeTrackBreakdown?: Record<string, { science: number; social: number; total: number }>;
   provinces: ProvinceSummary[];
+};
+
+type PhnomPenhDistrictStats = {
+  id: string;
+  nameKm: string;
+  nameEn: string;
+  schoolsCount: number;
+  candidateCount: number;
+  gradeA: number;
+  gradeAScience?: number;
+  gradeASocial?: number;
+  gradeAPercent: number;
+  femaleCount: number;
+  femalePercent: number;
+  scienceCount: number;
+  socialCount: number;
+  publicCount: number;
+  privateCount: number;
+  topSchools: Array<{
+    name: string;
+    branch?: string;
+    sampleStudentId?: number;
+    candidateCount: number;
+    gradeA: number;
+    gradeAScience?: number;
+    gradeASocial?: number;
+    gradeAPercent: number;
+    schoolType: "public" | "private";
+  }>;
+};
+
+const KHAN_SVG_DATA = phnomPenhSvg.locations.map((loc) => ({
+  id: loc.id,
+  nameKm: loc.nameKm,
+  nameEn: loc.nameEn,
+  path: loc.path,
+  cx: loc.center[0],
+  cy: loc.center[1],
+}));
+
+type SchoolBranchItem = {
+  name: string;
+  branch?: string;
+  schoolType?: "public" | "private";
+  khan?: string;
+  khanId?: string;
+  sampleStudentId: number;
+  province: string;
+  provinceId?: string;
+  candidateCount: number;
+  femaleCount: number;
+  scienceCount?: number;
+  socialCount?: number;
+  gradeA: number;
+  gradeAScience?: number;
+  gradeASocial?: number;
+  gradeB?: number;
+  gradeC?: number;
+  gradeD?: number;
+  gradeE?: number;
+  grades: Record<Grade, number>;
+  gradeAPercent: number;
+  passRate: number;
 };
 
 type SchoolAnalysis = {
   name: string;
+  branch?: string;
+  branchCount?: number;
+  branches?: SchoolBranchItem[];
+  schoolType?: "public" | "private";
+  khan?: string;
+  khanId?: string;
   province: string;
   provinceId?: string;
   candidateCount: number;
   femaleCount: number;
   scienceCount: number;
   socialCount: number;
+  gradeA?: number;
+  gradeAScience?: number;
+  gradeASocial?: number;
   grades: Record<Grade, number>;
   gradeAPercent: number;
+  passRate?: number;
   sampleStudentId: number;
   rank?: number;
 };
@@ -101,6 +184,8 @@ type SubjectOverviewItem = {
 
 type SubjectSchoolItem = {
   name: string;
+  branch?: string;
+  schoolType?: "public" | "private";
   sampleStudentId: number;
   province: string;
   provinceId: string;
@@ -180,22 +265,41 @@ const copy = {
     brand: "BacII Result Search Engine", facebook: "Facebook search", archive: "Results archive", insights: "Insights",
     eyebrow: "BacII intelligence dashboard", title: "See the story behind the results.",
     intro: "Explore grade patterns, compare provinces, and follow national result trends as each new archive year is added.",
-    tabOverview: "Overview & High Schools",
+    tabOverview: "National Overview",
+    tabSchools: "High Schools",
     tabSubjects: "Subject Analysis",
+    capitalMapTitle: "Phnom Penh Capital & Nationwide Geo-Heatmap",
+    capitalMapSubtitle: "Interactive geographic distribution of high schools across Phnom Penh's 14 modern Khans and all 25 provinces.",
+    viewPhnomPenh: "Phnom Penh (14 Khans)",
+    viewProvinces: "Nationwide (25 Provinces)",
+    heatmapMetric: "Heatmap Metric",
+    heatGradeA: "Overall Grade A",
+    heatCandidates: "Candidate Density",
+    heatScienceRatio: "Science Share",
+    heatSchools: "School Count",
+    filterByKhan: "Filter high schools by this Khan",
+    clearKhanFilter: "All Khans",
+    allKhans: "All Khans",
+    selectKhan: "Select Khan",
+    scienceTrackShort: "Science",
+    socialTrackShort: "Social",
     newBadge: "New",
     year: "Data year", metric: "Trend metric", candidates: "Passing candidates", centers: "Exam centers", schools: "High schools", pages: "Official pages", provinces: "provinces & capital",
-    nationalSnapshot: "National snapshot", gradeMix: "National grade composition", annualTrend: "Year-over-year trend",
+    nationalSnapshot: "National results snapshot", gradeMix: "National Overall BacII Grade Distribution (A, B, C, D, E)", annualTrend: "Year-over-year trend",
     provinceRanking: "Province / capital ranking", rankHelp: "Ranked using the selected trend metric for the chosen year.",
     schoolAnalysis: "High school analysis",
-    schoolAnalysisSubtitle: "Passing candidates, gender representation, and grade distributions across high schools.",
-    gradeAChampions: "Grade A Champions",
-    gradeAChampionsHelp: "High schools with the highest number of Grade A passing candidates.",
-    allSchoolsExplorer: "High school performance & grade mix",
+    schoolAnalysisSubtitle: "Passing candidates, gender representation, and overall grade distributions across high schools.",
+    gradeAChampions: "Overall Grade A Champions",
+    gradeAChampionsHelp: "High schools with the highest number of candidates passing with Overall Grade A.",
+    gradeATrackBreakdown: "Overall Grade A by Study Track",
+    gradeATrackBreakdownSub: "Distribution of Grade A candidates between Science and Social tracks",
+    overallGradeNotice: "Overall Exam Grade (combines all 7 subjects)",
+    allSchoolsExplorer: "High school performance & overall grade mix",
     searchSchoolPlaceholder: "Search high school name…",
     allProvinces: "All provinces / capital",
     sortBy: "Sort by",
-    sortGradeA: "Most Grade A",
-    sortGradeAPercent: "Highest Grade A %",
+    sortGradeA: "Most Overall Grade A",
+    sortGradeAPercent: "Highest Overall Grade A %",
     sortCandidates: "Most candidates",
     sortPassRate: "Highest Pass Rate (A–E)",
     sortName: "School name (A–Z)",
@@ -238,9 +342,9 @@ const copy = {
     colCandidates: "Candidates",
     colFemale: "Female",
     colTrack: "Track mix",
-    colGradeA: "Grade A",
+    colGradeA: "Overall Grade A",
     colPassRate: "Pass rate",
-    colGradeDistribution: "Grade distribution (A–E)",
+    colGradeDistribution: "Overall BacII Grades (A–E)",
     colSubjectDistribution: "Subject grades (A–F)",
     subjectDifficultyTitle: "Subject Difficulty Index",
     subjectDifficultySubtitle: "Comparative ranking of subjects by failure rate (Grade F) vs. Grade A yield",
@@ -249,27 +353,62 @@ const copy = {
     gradeFRate: "Grade F rate",
     gradeAPct: "Grade A rate",
     subjectSelected: "Selected",
+    schoolType: "High School Type",
+    typeAll: "All High Schools",
+    typePublic: "Public High Schools",
+    typePrivate: "Private High Schools",
+    typePublicShort: "Public",
+    typePrivateShort: "Private",
+    compareTitle: "Public vs. Private High Schools Comparison",
+    compareSubtitle: "Comparative breakdown of candidates, Grade A yield, and gender balance between public and private high schools",
+    publicShare: "Public High Schools",
+    privateShare: "Private High Schools",
+    schoolsCountLabel: "schools",
+    candidatesShare: "of candidates",
+    gradeAShare: "of national Grade A",
+    passRateLabel: "Pass rate (A–E)",
+    gradeARateLabel: "Grade A rate",
+    femaleRatioLabel: "Female candidates",
   },
   km: {
     brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរកតាម Facebook", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
     eyebrow: "ផ្ទាំងវិភាគទិន្នន័យបាក់ឌុប", title: "ស្វែងយល់ពីទិន្នន័យនៅពីក្រោយលទ្ធផល",
     intro: "មើលទម្រង់និទ្ទេស ប្រៀបធៀបរាជធានី ខេត្ត និងតាមដាននិន្នាការទូទាំងប្រទេស នៅពេលបន្ថែមទិន្នន័យឆ្នាំថ្មី។",
-    tabOverview: "ទិដ្ឋភាពទូទៅ និងអាគតដ្ឋាន",
+    tabOverview: "ទិដ្ឋភាពទូទៅទូទាំងប្រទេស",
+    tabSchools: "វិភាគតាមអាគតដ្ឋាន",
     tabSubjects: "វិភាគតាមមុខវិជ្ជា",
+    capitalMapTitle: "ផែនទីទីតាំង និងកម្តៅទិន្នន័យ (រាជធានីភ្នំពេញ / ទូទាំងប្រទេស)",
+    capitalMapSubtitle: "ការបែងចែកភូមិសាស្ត្រនៃអាគតដ្ឋានទូទាំង ១៤ ខណ្ឌ នៃរាជធានីភ្នំពេញ និង ២៥ រាជធានី-ខេត្ត",
+    viewPhnomPenh: "រាជធានីភ្នំពេញ (១៤ ខណ្ឌ)",
+    viewProvinces: "ទូទាំងប្រទេស (២៥ រាជធានី-ខេត្ត)",
+    heatmapMetric: "កម្រិតកម្តៅទិន្នន័យ",
+    heatGradeA: "និទ្ទេសរួម A",
+    heatCandidates: "ចំនួនបេក្ខជន",
+    heatScienceRatio: "សមាមាត្រវិទ្យាសាស្ត្រ",
+    heatSchools: "ចំនួនអាគតដ្ឋាន",
+    filterByKhan: "ចម្រាញ់យកអាគតដ្ឋានក្នុងខណ្ឌនេះ",
+    clearKhanFilter: "ខណ្ឌទាំងអស់",
+    allKhans: "ខណ្ឌទាំងអស់",
+    selectKhan: "ជ្រើសរើសខណ្ឌ",
+    scienceTrackShort: "វិទ្យាសាស្ត្រ",
+    socialTrackShort: "សង្គម",
     newBadge: "ថ្មី",
     year: "ឆ្នាំទិន្នន័យ", metric: "ទិន្នន័យសម្រាប់និន្នាការ", candidates: "បេក្ខជនជាប់", centers: "មណ្ឌលប្រឡង", schools: "អាគតដ្ឋាន", pages: "ទំព័រផ្លូវការ", provinces: "រាជធានី និងខេត្ត",
-    nationalSnapshot: "ទិន្នន័យសង្ខេបទូទាំងប្រទេស", gradeMix: "សមាមាត្រនិទ្ទេសទូទាំងប្រទេស", annualTrend: "និន្នាការពីមួយឆ្នាំទៅមួយឆ្នាំ",
+    nationalSnapshot: "ទិន្នន័យសង្ខេបលទ្ធផលទូទាំងប្រទេស", gradeMix: "ការបែងចែកនិទ្ទេសរួមនៃការប្រឡងបាក់ឌុប (A, B, C, D, E)", annualTrend: "និន្នាការពីមួយឆ្នាំទៅមួយឆ្នាំ",
     provinceRanking: "ចំណាត់ថ្នាក់រាជធានី ខេត្ត", rankHelp: "រៀបតាមទិន្នន័យដែលបានជ្រើសរើស សម្រាប់ឆ្នាំដែលបានជ្រើសរើស។",
     schoolAnalysis: "វិភាគតាមអាគតដ្ឋាន",
-    schoolAnalysisSubtitle: "ស្ថិតិបេក្ខជនជាប់ ភេទ និងការបែងចែកនិទ្ទេសតាមអាគតដ្ឋាននីមួយៗ",
-    gradeAChampions: "អាគតដ្ឋានឆ្នើម (និទ្ទេស A ច្រើនបំផុត)",
-    gradeAChampionsHelp: "អាគតដ្ឋានដែលមានបេក្ខជនទទួលបាននិទ្ទេស A ច្រើនជាងគេទូទាំងប្រទេស។",
-    allSchoolsExplorer: "តារាងចំណាត់ថ្នាក់ និងសមាមាត្រនិទ្ទេសតាមអាគតដ្ឋាន",
+    schoolAnalysisSubtitle: "ស្ថិតិបេក្ខជនជាប់ ភេទ និងការបែងចែកនិទ្ទេសរួមតាមអាគតដ្ឋាននីមួយៗ",
+    gradeAChampions: "អាគតដ្ឋានឆ្នើម (និទ្ទេសរួម A ច្រើនបំផុត)",
+    gradeAChampionsHelp: "អាគតដ្ឋានដែលមានបេក្ខជនទទួលបាននិទ្ទេសរួម A ច្រើនជាងគេទូទាំងប្រទេស។",
+    gradeATrackBreakdown: "និទ្ទេសរួម A តាមផ្នែកសិក្សា (វិទ្យាសាស្ត្រ vs សង្គម)",
+    gradeATrackBreakdownSub: "ការបែងចែកបេក្ខជននិទ្ទេសរួម A រវាងថ្នាក់វិទ្យាសាស្ត្រ និងថ្នាក់វិទ្យាសាស្ត្រសង្គម",
+    overallGradeNotice: "និទ្ទេសរួមនៃការប្រឡងបាក់ឌុប (គិតលើពិន្ទុរួមបញ្ចូលគ្នានៃមុខវិជ្ជាទាំង ៧)",
+    allSchoolsExplorer: "តារាងចំណាត់ថ្នាក់ និងសមាមាត្រនិទ្ទេសរួមតាមអាគតដ្ឋាន",
     searchSchoolPlaceholder: "ស្វែងរកឈ្មោះអាគតដ្ឋាន…",
     allProvinces: "រាជធានី ខេត្តទាំងអស់",
     sortBy: "តម្រៀបតាម",
-    sortGradeA: "និទ្ទេស A ច្រើនបំផុត",
-    sortGradeAPercent: "ភាគរយនិទ្ទេស A (%)",
+    sortGradeA: "និទ្ទេសរួម A ច្រើនបំផុត",
+    sortGradeAPercent: "ភាគរយនិទ្ទេសរួម A (%)",
     sortCandidates: "ចំនួនបេក្ខជនជាប់ច្រើនបំផុត",
     sortPassRate: "អត្រាជាប់មុខវិជ្ជាខ្ពស់បំផុត (A–E)",
     sortName: "ឈ្មោះអាគតដ្ឋាន",
@@ -312,9 +451,9 @@ const copy = {
     colCandidates: "បេក្ខជន",
     colFemale: "នារី",
     colTrack: "សមាមាត្រថ្នាក់",
-    colGradeA: "និទ្ទេស A",
+    colGradeA: "និទ្ទេសរួម A",
     colPassRate: "អត្រាជាប់ (A–E)",
-    colGradeDistribution: "សមាមាត្រនិទ្ទេស (A–E)",
+    colGradeDistribution: "និទ្ទេសរួមនៃការប្រឡង (A–E)",
     colSubjectDistribution: "សមាមាត្រនិទ្ទេស (A–F)",
     subjectDifficultyTitle: "សន្ទស្សន៍កម្រិតលំបាកតាមមុខវិជ្ជា",
     subjectDifficultySubtitle: "ការប្រៀបធៀបកម្រិតលំបាកនៃមុខវិជ្ជានីមួយៗ តាមរយៈអត្រានិទ្ទេស F និងនិទ្ទេស A",
@@ -323,6 +462,22 @@ const copy = {
     gradeFRate: "អត្រានិទ្ទេស F",
     gradeAPct: "អត្រានិទ្ទេស A",
     subjectSelected: "បានជ្រើសរើស",
+    schoolType: "ប្រភេទអាគតដ្ឋាន",
+    typeAll: "អាគតដ្ឋានទាំងអស់",
+    typePublic: "អាគតដ្ឋានរដ្ឋ",
+    typePrivate: "អាគតដ្ឋានឯកជន",
+    typePublicShort: "រដ្ឋ",
+    typePrivateShort: "ឯកជន",
+    compareTitle: "ការប្រៀបធៀបរវាងអាគតដ្ឋានរដ្ឋ និងអាគតដ្ឋានឯកជន",
+    compareSubtitle: "ការប្រៀបធៀបសមាមាត្របេក្ខជន និទ្ទេស A និងសមាមាត្រយេនឌ័រ រវាងអាគតដ្ឋានរដ្ឋ និងអាគតដ្ឋានឯកជន",
+    publicShare: "អាគតដ្ឋានរដ្ឋ",
+    privateShare: "អាគតដ្ឋានឯកជន",
+    schoolsCountLabel: "អាគតដ្ឋាន",
+    candidatesShare: "នៃបេក្ខជនសរុប",
+    gradeAShare: "នៃនិទ្ទេស A សរុប",
+    passRateLabel: "អត្រាជាប់ (A–E)",
+    gradeARateLabel: "អត្រានិទ្ទេស A",
+    femaleRatioLabel: "សមាមាត្រនារី",
   },
 } as const;
 
@@ -337,7 +492,10 @@ function initialLanguage(): Language {
 }
 
 function initialTab(): TabMode {
-  return window.location.hash.includes("subjects") ? "subjects" : "overview";
+  if (typeof window === "undefined") return "overview";
+  if (window.location.hash.includes("subjects")) return "subjects";
+  if (window.location.hash.includes("schools")) return "schools";
+  return "overview";
 }
 
 function renderSubjectIcon(key: SubjectKey) {
@@ -362,22 +520,30 @@ function OfficialSchoolImage({
   fallback,
 }: {
   year: string;
-  studentId: number;
+  studentId?: number;
   fallback: string;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  if (imageFailed) {
+  if (!studentId || imageFailed) {
     return <span className="official-school-text">{fallback || "—"}</span>;
   }
 
   return (
-    <span className="official-school-img-wrap">
+    <span className="official-school-img-wrap" title={fallback}>
       <img
-        src={apiUrl(`/api/archive/${year}/students/${studentId}/school-image?v=${SCHOOL_IMAGE_VERSION}`)}
+        src={apiUrl(`/api/archive/${year}/students/${studentId}/school-image?v=${SCHOOL_IMAGE_VERSION}&r=${retryCount}`)}
         alt={fallback || "Official school name"}
+        title={fallback}
         loading="lazy"
-        onError={() => setImageFailed(true)}
+        onError={() => {
+          if (retryCount < 2) {
+            setTimeout(() => setRetryCount((c) => c + 1), 600);
+          } else {
+            setImageFailed(true);
+          }
+        }}
       />
     </span>
   );
@@ -412,6 +578,44 @@ function SchoolStackedGradeBar({
   );
 }
 
+function SchoolTrackSplitBar({
+  science,
+  social,
+  language = "km",
+}: {
+  science: number;
+  social: number;
+  language?: Language;
+}) {
+  const total = science + social;
+  if (total <= 0) return null;
+  const sciPct = Number(((science / total) * 100).toFixed(1));
+  const socPct = Number(((social / total) * 100).toFixed(1));
+
+  return (
+    <div className="school-track-split-bar" title={`Science: ${numberFormat.format(science)} (${sciPct}%), Social: ${numberFormat.format(social)} (${socPct}%)`}>
+      <div className="track-bar-pills">
+        <span className="track-pill-science">
+          <Atom size={12} />
+          <span className="track-pill-label">{language === "km" ? "វិទ្យាសាស្ត្រ" : "Science"}</span>
+          <strong className="track-pill-val">{numberFormat.format(science)}</strong>
+          <small className="track-pill-pct">({sciPct}%)</small>
+        </span>
+        <span className="track-pill-social">
+          <BookOpen size={12} />
+          <span className="track-pill-label">{language === "km" ? "សង្គម" : "Social"}</span>
+          <strong className="track-pill-val">{numberFormat.format(social)}</strong>
+          <small className="track-pill-pct">({socPct}%)</small>
+        </span>
+      </div>
+      <div className="track-ratio-bar">
+        <div className="track-fill-science" style={{ width: `${sciPct}%` }} />
+        <div className="track-fill-social" style={{ width: `${socPct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function SubjectStackedGradeBar({
   grades: g,
   total,
@@ -441,6 +645,27 @@ function SubjectStackedGradeBar({
   );
 }
 
+function getDistrictHeatFill(
+  val: number,
+  min: number,
+  max: number,
+  metricKey: string,
+  isSelected: boolean,
+  isHovered: boolean
+) {
+  if (isSelected) return "#0ea5e9";
+  const ratio = max > min ? Math.max(0, Math.min(1, (val - min) / (max - min))) : 0.35;
+  if (metricKey === "gradeA") {
+    return isHovered ? "rgba(245, 158, 11, 0.95)" : `rgba(245, 158, 11, ${0.2 + ratio * 0.75})`;
+  } else if (metricKey === "candidates") {
+    return isHovered ? "rgba(16, 185, 129, 0.95)" : `rgba(16, 185, 129, ${0.2 + ratio * 0.75})`;
+  } else if (metricKey === "scienceRatio") {
+    return isHovered ? "rgba(6, 182, 212, 0.95)" : `rgba(6, 182, 212, ${0.2 + ratio * 0.75})`;
+  } else {
+    return isHovered ? "rgba(139, 92, 246, 0.95)" : `rgba(139, 92, 246, ${0.2 + ratio * 0.75})`;
+  }
+}
+
 export default function InsightsPage() {
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [language, setLanguage] = useState<Language>(initialLanguage);
@@ -461,8 +686,18 @@ export default function InsightsPage() {
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [schoolProvince, setSchoolProvince] = useState("all");
+  const [schoolKhan, setSchoolKhan] = useState("all");
+  const [schoolTypeFilter, setSchoolTypeFilter] = useState<"all" | "public" | "private">("all");
   const [schoolSort, setSchoolSort] = useState<"gradeA" | "gradeAPercent" | "candidates" | "name">("gradeA");
   const [schoolDisplayLimit, setSchoolDisplayLimit] = useState(25);
+
+  // Capital Heatmap & Map Explorer state
+  const [districts, setDistricts] = useState<PhnomPenhDistrictStats[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [mapViewMode, setMapViewMode] = useState<"phnom-penh" | "provinces">("phnom-penh");
+  const [heatMetric, setHeatMetric] = useState<"gradeA" | "candidates" | "scienceRatio" | "schools">("gradeA");
+  const [selectedKhan, setSelectedKhan] = useState<string | null>(null);
+  const [hoveredKhan, setHoveredKhan] = useState<string | null>(null);
 
   // Subject Analysis state
   const [selectedTrack, setSelectedTrack] = useState<"science" | "social-science">("science");
@@ -472,6 +707,7 @@ export default function InsightsPage() {
   const [loadingSubjectDetail, setLoadingSubjectDetail] = useState(false);
   const [subjectSearch, setSubjectSearch] = useState("");
   const [subjectProvince, setSubjectProvince] = useState("all");
+  const [subjectSchoolTypeFilter, setSubjectSchoolTypeFilter] = useState<"all" | "public" | "private">("all");
   const [subjectSort, setSubjectSort] = useState<"gradeA" | "gradeAPercent" | "candidates" | "passRate" | "name">("gradeA");
   const [subjectDisplayLimit, setSubjectDisplayLimit] = useState(25);
 
@@ -492,6 +728,8 @@ export default function InsightsPage() {
     const handleHash = () => {
       if (window.location.hash.includes("subjects")) {
         setActiveTab("subjects");
+      } else if (window.location.hash.includes("schools")) {
+        setActiveTab("schools");
       } else if (window.location.hash.startsWith("#insights")) {
         setActiveTab("overview");
       }
@@ -537,6 +775,20 @@ export default function InsightsPage() {
       .then((data) => setSchools(data.schools || []))
       .catch(() => setSchools([]))
       .finally(() => setLoadingSchools(false));
+  }, [selectedYear]);
+
+  // Fetch Phnom Penh district stats for selected year
+  useEffect(() => {
+    if (!selectedYear) return;
+    setLoadingDistricts(true);
+    fetch(apiUrl(`/api/archive/${selectedYear}/districts/phnom-penh`))
+      .then(async (res) => {
+        if (!res.ok) throw new Error();
+        return res.json() as Promise<{ districts: PhnomPenhDistrictStats[] }>;
+      })
+      .then((data) => setDistricts(data.districts || []))
+      .catch(() => setDistricts([]))
+      .finally(() => setLoadingDistricts(false));
   }, [selectedYear]);
 
   // Fetch Subject Overviews for selected year
@@ -617,6 +869,16 @@ export default function InsightsPage() {
     })
     .join(", ");
 
+  const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
+  const toggleExpandSchool = (key: string) => {
+    setExpandedSchools((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   const champions = useMemo(() => {
     return [...schools]
       .filter((s) => s.grades.A > 0)
@@ -624,16 +886,63 @@ export default function InsightsPage() {
       .slice(0, 3);
   }, [schools]);
 
+  const publicSchools = useMemo(() => schools.filter((s) => s.schoolType === "public"), [schools]);
+  const privateSchools = useMemo(() => schools.filter((s) => s.schoolType === "private"), [schools]);
+
+  const statsPublic = useMemo(() => {
+    const schoolCount = publicSchools.length;
+    const candidateCount = publicSchools.reduce((acc, s) => acc + s.candidateCount, 0);
+    const femaleCount = publicSchools.reduce((acc, s) => acc + s.femaleCount, 0);
+    const scienceCount = publicSchools.reduce((acc, s) => acc + (s.scienceCount || 0), 0);
+    const socialCount = publicSchools.reduce((acc, s) => acc + (s.socialCount || 0), 0);
+    const gradeA = publicSchools.reduce((acc, s) => acc + s.grades.A, 0);
+    const gradeB = publicSchools.reduce((acc, s) => acc + s.grades.B, 0);
+    const totalPass = publicSchools.reduce((acc, s) => acc + s.grades.A + s.grades.B + s.grades.C + s.grades.D + s.grades.E, 0);
+    const femalePercent = candidateCount > 0 ? (femaleCount / candidateCount) * 100 : 0;
+    const gradeAPct = candidateCount > 0 ? (gradeA / candidateCount) * 100 : 0;
+    const passRate = candidateCount > 0 ? (totalPass / candidateCount) * 100 : 0;
+    return { schoolCount, candidateCount, femaleCount, scienceCount, socialCount, gradeA, gradeB, totalPass, femalePercent, gradeAPct, passRate };
+  }, [publicSchools]);
+
+  const statsPrivate = useMemo(() => {
+    const schoolCount = privateSchools.length;
+    const campusCount = privateSchools.reduce((acc, s) => acc + (s.branchCount || 1), 0);
+    const candidateCount = privateSchools.reduce((acc, s) => acc + s.candidateCount, 0);
+    const femaleCount = privateSchools.reduce((acc, s) => acc + s.femaleCount, 0);
+    const scienceCount = privateSchools.reduce((acc, s) => acc + (s.scienceCount || 0), 0);
+    const socialCount = privateSchools.reduce((acc, s) => acc + (s.socialCount || 0), 0);
+    const gradeA = privateSchools.reduce((acc, s) => acc + s.grades.A, 0);
+    const gradeB = privateSchools.reduce((acc, s) => acc + s.grades.B, 0);
+    const totalPass = privateSchools.reduce((acc, s) => acc + s.grades.A + s.grades.B + s.grades.C + s.grades.D + s.grades.E, 0);
+    const femalePercent = candidateCount > 0 ? (femaleCount / candidateCount) * 100 : 0;
+    const gradeAPct = candidateCount > 0 ? (gradeA / candidateCount) * 100 : 0;
+    const passRate = candidateCount > 0 ? (totalPass / candidateCount) * 100 : 0;
+    return { schoolCount, campusCount, candidateCount, femaleCount, scienceCount, socialCount, gradeA, gradeB, totalPass, femalePercent, gradeAPct, passRate };
+  }, [privateSchools]);
+
   const filteredSchools = useMemo(() => {
     const term = schoolSearch.trim().toLowerCase();
     let list = schools;
     if (schoolProvince !== "all") {
       list = list.filter((s) => s.provinceId === schoolProvince || s.province === schoolProvince);
     }
+    if (schoolKhan !== "all") {
+      list = list.filter((s) => s.khanId === schoolKhan || s.khan === schoolKhan);
+    }
+    if (schoolTypeFilter !== "all") {
+      list = list.filter((s) => s.schoolType === schoolTypeFilter);
+    }
     if (term) {
       list = list.filter((s) => {
         const engProv = provinceEnglish[s.provinceId || s.province]?.toLowerCase() || "";
-        return s.name.toLowerCase().includes(term) || s.province.toLowerCase().includes(term) || engProv.includes(term);
+        const khanName = s.khan?.toLowerCase() || "";
+        return (
+          s.name.toLowerCase().includes(term) ||
+          (s.branch && s.branch.toLowerCase().includes(term)) ||
+          s.province.toLowerCase().includes(term) ||
+          engProv.includes(term) ||
+          khanName.includes(term)
+        );
       });
     }
     return list.slice().sort((a, b) => {
@@ -643,7 +952,68 @@ export default function InsightsPage() {
       if (schoolSort === "name") return a.name.localeCompare(b.name, "km");
       return 0;
     });
-  }, [schools, schoolSearch, schoolProvince, schoolSort]);
+  }, [schools, schoolSearch, schoolProvince, schoolKhan, schoolTypeFilter, schoolSort]);
+
+  // Phnom Penh Khan metric heat calculations
+  const khanValues = useMemo(() => {
+    const map = new Map<string, number>();
+    let min = Infinity;
+    let max = -Infinity;
+    for (const k of phnomPenhSvg.locations) {
+      const d = districts.find((item) => item.id === k.id);
+      let val = 0;
+      if (d) {
+        if (heatMetric === "gradeA") val = d.gradeA;
+        else if (heatMetric === "candidates") val = d.candidateCount;
+        else if (heatMetric === "scienceRatio") {
+          const total = d.scienceCount + d.socialCount;
+          val = total > 0 ? (d.scienceCount / total) * 100 : 0;
+        } else if (heatMetric === "schools") {
+          val = d.publicCount + d.privateCount;
+        }
+      }
+      map.set(k.id, val);
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+    if (min === Infinity) min = 0;
+    if (max === -Infinity || max === min) max = min + 1;
+    return { map, min, max };
+  }, [districts, heatMetric]);
+
+  function formatMetricSubValue(val: number, metric: "gradeA" | "candidates" | "scienceRatio" | "schools") {
+    if (metric === "gradeA") return `${numberFormat.format(val)} A`;
+    if (metric === "candidates") return numberFormat.format(val);
+    if (metric === "scienceRatio") return `${val.toFixed(1)}%`;
+    return `${val}`;
+  }
+
+  // Province metric heat calculations for national map view
+  const provValues = useMemo(() => {
+    const map = new Map<string, number>();
+    let min = Infinity;
+    let max = -Infinity;
+    if (!selected) return { map, min: 0, max: 1 };
+    for (const p of selected.provinces) {
+      let val = 0;
+      if (heatMetric === "gradeA") val = p.grades.A || 0;
+      else if (heatMetric === "candidates") val = p.candidateCount;
+      else if (heatMetric === "scienceRatio") {
+        val = p.candidateCount > 0 ? (p.grades.A / p.candidateCount) * 100 : 0;
+      } else if (heatMetric === "schools") {
+        val = p.schoolCount || 0;
+      }
+      map.set(p.id, val);
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+    if (min === Infinity) min = 0;
+    if (max === -Infinity || max === min) max = min + 1;
+    return { map, min, max };
+  }, [selected, heatMetric]);
+
+  const activeKhanId = hoveredKhan || selectedKhan || "chamkar-mon";
+  const activeKhanStats = districts.find((d) => d.id === activeKhanId) || districts[0];
 
   const visibleSchools = useMemo(() => {
     return filteredSchools.slice(0, schoolDisplayLimit);
@@ -667,10 +1037,18 @@ export default function InsightsPage() {
     if (subjectProvince !== "all") {
       list = list.filter((s) => s.provinceId === subjectProvince || s.province === subjectProvince);
     }
+    if (subjectSchoolTypeFilter !== "all") {
+      list = list.filter((s) => s.schoolType === subjectSchoolTypeFilter);
+    }
     if (term) {
       list = list.filter((s) => {
         const engProv = provinceEnglish[s.provinceId || s.province]?.toLowerCase() || "";
-        return s.name.toLowerCase().includes(term) || s.province.toLowerCase().includes(term) || engProv.includes(term);
+        return (
+          s.name.toLowerCase().includes(term) ||
+          (s.branch && s.branch.toLowerCase().includes(term)) ||
+          s.province.toLowerCase().includes(term) ||
+          engProv.includes(term)
+        );
       });
     }
     return list.slice().sort((a, b) => {
@@ -681,7 +1059,7 @@ export default function InsightsPage() {
       if (subjectSort === "name") return a.name.localeCompare(b.name, "km");
       return 0;
     });
-  }, [subjectDetail, subjectSearch, subjectProvince, subjectSort]);
+  }, [subjectDetail, subjectSearch, subjectProvince, subjectSchoolTypeFilter, subjectSort]);
 
   const visibleSubjectSchools = useMemo(() => {
     return filteredSubjectSchools.slice(0, subjectDisplayLimit);
@@ -785,11 +1163,25 @@ export default function InsightsPage() {
         <button
           type="button"
           role="tab"
+          aria-selected={activeTab === "schools"}
+          className={`tab-pill-btn ${activeTab === "schools" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("schools");
+            window.location.hash = "#insights/schools";
+          }}
+        >
+          <School size={15} />
+          <span>{t.tabSchools}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
           aria-selected={activeTab === "subjects"}
           className={`tab-pill-btn ${activeTab === "subjects" ? "active" : ""}`}
           onClick={() => {
             setActiveTab("subjects");
-            window.location.hash = "#insights-subjects";
+            window.location.hash = "#insights/subjects";
           }}
         >
           <BookOpen size={15} />
@@ -877,6 +1269,58 @@ export default function InsightsPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Overall Grade A Track Breakdown Banner */}
+                  {(() => {
+                    const gradeABrk = selected.gradeTrackBreakdown?.A || { science: 1766, social: 256, total: 2022 };
+                    const scPct = gradeABrk.total > 0 ? ((gradeABrk.science / gradeABrk.total) * 100).toFixed(1) : "87.3";
+                    const soPct = gradeABrk.total > 0 ? ((gradeABrk.social / gradeABrk.total) * 100).toFixed(1) : "12.7";
+                    return (
+                      <div className="grade-a-track-banner">
+                        <div className="grade-a-track-head">
+                          <div className="grade-a-track-title">
+                            <span className="trophy-badge">🏆</span>
+                            <div>
+                              <h4>{t.gradeATrackBreakdown}</h4>
+                              <p>{t.gradeATrackBreakdownSub}</p>
+                            </div>
+                          </div>
+                          <div className="grade-a-total-pill">
+                            <strong>{numberFormat.format(gradeABrk.total)}</strong>
+                            <span>{t.candidatesUnit}</span>
+                          </div>
+                        </div>
+
+                        <div className="grade-a-track-split">
+                          <div className="track-stat science">
+                            <span className="track-dot science-dot" />
+                            <span className="track-name">{t.scienceTrack}</span>
+                            <strong>{numberFormat.format(gradeABrk.science)}</strong>
+                            <small>({scPct}%)</small>
+                          </div>
+                          <div className="track-stat social">
+                            <span className="track-dot social-dot" />
+                            <span className="track-name">{t.socialTrack}</span>
+                            <strong>{numberFormat.format(gradeABrk.social)}</strong>
+                            <small>({soPct}%)</small>
+                          </div>
+                        </div>
+
+                        <div className="grade-a-progress-bar">
+                          <div
+                            className="grade-a-prog-science"
+                            style={{ width: `${scPct}%` }}
+                            title={`${t.scienceTrack}: ${numberFormat.format(gradeABrk.science)} (${scPct}%)`}
+                          />
+                          <div
+                            className="grade-a-prog-social"
+                            style={{ width: `${soPct}%` }}
+                            title={`${t.socialTrack}: ${numberFormat.format(gradeABrk.social)} (${soPct}%)`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </article>
 
                 <article className="insight-card province-ranking-card">
@@ -902,8 +1346,12 @@ export default function InsightsPage() {
                   </div>
                 </article>
               </section>
+            </div>
+          )}
 
-              {/* High School (អាគតដ្ឋាន) Analysis Section */}
+          {/* TAB 2: HIGH SCHOOLS (អាគតដ្ឋាន) */}
+          {activeTab === "schools" && (
+            <div className="tab-pane">
               <section className="school-analysis-section shell" aria-label={t.schoolAnalysis}>
                 <div className="school-section-header">
                   <div className="school-section-title-wrap">
@@ -912,6 +1360,470 @@ export default function InsightsPage() {
                     <p>{t.schoolAnalysisSubtitle}</p>
                   </div>
                 </div>
+
+                {/* Capital Geo-Heatmap Explorer */}
+                <div className="capital-heatmap-container">
+                  <div className="heatmap-header">
+                    <div className="heatmap-header-left">
+                      <MapPin size={22} className="heatmap-map-icon" />
+                      <div>
+                        <h3>{t.capitalMapTitle}</h3>
+                        <p>{t.capitalMapSubtitle}</p>
+                      </div>
+                    </div>
+
+                    <div className="heatmap-controls-row">
+                      {/* Switcher: Phnom Penh (14 Khans) vs Provinces */}
+                      <div className="heatmap-view-switcher" role="group">
+                        <button
+                          type="button"
+                          className={`seg-btn ${mapViewMode === "phnom-penh" ? "active" : ""}`}
+                          onClick={() => setMapViewMode("phnom-penh")}
+                        >
+                          <Building2 size={13} />
+                          <span>{t.viewPhnomPenh}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${mapViewMode === "provinces" ? "active" : ""}`}
+                          onClick={() => setMapViewMode("provinces")}
+                        >
+                          <Compass size={13} />
+                          <span>{t.viewProvinces}</span>
+                        </button>
+                      </div>
+
+                      {/* Heatmap Metric Selector */}
+                      <div className="heatmap-metric-selector">
+                        <span className="metric-label">{t.heatmapMetric}:</span>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "gradeA" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("gradeA")}
+                        >
+                          🏆 {t.heatGradeA}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "candidates" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("candidates")}
+                        >
+                          👥 {t.heatCandidates}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "scienceRatio" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("scienceRatio")}
+                        >
+                          🔬 {t.heatScienceRatio}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "schools" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("schools")}
+                        >
+                          🏫 {t.heatSchools}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="heatmap-content-grid">
+                    <div className="heatmap-svg-wrap">
+                      {mapViewMode === "phnom-penh" ? (
+                        <svg
+                          viewBox={phnomPenhSvg.viewBox}
+                          className="phnom-penh-svg-map"
+                          role="img"
+                          aria-label="Phnom Penh Khans Map"
+                        >
+                          {phnomPenhSvg.locations.map((loc) => {
+                            const val = khanValues.map.get(loc.id) || 0;
+                            const isSelected = selectedKhan === loc.id;
+                            const isHovered = hoveredKhan === loc.id;
+                            const fill = getDistrictHeatFill(val, khanValues.min, khanValues.max, heatMetric, isSelected, isHovered);
+
+                            return (
+                              <g
+                                key={loc.id}
+                                className={`khan-group ${isSelected ? "selected" : ""}`}
+                                onClick={() => setSelectedKhan(selectedKhan === loc.id ? null : loc.id)}
+                                onMouseEnter={() => setHoveredKhan(loc.id)}
+                                onMouseLeave={() => setHoveredKhan(null)}
+                              >
+                                <path
+                                  id={`khan-path-${loc.id}`}
+                                  d={loc.path}
+                                  className={`khan-polygon ${isSelected ? "selected" : ""}`}
+                                  style={{ fill }}
+                                >
+                                  <title>{`${language === "km" ? loc.nameKm : loc.nameEn}: ${numberFormat.format(val)}`}</title>
+                                </path>
+                                <text
+                                  x={loc.center[0]}
+                                  y={loc.center[1] - 4}
+                                  textAnchor="middle"
+                                  className="khan-label"
+                                >
+                                  {language === "km" ? loc.nameKm : loc.nameEn}
+                                </text>
+                                <text
+                                  x={loc.center[0]}
+                                  y={loc.center[1] + 9}
+                                  textAnchor="middle"
+                                  className="khan-val-sub"
+                                >
+                                  {formatMetricSubValue(val, heatMetric)}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox={cambodia.viewBox}
+                          className="cambodia-svg-map"
+                          role="img"
+                          aria-label="Cambodia Provinces Map"
+                        >
+                          {cambodia.locations.map((loc: any) => {
+                            const val = provValues.map.get(loc.id) || 0;
+                            const isSelected = schoolProvince === loc.id;
+                            const isHovered = hoveredKhan === loc.id;
+                            const fill = getDistrictHeatFill(val, provValues.min, provValues.max, heatMetric, isSelected, isHovered);
+
+                            return (
+                              <path
+                                key={loc.id}
+                                id={loc.id}
+                                d={loc.path}
+                                className={`province-path ${isSelected ? "selected" : ""}`}
+                                style={{ fill }}
+                                onClick={() => {
+                                  setSchoolProvince(schoolProvince === loc.id ? "all" : loc.id);
+                                  if (loc.id !== "phnom-penh") setSchoolKhan("all");
+                                }}
+                                onMouseEnter={() => setHoveredKhan(loc.id)}
+                                onMouseLeave={() => setHoveredKhan(null)}
+                              >
+                                <title>
+                                  {`${loc.name}: ${numberFormat.format(val)} (${heatMetric})`}
+                                </title>
+                              </path>
+                            );
+                          })}
+                        </svg>
+                      )}
+                      <div className="map-legend">
+                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.min : provValues.min)}</span>
+                        <i />
+                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.max : provValues.max)}</span>
+                      </div>
+                    </div>
+
+                    {/* Sidebar Pane for active Khan or Province */}
+                    <div className="heatmap-sidebar-pane">
+                      {mapViewMode === "phnom-penh" ? (
+                        <div className="khan-info-card">
+                          <div className="khan-info-head">
+                            <div className="khan-info-head-text">
+                              <h4>{language === "km" ? activeKhanStats?.nameKm || "ខណ្ឌ" : activeKhanStats?.nameEn || "Khan"}</h4>
+                              <span>{language === "km" ? activeKhanStats?.nameEn : activeKhanStats?.nameKm}</span>
+                            </div>
+                            <span className="khan-badge">
+                              {activeKhanStats?.schoolsCount || 0} {t.schools}
+                            </span>
+                          </div>
+
+                          <div className="khan-kpi-grid">
+                            <div className="khan-kpi-item">
+                              <span>{t.candidates}</span>
+                              <strong>{numberFormat.format(activeKhanStats?.candidateCount || 0)}</strong>
+                              <small>♀ {activeKhanStats?.femalePercent?.toFixed(1) || 0}% {t.femalePercent}</small>
+                            </div>
+                            <div className="khan-kpi-item">
+                              <span>{t.colGradeA}</span>
+                              <strong style={{ color: "#d97706" }}>{numberFormat.format(activeKhanStats?.gradeA || 0)}</strong>
+                              <small>{activeKhanStats?.gradeAPercent?.toFixed(1) || 0}% {t.gradeARateLabel}</small>
+                              {activeKhanStats && activeKhanStats.gradeA > 0 && (
+                                <div className="khan-grade-a-sub">
+                                  <span className="sc-sub">⚛ {numberFormat.format(activeKhanStats.gradeAScience || 0)}</span>
+                                  <span className="divider">·</span>
+                                  <span className="so-sub">📖 {numberFormat.format(activeKhanStats.gradeASocial || 0)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Science vs Social Track Bar for District */}
+                          {activeKhanStats && (activeKhanStats.scienceCount > 0 || activeKhanStats.socialCount > 0) && (
+                            <SchoolTrackSplitBar
+                              science={activeKhanStats.scienceCount}
+                              social={activeKhanStats.socialCount}
+                              language={language}
+                            />
+                          )}
+
+                          {/* Top High Schools in this Khan */}
+                          {activeKhanStats?.topSchools && activeKhanStats.topSchools.length > 0 && (
+                            <div className="khan-top-schools-box">
+                              <span className="box-title">{t.gradeAChampions}</span>
+                              <div className="khan-top-schools-list">
+                                {activeKhanStats.topSchools.map((sch, i) => (
+                                  <div key={i} className="khan-top-school-row">
+                                    <div className="khan-school-left">
+                                      <OfficialSchoolImage
+                                        year={selected.year}
+                                        studentId={sch.sampleStudentId}
+                                        fallback={sch.name}
+                                      />
+                                      {sch.branch && (
+                                        <span className="school-branch-badge" style={{ fontSize: 10, padding: "1px 5px" }}>
+                                          {sch.branch}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                                      <span className="khan-school-a-badge">
+                                        {sch.gradeA} A
+                                      </span>
+                                      {sch.gradeA > 0 && (sch.gradeAScience !== undefined || sch.gradeASocial !== undefined) && (
+                                        <span style={{ fontSize: 9.5, color: "var(--muted)", fontWeight: 600 }}>
+                                          {sch.gradeAScience || 0} Sci · {sch.gradeASocial || 0} Soc
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            className={`khan-filter-btn ${schoolKhan === activeKhanId ? "active" : ""}`}
+                            onClick={() => {
+                              if (schoolKhan === activeKhanId) {
+                                setSchoolKhan("all");
+                              } else {
+                                setSchoolKhan(activeKhanId);
+                                setSchoolProvince("phnom-penh");
+                              }
+                            }}
+                          >
+                            {schoolKhan === activeKhanId ? (
+                              <>✓ {t.clearKhanFilter}</>
+                            ) : (
+                              <>🔍 {t.filterByKhan} ({language === "km" ? activeKhanStats?.nameKm : activeKhanStats?.nameEn})</>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        (() => {
+                          const selectedProvItem = schoolProvince !== "all" ? selected.provinces.find((p) => p.id === schoolProvince) : null;
+                          return (
+                            <div className="khan-info-card">
+                              <div className="khan-info-head">
+                                <div className="khan-info-head-text">
+                                  <h4>{selectedProvItem ? (language === "km" ? selectedProvItem.name : provinceEnglish[selectedProvItem.id] || selectedProvItem.name) : t.viewProvinces}</h4>
+                                  <span>{selectedProvItem ? `${numberFormat.format(selectedProvItem.candidateCount)} ${t.candidates}` : `${selected.provinceCount} ${t.provinces}`}</span>
+                                </div>
+                                {selectedProvItem && (
+                                  <span className="khan-badge">
+                                    {selectedProvItem.schoolCount} {t.schools}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="khan-kpi-grid">
+                                <div className="khan-kpi-item">
+                                  <span>{t.candidates}</span>
+                                  <strong>{numberFormat.format(selectedProvItem ? selectedProvItem.candidateCount : selected.candidateCount)}</strong>
+                                  <small>{selectedProvItem ? `${selectedProvItem.centerCount} ${t.centers}` : `${selected.centerCount} ${t.centers}`}</small>
+                                </div>
+                                <div className="khan-kpi-item">
+                                  <span>{t.colGradeA}</span>
+                                  <strong style={{ color: "#d97706" }}>
+                                    {numberFormat.format(selectedProvItem ? (selectedProvItem.gradeA || selectedProvItem.grades.A) : (selected.grades.find(g => g.grade === 'A')?.count || 2022))}
+                                  </strong>
+                                  {selectedProvItem && selectedProvItem.gradeA > 0 && (
+                                    <div className="khan-grade-a-sub">
+                                      <span className="sc-sub">⚛ {numberFormat.format(selectedProvItem.gradeAScience || 0)}</span>
+                                      <span className="divider">·</span>
+                                      <span className="so-sub">📖 {numberFormat.format(selectedProvItem.gradeASocial || 0)}</span>
+                                    </div>
+                                  )}
+                                  {!selectedProvItem && (
+                                    <small>{selected.candidateCount > 0 ? (((selected.grades.find(g => g.grade === 'A')?.count || 2022) / selected.candidateCount) * 100).toFixed(2) : 0}% {t.gradeARateLabel}</small>
+                                  )}
+                                </div>
+                              </div>
+
+                              {selectedProvItem && (selectedProvItem.scienceCount > 0 || selectedProvItem.socialScienceCount > 0) && (
+                                <SchoolTrackSplitBar
+                                  science={selectedProvItem.scienceCount}
+                                  social={selectedProvItem.socialScienceCount}
+                                  language={language}
+                                />
+                              )}
+
+                              <p style={{ fontSize: 12, color: "var(--muted)", margin: "8px 0" }}>
+                                {language === "km"
+                                  ? (selectedProvItem ? "ចុចលើខេត្តដទៃទៀត ឬប្ដូរទៅរាជធានីភ្នំពេញដើម្បីវិភាគលម្អិត" : "ចុចលើខេត្តណាមួយលើផែនទីដើម្បីចម្រាញ់យកអាគតដ្ឋានក្នុងខេត្តនោះ")
+                                  : (selectedProvItem ? "Click another province or switch to Phnom Penh for district analytics." : "Click any province on the map to filter schools to that province.")}
+                              </p>
+
+                              {schoolProvince !== "all" && (
+                                <button
+                                  type="button"
+                                  className="khan-filter-btn active"
+                                  onClick={() => setSchoolProvince("all")}
+                                >
+                                  ✓ {t.allProvinces}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Public vs Private High School Comparison Section */}
+                {schools.length > 0 && (
+                  <div className="public-private-compare-container">
+                    <div className="compare-header">
+                      <div className="compare-header-left">
+                        <Scale size={20} className="compare-scale-icon" />
+                        <div>
+                          <h3>{t.compareTitle}</h3>
+                          <p>{t.compareSubtitle}</p>
+                        </div>
+                      </div>
+
+                      <div className="school-type-filter-segmented" role="group" aria-label={t.schoolType}>
+                        <button
+                          type="button"
+                          className={`seg-btn ${schoolTypeFilter === "all" ? "active" : ""}`}
+                          onClick={() => setSchoolTypeFilter("all")}
+                        >
+                          <span>{t.typeAll}</span>
+                          <span className="seg-badge">{numberFormat.format(schools.length)}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn public ${schoolTypeFilter === "public" ? "active" : ""}`}
+                          onClick={() => setSchoolTypeFilter("public")}
+                        >
+                          <span>🏛️ {t.typePublic}</span>
+                          <span className="seg-badge">{numberFormat.format(statsPublic.schoolCount)}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn private ${schoolTypeFilter === "private" ? "active" : ""}`}
+                          onClick={() => setSchoolTypeFilter("private")}
+                        >
+                          <span>⭐ {t.typePrivate}</span>
+                          <span className="seg-badge">{numberFormat.format(statsPrivate.schoolCount)}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="public-private-cards-grid">
+                      {/* Public High Schools Card */}
+                      <div
+                        className={`compare-card public ${schoolTypeFilter === "public" ? "active-selected" : ""}`}
+                        onClick={() => setSchoolTypeFilter(schoolTypeFilter === "public" ? "all" : "public")}
+                        role="button"
+                        tabIndex={0}
+                        title={language === "km" ? "ចុចដើម្បីចម្រាញ់យកតែអាគតដ្ឋានរដ្ឋ" : "Click to filter to public schools"}
+                      >
+                        <div className="compare-card-top">
+                          <span className="school-type-badge public">
+                            🏛️ {t.publicShare}
+                          </span>
+                          <span className="compare-school-count">
+                            {numberFormat.format(statsPublic.schoolCount)} {t.schoolsCountLabel}
+                          </span>
+                        </div>
+
+                        <div className="compare-metric-row">
+                          <div className="compare-metric-item">
+                            <span>{t.candidates}</span>
+                            <strong>{numberFormat.format(statsPublic.candidateCount)}</strong>
+                            <small>{((statsPublic.candidateCount / Math.max(1, selected.candidateCount)) * 100).toFixed(1)}% {t.candidatesShare}</small>
+                          </div>
+                          <div className="compare-metric-item">
+                            <span>{t.colGradeA}</span>
+                            <strong style={{ color: "#d97706" }}>{numberFormat.format(statsPublic.gradeA)}</strong>
+                            <small>{statsPublic.gradeAPct.toFixed(2)}% {t.gradeARateLabel}</small>
+                          </div>
+                          <div className="compare-metric-item">
+                            <span>{t.femalePercent}</span>
+                            <strong style={{ color: "#db2777" }}>♀ {statsPublic.femalePercent.toFixed(1)}%</strong>
+                            <small>{numberFormat.format(statsPublic.femaleCount)} {t.candidatesUnit}</small>
+                          </div>
+                        </div>
+
+                        <div className="compare-ratio-bar" title={`Public Share: ${((statsPublic.candidateCount / Math.max(1, selected.candidateCount)) * 100).toFixed(1)}%`}>
+                          <div
+                            className="compare-ratio-fill public"
+                            style={{ width: `${(statsPublic.candidateCount / Math.max(1, selected.candidateCount)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Private High Schools Card */}
+                      <div
+                        className={`compare-card private ${schoolTypeFilter === "private" ? "active-selected" : ""}`}
+                        onClick={() => setSchoolTypeFilter(schoolTypeFilter === "private" ? "all" : "private")}
+                        role="button"
+                        tabIndex={0}
+                        title={language === "km" ? "ចុចដើម្បីចម្រាញ់យកតែអាគតដ្ឋានឯកជន" : "Click to filter to private schools"}
+                      >
+                        <div className="compare-card-top">
+                          <span className="school-type-badge private">
+                            ⭐ {t.privateShare}
+                          </span>
+                          <span className="compare-school-count">
+                            {numberFormat.format(statsPrivate.schoolCount)} {language === "km" ? "គ្រឹះស្ថាន" : "Networks"}
+                            {statsPrivate.campusCount > statsPrivate.schoolCount && (
+                              <small style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500, marginLeft: 4 }}>
+                                ({numberFormat.format(statsPrivate.campusCount)} {language === "km" ? "សាខា" : "Campuses"})
+                              </small>
+                            )}
+                          </span>
+                        </div>
+
+                        <div className="compare-metric-row">
+                          <div className="compare-metric-item">
+                            <span>{t.candidates}</span>
+                            <strong>{numberFormat.format(statsPrivate.candidateCount)}</strong>
+                            <small>{((statsPrivate.candidateCount / Math.max(1, selected.candidateCount)) * 100).toFixed(1)}% {t.candidatesShare}</small>
+                          </div>
+                          <div className="compare-metric-item">
+                            <span>{t.colGradeA}</span>
+                            <strong style={{ color: "#d97706" }}>{numberFormat.format(statsPrivate.gradeA)}</strong>
+                            <small>{statsPrivate.gradeAPct.toFixed(2)}% {t.gradeARateLabel}</small>
+                          </div>
+                          <div className="compare-metric-item">
+                            <span>{t.femalePercent}</span>
+                            <strong style={{ color: "#db2777" }}>♀ {statsPrivate.femalePercent.toFixed(1)}%</strong>
+                            <small>{numberFormat.format(statsPrivate.femaleCount)} {t.candidatesUnit}</small>
+                          </div>
+                        </div>
+
+                        <div className="compare-ratio-bar" title={`Private Share: ${((statsPrivate.candidateCount / Math.max(1, selected.candidateCount)) * 100).toFixed(1)}%`}>
+                          <div
+                            className="compare-ratio-fill private"
+                            style={{ width: `${(statsPrivate.candidateCount / Math.max(1, selected.candidateCount)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Champions Showcase (Top 3 Grade A Schools) */}
                 {champions.length > 0 && (
@@ -952,12 +1864,25 @@ export default function InsightsPage() {
                               : provinceEnglish[champion.provinceId || champion.province] || champion.province;
 
                           return (
-                            <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
+                            <article key={`${champion.province}-${champion.name}-${champion.branch || ""}`} className={`school-champion-card medal-${medalClass}`}>
                               <div className="champion-card-top">
                                 <span className={`champion-rank-badge rank-${idx + 1}`}>
                                   <Award size={14} />
                                   #{idx + 1}
                                 </span>
+                                <span className={`school-type-badge ${champion.schoolType || "public"}`}>
+                                  {champion.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                  {champion.schoolType === "private" ? (language === "km" ? t.typePrivateShort : "Private") : (language === "km" ? t.typePublicShort : "Public")}
+                                </span>
+                                {champion.branchCount && champion.branchCount > 1 ? (
+                                  <span className="school-branch-badge multi-branch">
+                                    <Building2 size={11} /> {language === "km" ? `${champion.branchCount} សាខា` : `${champion.branchCount} branches`}
+                                  </span>
+                                ) : champion.branch ? (
+                                  <span className="school-branch-badge">
+                                    <Building2 size={11} /> {champion.branch}
+                                  </span>
+                                ) : null}
                                 <span className="province-chip">
                                   <MapPin size={11} /> {provLabel}
                                 </span>
@@ -974,15 +1899,21 @@ export default function InsightsPage() {
                               <div className="champion-stat-hero">
                                 <div className="champion-stat-main">
                                   <strong>{numberFormat.format(champion.grades.A)}</strong>
-                                  <span>{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
+                                  <span>{language === "km" ? "និទ្ទេសរួម A" : "Overall Grade A"}</span>
                                 </div>
                                 <div className="champion-stat-sub">
                                   <b>{champion.gradeAPercent.toFixed(1)}%</b>
                                   <small>{language === "km" ? "នៃបេក្ខជនសរុប" : "of candidates"}</small>
+                                  {champion.grades.A > 0 && (champion.gradeAScience !== undefined || champion.gradeASocial !== undefined) && (
+                                    <span style={{ fontSize: 9.5, color: "var(--muted)", fontWeight: 700, marginTop: 2, display: "block" }}>
+                                      ⚛ {champion.gradeAScience || 0} Sci · 📖 {champion.gradeASocial || 0} Soc
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
                               <SchoolStackedGradeBar grades={champion.grades} total={champion.candidateCount} />
+                              <SchoolTrackSplitBar science={champion.scienceCount} social={champion.socialCount} language={language} />
 
                               <div className="champion-footer-stats">
                                 <span>{numberFormat.format(champion.candidateCount)} {t.candidatesUnit}</span>
@@ -1019,13 +1950,48 @@ export default function InsightsPage() {
                   <div className="school-filter-selects">
                     <label className="school-filter-item">
                       <select
+                        value={schoolTypeFilter}
+                        onChange={(e) => setSchoolTypeFilter(e.target.value as any)}
+                      >
+                        <option value="all">{t.typeAll}</option>
+                        <option value="public">🏛️ {t.typePublic} ({numberFormat.format(statsPublic.schoolCount)})</option>
+                        <option value="private">⭐ {t.typePrivate} ({numberFormat.format(statsPrivate.schoolCount)})</option>
+                      </select>
+                    </label>
+
+                    <label className="school-filter-item">
+                      <select
                         value={schoolProvince}
-                        onChange={(e) => setSchoolProvince(e.target.value)}
+                        onChange={(e) => {
+                          setSchoolProvince(e.target.value);
+                          if (e.target.value !== "phnom-penh" && e.target.value !== "all") {
+                            setSchoolKhan("all");
+                          }
+                        }}
                       >
                         <option value="all">{t.allProvinces}</option>
                         {selected.provinces.map((p) => (
                           <option key={p.id} value={p.id}>
                             {language === "km" ? p.name : provinceEnglish[p.id] || p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="school-filter-item">
+                      <select
+                        value={schoolKhan}
+                        onChange={(e) => {
+                          setSchoolKhan(e.target.value);
+                          if (e.target.value !== "all") {
+                            setSchoolProvince("phnom-penh");
+                          }
+                        }}
+                      >
+                        <option value="all">{t.allKhans}</option>
+                        {districts.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {language === "km" ? d.nameKm : d.nameEn}
                           </option>
                         ))}
                       </select>
@@ -1090,6 +2056,7 @@ export default function InsightsPage() {
                           <th className="th-province">{t.colProvince}</th>
                           <th className="th-num">{t.colCandidates}</th>
                           <th className="th-female">{t.colFemale}</th>
+                          <th className="th-track">{t.colTrack}</th>
                           <th className="th-grade-a">{t.colGradeA}</th>
                           <th className="th-bar">{t.colGradeDistribution}</th>
                         </tr>
@@ -1107,38 +2074,181 @@ export default function InsightsPage() {
                             language === "km"
                               ? provObj?.name || school.province
                               : provinceEnglish[school.provinceId || school.province] || school.province;
+                          const schoolKey = `${school.provinceId || school.province}-${school.name}-${school.branch || ""}`;
+                          const isExpanded = expandedSchools.has(schoolKey);
+                          const hasBranches = Boolean(school.branches && school.branches.length > 1);
 
                           return (
-                            <tr key={`${school.province}-${school.name}`}>
-                              <td className="td-rank">#{index + 1}</td>
-                              <td className="td-school">
-                                <div className="table-school-cell">
-                                  <OfficialSchoolImage
-                                    year={selected.year}
-                                    studentId={school.sampleStudentId}
-                                    fallback={school.name}
-                                  />
-                                </div>
-                              </td>
-                              <td className="td-province">
-                                <span className="table-prov-chip">{provLabel}</span>
-                              </td>
-                              <td className="td-num">
-                                <strong>{numberFormat.format(school.candidateCount)}</strong>
-                              </td>
-                              <td className="td-female">
-                                <span className="female-rate-badge">♀ {femalePct}%</span>
-                              </td>
-                              <td className="td-grade-a">
-                                <span className={`grade-a-badge ${school.grades.A > 0 ? "has-a" : "zero-a"}`}>
-                                  <strong>{numberFormat.format(school.grades.A)}</strong>
-                                  <small>({school.gradeAPercent.toFixed(1)}%)</small>
-                                </span>
-                              </td>
-                              <td className="td-bar">
-                                <SchoolStackedGradeBar grades={school.grades} total={school.candidateCount} />
-                              </td>
-                            </tr>
+                            <Fragment key={schoolKey}>
+                              <tr>
+                                <td className="td-rank">#{index + 1}</td>
+                                <td className="td-school">
+                                  <div className="table-school-cell">
+                                    <OfficialSchoolImage
+                                      year={selected.year}
+                                      studentId={school.sampleStudentId}
+                                      fallback={school.name}
+                                    />
+                                    <div className="table-school-badges-row">
+                                      <span className={`school-type-badge ${school.schoolType || "public"}`}>
+                                        {school.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                        {school.schoolType === "private" ? (language === "km" ? t.typePrivateShort : "Private") : (language === "km" ? t.typePublicShort : "Public")}
+                                      </span>
+                                      {hasBranches ? (
+                                        <button
+                                          type="button"
+                                          className={`branch-expand-pill-btn ${isExpanded ? "expanded" : ""}`}
+                                          onClick={() => toggleExpandSchool(schoolKey)}
+                                          title={language === "km" ? "ចុចដើម្បីមើល ឬបិទបញ្ជីសាខា" : "Click to view or collapse branches"}
+                                        >
+                                          <Building2 size={11} />
+                                          <span>{language === "km" ? `${school.branches!.length} សាខា` : `${school.branches!.length} branches`}</span>
+                                          {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                        </button>
+                                      ) : school.branch ? (
+                                        <span className="school-branch-badge">
+                                          <Building2 size={11} /> {school.branch}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="td-province">
+                                  <span className="table-prov-chip">{provLabel}</span>
+                                </td>
+                                <td className="td-num">
+                                  <strong>{numberFormat.format(school.candidateCount)}</strong>
+                                </td>
+                                <td className="td-female">
+                                  <span className="female-rate-badge">♀ {femalePct}%</span>
+                                </td>
+                                <td className="td-track">
+                                  <div className="table-track-cell">
+                                    <div className="table-track-pills">
+                                      <span className="table-track-sci"><Atom size={10} /> {numberFormat.format(school.scienceCount)}</span>
+                                      <span className="table-track-soc"><BookOpen size={10} /> {numberFormat.format(school.socialCount)}</span>
+                                    </div>
+                                    <div className="track-ratio-bar table-ratio-bar">
+                                      <div
+                                        className="track-fill-science"
+                                        style={{ width: `${school.candidateCount > 0 ? (school.scienceCount / school.candidateCount) * 100 : 50}%` }}
+                                      />
+                                      <div
+                                        className="track-fill-social"
+                                        style={{ width: `${school.candidateCount > 0 ? (school.socialCount / school.candidateCount) * 100 : 50}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="td-grade-a">
+                                  <span className={`grade-a-badge ${school.grades.A > 0 ? "has-a" : "zero-a"}`}>
+                                    <strong>{numberFormat.format(school.grades.A)}</strong>
+                                    <small>({school.gradeAPercent.toFixed(1)}%)</small>
+                                    {school.grades.A > 0 && (school.gradeAScience !== undefined || school.gradeASocial !== undefined) && (
+                                      <span style={{ fontSize: 9, color: "var(--muted)", display: "block", marginTop: 1 }}>
+                                        ⚛ {school.gradeAScience || 0} Sci · 📖 {school.gradeASocial || 0} Soc
+                                      </span>
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="td-bar">
+                                  <SchoolStackedGradeBar grades={school.grades} total={school.candidateCount} />
+                                </td>
+                              </tr>
+
+                              {isExpanded && hasBranches && (
+                                <tr className="school-branches-tr">
+                                  <td colSpan={8}>
+                                    <div className="school-branches-drawer">
+                                      <div className="branches-drawer-header">
+                                        <div className="drawer-title">
+                                          <Building2 size={15} />
+                                          <span>
+                                            {language === "km"
+                                              ? `បញ្ជីសាខាទាំង ${school.branches!.length} របស់ ${school.name}`
+                                              : `All ${school.branches!.length} branches of ${school.name}`}
+                                          </span>
+                                        </div>
+                                        <span className="drawer-sub">
+                                          {language === "km"
+                                            ? `សរុប ${numberFormat.format(school.candidateCount)} នាក់ · និទ្ទេសរួម A: ${numberFormat.format(school.gradeA || 0)} នាក់`
+                                            : `Total ${numberFormat.format(school.candidateCount)} candidates · Grade A: ${numberFormat.format(school.gradeA || 0)}`}
+                                        </span>
+                                      </div>
+
+                                      <div className="branches-sub-table-wrapper">
+                                        <table className="branches-sub-table">
+                                          <thead>
+                                            <tr>
+                                              <th>#</th>
+                                              <th>{language === "km" ? "សាខា (អាគតដ្ឋាន)" : "Branch Campus"}</th>
+                                              <th>{language === "km" ? "ទីតាំង" : "Location"}</th>
+                                              <th>{t.colCandidates}</th>
+                                              <th>{t.colTrack}</th>
+                                              <th>{t.colGradeA}</th>
+                                              <th>{t.colPassRate}</th>
+                                              <th>{t.colGradeDistribution}</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {school.branches!.map((br, bIdx) => (
+                                              <tr key={bIdx} className="branch-inner-row">
+                                                <td className="td-rank">#{bIdx + 1}</td>
+                                                <td>
+                                                  <div className="branch-name-item">
+                                                    <OfficialSchoolImage
+                                                      year={selected.year}
+                                                      studentId={br.sampleStudentId}
+                                                      fallback={br.branch || br.name}
+                                                    />
+                                                    {br.branch && (
+                                                      <span className="school-branch-badge highlight">
+                                                        <Building2 size={10} /> {br.branch}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </td>
+                                                <td>
+                                                  <span className="province-chip">
+                                                    <MapPin size={10} /> {br.khan ? `${br.khan}, ` : ""}{br.province}
+                                                  </span>
+                                                </td>
+                                                <td className="td-cand">
+                                                  <strong>{numberFormat.format(br.candidateCount)}</strong>
+                                                </td>
+                                                <td>
+                                                  <div className="table-track-pills">
+                                                    <span className="table-track-sci"><Atom size={9} /> {numberFormat.format(br.scienceCount || 0)}</span>
+                                                    <span className="table-track-soc"><BookOpen size={9} /> {numberFormat.format(br.socialCount || 0)}</span>
+                                                  </div>
+                                                </td>
+                                                <td className="td-grade-a">
+                                                  <span className={`grade-a-badge ${br.gradeA > 0 ? "has-a" : "zero-a"}`}>
+                                                    <strong>{numberFormat.format(br.gradeA)}</strong>
+                                                    <small> ({br.gradeAPercent.toFixed(1)}%)</small>
+                                                    {br.gradeA > 0 && (
+                                                      <span style={{ fontSize: 9, color: "var(--muted)", display: "block" }}>
+                                                        ⚛ {br.gradeAScience || 0} · 📖 {br.gradeASocial || 0}
+                                                      </span>
+                                                    )}
+                                                  </span>
+                                                </td>
+                                                <td className="td-pass-rate">
+                                                  <span className="pass-pill">{br.passRate}%</span>
+                                                </td>
+                                                <td>
+                                                  <SchoolStackedGradeBar grades={br.grades} total={br.candidateCount} />
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
                           );
                         })}
                       </tbody>
@@ -1158,9 +2268,12 @@ export default function InsightsPage() {
                         language === "km"
                           ? provObj?.name || school.province
                           : provinceEnglish[school.provinceId || school.province] || school.province;
+                      const schoolKey = `${school.provinceId || school.province}-${school.name}-${school.branch || ""}`;
+                      const isExpanded = expandedSchools.has(schoolKey);
+                      const hasBranches = Boolean(school.branches && school.branches.length > 1);
 
                       return (
-                        <article key={`${school.province}-${school.name}`} className="school-row-card">
+                        <article key={schoolKey} className="school-row-card">
                           <div className="school-row-left">
                             <span className="school-rank-num">{String(index + 1).padStart(2, "0")}</span>
                             <div className="school-row-details">
@@ -1172,18 +2285,82 @@ export default function InsightsPage() {
                                 />
                               </div>
                               <div className="school-tags-row">
+                                <span className={`school-type-badge ${school.schoolType || "public"}`}>
+                                  {school.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                  {school.schoolType === "private" ? (language === "km" ? t.typePrivate : "Private") : (language === "km" ? t.typePublic : "Public")}
+                                </span>
+                                {hasBranches ? (
+                                  <span className="school-branch-badge multi-branch">
+                                    <Building2 size={11} /> {language === "km" ? `${school.branches!.length} សាខា` : `${school.branches!.length} branches`}
+                                  </span>
+                                ) : school.branch ? (
+                                  <span className="school-branch-badge">
+                                    <Building2 size={11} /> {school.branch}
+                                  </span>
+                                ) : null}
                                 <span className="province-chip">
                                   <MapPin size={11} /> {provLabel}
                                 </span>
                                 <span className="tag-chip gender-tag">
                                   ♀ {femalePct}% {t.femalePercent}
                                 </span>
-                                {(school.scienceCount > 0 || school.socialCount > 0) && (
-                                  <span className="tag-chip track-tag">
-                                    {t.scienceTrack}: {numberFormat.format(school.scienceCount)} · {t.socialTrack}: {numberFormat.format(school.socialCount)}
-                                  </span>
-                                )}
                               </div>
+                              <SchoolTrackSplitBar
+                                science={school.scienceCount}
+                                social={school.socialCount}
+                                language={language}
+                              />
+
+                              {hasBranches && (
+                                <div className="card-branch-expand-row">
+                                  <button
+                                    type="button"
+                                    className={`card-branch-toggle-btn ${isExpanded ? "expanded" : ""}`}
+                                    onClick={() => toggleExpandSchool(schoolKey)}
+                                  >
+                                    <Building2 size={13} />
+                                    <span>
+                                      {isExpanded
+                                        ? (language === "km" ? `បង្រួមសាខា (${school.branches!.length})` : `Collapse branches (${school.branches!.length})`)
+                                        : (language === "km" ? `មើលសាខាទាំង ${school.branches!.length}` : `View all ${school.branches!.length} branches`)}
+                                    </span>
+                                    {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                  </button>
+                                </div>
+                              )}
+
+                              {isExpanded && hasBranches && (
+                                <div className="card-branches-drawer">
+                                  {school.branches!.map((br, bIdx) => (
+                                    <div key={bIdx} className="card-branch-item">
+                                      <div className="branch-left">
+                                        <OfficialSchoolImage
+                                          year={selected.year}
+                                          studentId={br.sampleStudentId}
+                                          fallback={br.branch || br.name}
+                                        />
+                                        {br.branch && (
+                                          <span className="school-branch-badge highlight">
+                                            <Building2 size={10} /> {br.branch}
+                                          </span>
+                                        )}
+                                        <span className="province-chip">
+                                          <MapPin size={10} /> {br.khan ? `${br.khan}, ` : ""}{br.province}
+                                        </span>
+                                      </div>
+                                      <div className="branch-right">
+                                        <span className="branch-metric-cand">
+                                          <strong>{numberFormat.format(br.candidateCount)}</strong> {t.candidatesUnit}
+                                        </span>
+                                        <span className={`grade-a-badge ${br.gradeA > 0 ? "has-a" : "zero-a"}`}>
+                                          <strong>{numberFormat.format(br.gradeA)} A</strong>
+                                        </span>
+                                        <span className="pass-pill">{br.passRate}%</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -1194,11 +2371,16 @@ export default function InsightsPage() {
                                 <strong>{numberFormat.format(school.candidateCount)}</strong>
                               </div>
                               <div className="school-metric-box grade-a-metric">
-                                <span className="metric-label">{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
+                                <span className="metric-label">{language === "km" ? "និទ្ទេសរួម A" : "Overall Grade A"}</span>
                                 <strong>
                                   {numberFormat.format(school.grades.A)}
                                   <small> ({school.gradeAPercent.toFixed(1)}%)</small>
                                 </strong>
+                                {school.grades.A > 0 && (school.gradeAScience !== undefined || school.gradeASocial !== undefined) && (
+                                  <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 600, display: "block", marginTop: 2 }}>
+                                    ⚛ {school.gradeAScience || 0} {t.scienceTrackShort} · 📖 {school.gradeASocial || 0} {t.socialTrackShort}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1548,12 +2730,21 @@ export default function InsightsPage() {
                                   : provinceEnglish[champion.provinceId || champion.province] || champion.province;
 
                               return (
-                                <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
+                                <article key={`${champion.province}-${champion.name}-${champion.branch || ""}`} className={`school-champion-card medal-${medalClass}`}>
                                   <div className="champion-card-top">
                                     <span className={`champion-rank-badge rank-${idx + 1}`}>
                                       <Award size={14} />
                                       #{idx + 1}
                                     </span>
+                                    <span className={`school-type-badge ${champion.schoolType || "public"}`}>
+                                      {champion.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                      {champion.schoolType === "private" ? (language === "km" ? t.typePrivateShort : "Private") : (language === "km" ? t.typePublicShort : "Public")}
+                                    </span>
+                                    {champion.branch && (
+                                      <span className="school-branch-badge">
+                                        <Building2 size={11} /> {champion.branch}
+                                      </span>
+                                    )}
                                     <span className="province-chip">
                                       <MapPin size={11} /> {provLabel}
                                     </span>
@@ -1619,6 +2810,17 @@ export default function InsightsPage() {
                       </div>
 
                       <div className="school-filter-selects">
+                        <label className="school-filter-item">
+                          <select
+                            value={subjectSchoolTypeFilter}
+                            onChange={(e) => setSubjectSchoolTypeFilter(e.target.value as any)}
+                          >
+                            <option value="all">{t.typeAll}</option>
+                            <option value="public">🏛️ {t.typePublic}</option>
+                            <option value="private">⭐ {t.typePrivate}</option>
+                          </select>
+                        </label>
+
                         <label className="school-filter-item">
                           <select
                             value={subjectProvince}
@@ -1705,7 +2907,7 @@ export default function InsightsPage() {
                                   : provinceEnglish[school.provinceId || school.province] || school.province;
 
                               return (
-                                <tr key={`${school.province}-${school.name}`}>
+                                <tr key={`${school.province}-${school.name}-${school.branch || ""}`}>
                                   <td className="td-rank">#{index + 1}</td>
                                   <td className="td-school">
                                     <div className="table-school-cell">
@@ -1714,6 +2916,15 @@ export default function InsightsPage() {
                                         studentId={school.sampleStudentId}
                                         fallback={school.name}
                                       />
+                                      <span className={`school-type-badge ${school.schoolType || "public"}`}>
+                                        {school.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                        {school.schoolType === "private" ? (language === "km" ? t.typePrivateShort : "Private") : (language === "km" ? t.typePublicShort : "Public")}
+                                      </span>
+                                      {school.branch && (
+                                        <span className="school-branch-badge">
+                                          <Building2 size={11} /> {school.branch}
+                                        </span>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="td-province">
@@ -1752,7 +2963,7 @@ export default function InsightsPage() {
                               : provinceEnglish[school.provinceId || school.province] || school.province;
 
                           return (
-                            <article key={`${school.province}-${school.name}`} className="school-row-card">
+                            <article key={`${school.province}-${school.name}-${school.branch || ""}`} className="school-row-card">
                               <div className="school-row-left">
                                 <span className="school-rank-num">{String(index + 1).padStart(2, "0")}</span>
                                 <div className="school-row-details">
@@ -1764,6 +2975,15 @@ export default function InsightsPage() {
                                     />
                                   </div>
                                   <div className="school-tags-row">
+                                    <span className={`school-type-badge ${school.schoolType || "public"}`}>
+                                      {school.schoolType === "private" ? "⭐ " : "🏛️ "}
+                                      {school.schoolType === "private" ? (language === "km" ? t.typePrivate : "Private") : (language === "km" ? t.typePublic : "Public")}
+                                    </span>
+                                    {school.branch && (
+                                      <span className="school-branch-badge">
+                                        <Building2 size={11} /> {school.branch}
+                                      </span>
+                                    )}
                                     <span className="province-chip">
                                       <MapPin size={11} /> {provLabel}
                                     </span>

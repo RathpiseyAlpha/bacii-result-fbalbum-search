@@ -70,21 +70,26 @@ def fetch_json(url: str) -> dict:
 
 
 def head_size(url: str) -> int:
+    MIN_VALID_PDF_SIZE = 100_000
     try:
         request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(request, timeout=20) as response:
+            content_type = (response.headers.get("Content-Type") or "").lower()
             size = int(response.headers.get("Content-Length") or 0)
-            if size > 0:
+            if size >= MIN_VALID_PDF_SIZE and ("pdf" in content_type or "octet-stream" in content_type or "binary" in content_type):
                 return size
     except Exception:
         pass
     try:
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Range": "bytes=0-0"})
         with urllib.request.urlopen(request, timeout=20) as response:
+            content_type = (response.headers.get("Content-Type") or "").lower()
             content_range = response.headers.get("Content-Range") or ""
             match = re.search(r"/(\d+)$", content_range)
             if match:
-                return int(match.group(1))
+                size = int(match.group(1))
+                if size >= MIN_VALID_PDF_SIZE and ("pdf" in content_type or "octet-stream" in content_type or "binary" in content_type):
+                    return size
     except Exception:
         pass
     return 0
@@ -105,6 +110,10 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
     if parsed.scheme != "https" or not any(hostname == host or hostname.endswith(f".{host}") for host in allowed_hosts):
         raise RuntimeError(f"Refusing an unapproved archive PDF host: {parsed.hostname or 'invalid URL'}")
     target.parent.mkdir(parents=True, exist_ok=True)
+
+    if expected_size < 100_000:
+        expected_size = 0
+
     if not expected_size:
         expected_size = head_size(url)
 
@@ -117,15 +126,23 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
         except Exception:
             is_valid_pdf = False
 
-        if not is_valid_pdf or (expected_size > 0 and target.stat().st_size > expected_size):
+        if not is_valid_pdf or (expected_size >= 100_000 and target.stat().st_size > expected_size):
             print(f"    removing invalid/corrupted staging PDF file: {target.name}", flush=True)
             target.unlink()
 
     for attempt in range(1, 40):
         current = target.stat().st_size if target.exists() else 0
-        if expected_size and current == expected_size:
-            return
-        if expected_size and current > expected_size:
+        if expected_size >= 100_000 and current == expected_size:
+            try:
+                with target.open("rb") as check_f:
+                    if check_f.read(4) == b"%PDF":
+                        return
+            except Exception:
+                pass
+            target.unlink()
+            current = 0
+
+        if expected_size >= 100_000 and current > expected_size:
             target.unlink()
             current = 0
 
@@ -137,8 +154,23 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
         completed_cleanly = False
         try:
             with urllib.request.urlopen(req, timeout=45) as response:
-                mode = "ab" if response.status == 206 else "wb"
-                if mode == "wb" and current > 0:
+                if response.status == 200:
+                    mode = "wb"
+                    if current > 0:
+                        current = 0
+                    cl = int(response.headers.get("Content-Length") or 0)
+                    if cl >= 100_000 and (expected_size == 0 or expected_size < 100_000):
+                        expected_size = cl
+                elif response.status == 206:
+                    mode = "ab"
+                    cr = response.headers.get("Content-Range") or ""
+                    match = re.search(r"/(\d+)$", cr)
+                    if match:
+                        total_sz = int(match.group(1))
+                        if total_sz >= 100_000 and (expected_size == 0 or expected_size < 100_000):
+                            expected_size = total_sz
+                else:
+                    mode = "wb"
                     current = 0
 
                 with target.open(mode) as f:
@@ -156,17 +188,30 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
                             break
 
             size = target.stat().st_size if target.exists() else 0
-            if expected_size > 0 and size == expected_size:
+            is_valid_pdf = False
+            try:
+                with target.open("rb") as check_f:
+                    if check_f.read(4) == b"%PDF":
+                        is_valid_pdf = True
+            except Exception:
+                is_valid_pdf = False
+
+            if not is_valid_pdf:
+                print(f"    downloaded non-PDF content for {url}, removing target", flush=True)
+                target.unlink()
+                time.sleep(min(attempt * 2, 15))
+                continue
+
+            if expected_size >= 100_000 and size == expected_size:
                 return
-            if expected_size == 0 and completed_cleanly:
+
+            if expected_size == 0 and completed_cleanly and is_valid_pdf:
                 try:
-                    with target.open("rb") as check_f:
-                        if check_f.read(4) == b"%PDF":
-                            doc = pymupdf.open(target)
-                            if doc.page_count > 1:
-                                doc.close()
-                                return
-                            doc.close()
+                    doc = pymupdf.open(target)
+                    if doc.page_count >= 1:
+                        doc.close()
+                        return
+                    doc.close()
                 except Exception:
                     pass
         except Exception as error:

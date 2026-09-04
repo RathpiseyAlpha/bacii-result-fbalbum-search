@@ -130,6 +130,8 @@ def benchmark_single_curl(url: str, size_bytes: int = 2 * 1024 * 1024):
         "-H", "Accept: application/pdf,*/*",
         "-H", "Accept-Language: en-US,en;q=0.9",
         "--connect-timeout", "15",
+        "--speed-limit", "1024",
+        "--speed-time", "15",
         url,
         "-o", "-"
     ]
@@ -146,18 +148,33 @@ def benchmark_single_curl(url: str, size_bytes: int = 2 * 1024 * 1024):
         log("BENCH-CURL", f"Failed: {e}")
 
 
-def benchmark_parallel_urllib(url: str, num_workers: int = 6, chunk_size: int = 2 * 1024 * 1024):
-    log("BENCH-PARALLEL", f"Benchmarking {num_workers} parallel workers ({num_workers * chunk_size / 1024 / 1024:.1f} MB total)...")
+def benchmark_parallel_curl(url: str, num_workers: int = 4, chunk_size: int = 2 * 1024 * 1024):
+    curl_path = "curl.exe" if sys.platform == "win32" else "curl"
+    log("BENCH-PARALLEL-CURL", f"Benchmarking {num_workers} parallel curl workers ({num_workers * chunk_size / 1024 / 1024:.1f} MB total)...")
 
     def fetch_worker(worker_id: int):
         s = worker_id * chunk_size
         e = (worker_id + 1) * chunk_size - 1
-        req = urllib.request.Request(url, headers={**BROWSER_HEADERS, "Range": f"bytes={s}-{e}"})
+        cmd = [
+            curl_path,
+            "-L",
+            "--silent",
+            "--show-error",
+            "-r", f"{s}-{e}",
+            "-A", USER_AGENT,
+            "-e", "https://moeys.gov.kh/",
+            "-H", "Accept: application/pdf,*/*",
+            "-H", "Accept-Language: en-US,en;q=0.9",
+            "--connect-timeout", "15",
+            "--speed-limit", "1024",
+            "--speed-time", "15",
+            url,
+            "-o", "-"
+        ]
         t_w = time.time()
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = resp.read()
-            dur = time.time() - t_w
-            return worker_id, len(data), dur
+        res = subprocess.run(cmd, capture_output=True, check=False)
+        dur = time.time() - t_w
+        return worker_id, len(res.stdout), dur, res.returncode
 
     t0 = time.time()
     results = []
@@ -169,11 +186,34 @@ def benchmark_parallel_urllib(url: str, num_workers: int = 6, chunk_size: int = 
         total_dur = time.time() - t0
         total_bytes = sum(r[1] for r in results)
         effective_speed = (total_bytes / 1024) / max(0.001, total_dur)
-        for w_id, b, d in sorted(results):
-            log("BENCH-PARALLEL", f"  Worker {w_id}: {b:,} bytes in {d:.2f}s ({(b / 1024) / max(0.001, d):.1f} KB/s)")
-        log("BENCH-PARALLEL", f"Result: {total_bytes:,} bytes in {total_dur:.2f}s -> Aggregated Speed: {effective_speed:.1f} KB/s ({effective_speed / 1024:.2f} MB/s)")
+        for w_id, b, d, code in sorted(results):
+            log("BENCH-PARALLEL-CURL", f"  Worker {w_id}: {b:,} bytes in {d:.2f}s ({(b / 1024) / max(0.001, d):.1f} KB/s), code={code}")
+        log("BENCH-PARALLEL-CURL", f"Result: {total_bytes:,} bytes in {total_dur:.2f}s -> Aggregated Speed: {effective_speed:.1f} KB/s ({effective_speed / 1024:.2f} MB/s)")
     except Exception as e:
-        log("BENCH-PARALLEL", f"Parallel test encountered error: {e}")
+        log("BENCH-PARALLEL-CURL", f"Parallel curl test failed: {e}")
+
+
+def benchmark_single_urllib(url: str, size_bytes: int = 2 * 1024 * 1024):
+    log("BENCH-URLLIB", f"Benchmarking single-stream urllib download of {size_bytes / 1024 / 1024:.1f} MB (with 15s timeout)...")
+    socket.setdefaulttimeout(15.0)
+    req = urllib.request.Request(url, headers={**BROWSER_HEADERS, "Range": f"bytes=0-{size_bytes - 1}"})
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            chunks = []
+            total = 0
+            while total < size_bytes:
+                chunk = resp.read(65536)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                total += len(chunk)
+            data = b"".join(chunks)
+            duration = time.time() - t0
+            speed_kb = (len(data) / 1024) / max(0.001, duration)
+            log("BENCH-URLLIB", f"Downloaded {len(data):,} bytes in {duration:.2f}s -> {speed_kb:.1f} KB/s ({speed_kb / 1024:.2f} MB/s)")
+    except Exception as e:
+        log("BENCH-URLLIB", f"Failed: {e}")
 
 
 def main():
@@ -184,10 +224,11 @@ def main():
     parsed = urlparse(TEST_URL)
     test_dns_and_latency(parsed.hostname or "moeys.gov.kh")
     test_headers_and_status(TEST_URL)
-    benchmark_single_urllib(TEST_URL, 2 * 1024 * 1024)
+    # Test curl FIRST
     benchmark_single_curl(TEST_URL, 2 * 1024 * 1024)
-    benchmark_parallel_urllib(TEST_URL, num_workers=4, chunk_size=2 * 1024 * 1024)
-    benchmark_parallel_urllib(TEST_URL, num_workers=6, chunk_size=2 * 1024 * 1024)
+    benchmark_parallel_curl(TEST_URL, num_workers=4, chunk_size=2 * 1024 * 1024)
+    # Test urllib with safe timeouts
+    benchmark_single_urllib(TEST_URL, 2 * 1024 * 1024)
     print("=" * 65)
     print("  Diagnostic Complete. Please share the output above.")
     print("=" * 65)

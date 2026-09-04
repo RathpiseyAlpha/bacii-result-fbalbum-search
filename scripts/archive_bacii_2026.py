@@ -125,62 +125,89 @@ def sha256_file(path: Path) -> str:
 def download_parallel_segments(url: str, target: Path, expected_size: int, num_workers: int = 6) -> bool:
     if expected_size < 4_000_000:
         return False
+    curl_bin = "curl.exe" if sys.platform == "win32" else "curl"
     segment_size = (expected_size + num_workers - 1) // num_workers
     tasks = []
+    part_files = []
     for i in range(num_workers):
         start = i * segment_size
         end = min(expected_size - 1, (i + 1) * segment_size - 1)
-        tasks.append((i, start, end))
+        part_file = target.parent / f"{target.stem}.part_{i}"
+        part_files.append(part_file)
+        tasks.append((i, start, end, part_file))
 
-    try:
-        with target.open("wb") as f:
-            f.seek(expected_size - 1)
-            f.write(b"\0")
-    except Exception:
-        return False
-
-    downloaded = [0] * num_workers
     stop_event = False
 
-    def fetch_range(worker_id: int, start: int, end: int) -> bool:
+    def fetch_range(worker_id: int, start: int, end: int, part_path: Path) -> bool:
         nonlocal stop_event
         expected_len = end - start + 1
-        for retry in range(1, 8):
+        for retry in range(1, 6):
             if stop_event:
                 return False
-            req = urllib.request.Request(url, headers={**BROWSER_HEADERS, "Range": f"bytes={start}-{end}"})
-            try:
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    if resp.status not in (200, 206):
-                        print(f"        [worker {worker_id}] HTTP status {resp.status} for range {start}-{end}", flush=True)
-                        return False
-                    data = resp.read()
-                    if len(data) == expected_len:
-                        with target.open("r+b") as f:
-                            f.seek(start)
-                            f.write(data)
-                        downloaded[worker_id] = len(data)
-                        return True
-                    else:
-                        print(f"        [worker {worker_id}] partial read: received {len(data):,} of {expected_len:,} bytes", flush=True)
-            except Exception as err:
-                print(f"        [worker {worker_id}] attempt {retry} failed: {err}", flush=True)
-                time.sleep(1)
+            cmd = [
+                curl_bin,
+                "-L",
+                "--silent",
+                "--show-error",
+                "-r", f"{start}-{end}",
+                "-A", USER_AGENT,
+                "-e", "https://moeys.gov.kh/",
+                "-H", "Accept: application/pdf,*/*",
+                "-H", "Accept-Language: en-US,en;q=0.9,km;q=0.8",
+                "--connect-timeout", "20",
+                "--speed-limit", "1024",
+                "--speed-time", "15",
+                url,
+                "-o", str(part_path),
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            sz = part_path.stat().st_size if part_path.exists() else 0
+            if res.returncode == 0 and sz == expected_len:
+                return True
+            print(f"        [worker {worker_id}] retry {retry}: size={sz:,}/{expected_len:,}, code={res.returncode}, stderr={res.stderr.strip()!r}", flush=True)
+            time.sleep(1)
         stop_event = True
         return False
 
     t0 = time.time()
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        futures = [executor.submit(fetch_range, w_id, s, e) for w_id, s, e in tasks]
+        futures = [executor.submit(fetch_range, w_id, s, e, p) for w_id, s, e, p in tasks]
         while any(not f.done() for f in futures):
             time.sleep(2)
-            done_bytes = sum(downloaded)
+            done_bytes = sum(p.stat().st_size for p in part_files if p.exists())
             pct = (done_bytes / expected_size * 100) if expected_size > 0 else 0
             elapsed = time.time() - t0
             spd = (done_bytes / 1024) / max(0.001, elapsed)
             print(f"        parallel downloading: {done_bytes:,}/{expected_size:,} bytes ({pct:.1f}%) @ {spd:.1f} KB/s", flush=True)
 
     if stop_event or not all(f.result() for f in futures):
+        for p in part_files:
+            try:
+                p.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return False
+
+    try:
+        with target.open("wb") as out_f:
+            for p in part_files:
+                with p.open("rb") as in_f:
+                    while True:
+                        chunk = in_f.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        out_f.write(chunk)
+                try:
+                    p.unlink(missing_ok=True)
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"    error stitching parts: {e}", flush=True)
+        for p in part_files:
+            try:
+                p.unlink(missing_ok=True)
+            except Exception:
+                pass
         return False
 
     try:

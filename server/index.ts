@@ -6,7 +6,10 @@ import { discoveries, getZipSize, photosFromUrls, startDiscovery, startZip, zipJ
 import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } from "./ocr.ts";
 import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
-import { getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveSummary, listArchiveYears, searchArchive } from "./archive.ts";
+import {
+  getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveSubjectDetail,
+  getArchiveSubjectOverview, getArchiveSummary, listArchiveYears, searchArchive,
+} from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
 import {
@@ -142,6 +145,32 @@ app.get("/api/archive/:year/schools", (request, response) => {
     response.json({ schools, count: schools.length });
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/subjects/overview", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const overview = getArchiveSubjectOverview(request.params.year);
+    response.json({ overview, count: overview.length });
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Archive not found." });
+  }
+});
+
+app.get("/api/archive/:year/subjects/detail", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const track = request.query.track === "social-science" ? "social-science" : "science";
+    const subject = String(request.query.subject || "") as any;
+    const province = String(request.query.province || "") || undefined;
+    const search = String(request.query.search || "") || undefined;
+    const sort = String(request.query.sort || "") as any;
+    const limit = request.query.limit ? Number(request.query.limit) : undefined;
+    const detail = getArchiveSubjectDetail(request.params.year, { track, subject, province, search, sort, limit });
+    response.json(detail);
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Subject data not found." });
   }
 });
 

@@ -434,3 +434,363 @@ export function getArchiveNameLocator(year: string, studentId: number) {
   const pdf = resolve(directory, "pdfs", archivePdfFileName(row.localPath));
   return existsSync(pdf) ? { pdf, pageNumber: row.pageNumber, tableNumber: String(row.tableNumber) } : undefined;
 }
+
+export type SubjectKey =
+  | "math"
+  | "physics"
+  | "chemistry"
+  | "biology"
+  | "khmer"
+  | "history"
+  | "foreign_language"
+  | "earth_science"
+  | "geography"
+  | "civics";
+
+export type SubjectGrade = "A" | "B" | "C" | "D" | "E" | "F";
+
+export interface SubjectMeta {
+  key: SubjectKey;
+  nameKm: string;
+  nameEn: string;
+  tracks: Array<"science" | "social-science">;
+}
+
+export const SUBJECT_METAS: SubjectMeta[] = [
+  { key: "math", nameKm: "គណិតវិទ្យា", nameEn: "Mathematics", tracks: ["science", "social-science"] },
+  { key: "physics", nameKm: "រូបវិទ្យា", nameEn: "Physics", tracks: ["science"] },
+  { key: "chemistry", nameKm: "គីមីវិទ្យា", nameEn: "Chemistry", tracks: ["science"] },
+  { key: "biology", nameKm: "ជីវវិទ្យា", nameEn: "Biology", tracks: ["science"] },
+  { key: "khmer", nameKm: "ភាសាខ្មែរ", nameEn: "Khmer Literature", tracks: ["science", "social-science"] },
+  { key: "history", nameKm: "ប្រវត្តិវិទ្យា", nameEn: "History", tracks: ["science", "social-science"] },
+  { key: "foreign_language", nameKm: "ភាសាបរទេស", nameEn: "Foreign Language", tracks: ["science", "social-science"] },
+  { key: "earth_science", nameKm: "ផែនដីវិទ្យា", nameEn: "Earth Science", tracks: ["social-science"] },
+  { key: "geography", nameKm: "ភូមិវិទ្យា", nameEn: "Geography", tracks: ["social-science"] },
+  { key: "civics", nameKm: "សីលធម៌-ពលរដ្ឋ", nameEn: "Civics & Morality", tracks: ["social-science"] },
+];
+
+export function getSubjectColumn(subject: SubjectKey, track: "science" | "social-science"): string | null {
+  if (track === "science") {
+    switch (subject) {
+      case "khmer": return "subject_1";
+      case "math": return "subject_2";
+      case "biology": return "subject_3";
+      case "history": return "subject_4";
+      case "chemistry": return "subject_5";
+      case "physics": return "subject_6";
+      case "foreign_language": return "subject_7";
+      default: return null;
+    }
+  } else {
+    switch (subject) {
+      case "khmer": return "subject_1";
+      case "math": return "subject_2";
+      case "earth_science": return "subject_3";
+      case "geography": return "subject_4";
+      case "history": return "subject_5";
+      case "civics": return "subject_6";
+      case "foreign_language": return "subject_7";
+      default: return null;
+    }
+  }
+}
+
+export interface SubjectOverviewItem {
+  key: SubjectKey;
+  nameKm: string;
+  nameEn: string;
+  track: "science" | "social-science";
+  totalCandidates: number;
+  grades: Record<SubjectGrade, number>;
+  gradeAPercent: number;
+  passPercent: number;
+  excellencePercent: number;
+}
+
+export interface SubjectSchoolItem {
+  name: string;
+  sampleStudentId: number;
+  province: string;
+  provinceId: string;
+  totalCandidates: number;
+  grades: Record<SubjectGrade, number>;
+  gradeA: number;
+  gradeAPercent: number;
+  passPercent: number;
+  rank: number;
+}
+
+export interface SubjectProvinceItem {
+  id: string;
+  name: string;
+  totalCandidates: number;
+  grades: Record<SubjectGrade, number>;
+  gradeA: number;
+  gradeAPercent: number;
+  passPercent: number;
+  rank: number;
+}
+
+export interface SubjectDetailResponse {
+  year: string;
+  track: "science" | "social-science";
+  subject: SubjectKey;
+  subjectMeta: SubjectMeta;
+  overview: SubjectOverviewItem;
+  otherTrackOverview?: SubjectOverviewItem;
+  schools: SubjectSchoolItem[];
+  provinces: SubjectProvinceItem[];
+}
+
+const subjectOverviewCaches = new Map<string, { modifiedAt: number; items: SubjectOverviewItem[] }>();
+const subjectDetailCaches = new Map<string, { modifiedAt: number; map: Map<string, SubjectDetailResponse> }>();
+
+export function getArchiveSubjectOverview(year: string): SubjectOverviewItem[] {
+  const directory = archiveDirectory(year);
+  if (!directory) throw new Error(`Archive ${year} is not available.`);
+  const modifiedAt = statSync(resolve(directory, `bacii-${year}.sqlite`)).mtimeMs;
+  const cached = subjectOverviewCaches.get(year);
+  if (cached?.modifiedAt === modifiedAt) return cached.items;
+
+  const db = archiveDatabase(year);
+  const items: SubjectOverviewItem[] = [];
+
+  const tracks: Array<"science" | "social-science"> = ["science", "social-science"];
+  for (const track of tracks) {
+    const trackWhere = track === "science"
+      ? "(p.text_raw LIKE '%គីមី%' OR p.text_raw LIKE '%ជីវ%')"
+      : "(p.text_raw LIKE '%សីល-ពល%' OR p.text_raw LIKE '%ែផនដី%')";
+
+    // Build single query for all 7 subjects in this track
+    const selectClauses: string[] = ["COUNT(*) as total"];
+    for (let i = 1; i <= 7; i++) {
+      for (const grade of ["A", "B", "C", "D", "E", "F"]) {
+        selectClauses.push(`SUM(CASE WHEN s.subject_${i} = '${grade}' THEN 1 ELSE 0 END) as s${i}_${grade}`);
+      }
+    }
+
+    const row = db.prepare(`
+      SELECT ${selectClauses.join(", ")}
+      FROM students s
+      JOIN pages p ON p.id = s.page_id
+      WHERE ${trackWhere}
+    `).get() as Record<string, number>;
+
+    const total = Number(row.total || 0);
+
+    for (const meta of SUBJECT_METAS) {
+      if (!meta.tracks.includes(track)) continue;
+      const col = getSubjectColumn(meta.key, track);
+      if (!col) continue;
+      const num = col.replace("subject_", "");
+      const grades: Record<SubjectGrade, number> = {
+        A: Number(row[`s${num}_A`] || 0),
+        B: Number(row[`s${num}_B`] || 0),
+        C: Number(row[`s${num}_C`] || 0),
+        D: Number(row[`s${num}_D`] || 0),
+        E: Number(row[`s${num}_E`] || 0),
+        F: Number(row[`s${num}_F`] || 0),
+      };
+      const gradeA = grades.A;
+      const passing = grades.A + grades.B + grades.C + grades.D + grades.E;
+      const excellence = grades.A + grades.B;
+      const gradeAPercent = total > 0 ? Number(((gradeA / total) * 100).toFixed(2)) : 0;
+      const passPercent = total > 0 ? Number(((passing / total) * 100).toFixed(2)) : 0;
+      const excellencePercent = total > 0 ? Number(((excellence / total) * 100).toFixed(2)) : 0;
+
+      items.push({
+        key: meta.key,
+        nameKm: meta.nameKm,
+        nameEn: meta.nameEn,
+        track,
+        totalCandidates: total,
+        grades,
+        gradeAPercent,
+        passPercent,
+        excellencePercent,
+      });
+    }
+  }
+
+  subjectOverviewCaches.set(year, { modifiedAt, items });
+  return items;
+}
+
+export interface GetSubjectDetailOptions {
+  track?: "science" | "social-science";
+  subject?: SubjectKey;
+  province?: string;
+  search?: string;
+  sort?: "gradeA" | "gradeAPercent" | "candidates" | "passRate" | "name";
+  limit?: number;
+}
+
+export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailOptions = {}): SubjectDetailResponse {
+  const directory = archiveDirectory(year);
+  if (!directory) throw new Error(`Archive ${year} is not available.`);
+  const modifiedAt = statSync(resolve(directory, `bacii-${year}.sqlite`)).mtimeMs;
+
+  const track = options.track === "social-science" ? "social-science" : "science";
+  const subject: SubjectKey = options.subject || (track === "science" ? "physics" : "math");
+  const meta = SUBJECT_METAS.find((m) => m.key === subject) || SUBJECT_METAS[0];
+  const col = getSubjectColumn(meta.key, track);
+  if (!col) throw new Error(`Subject ${subject} is not available in track ${track}.`);
+
+  let cacheEntry = subjectDetailCaches.get(year);
+  if (!cacheEntry || cacheEntry.modifiedAt !== modifiedAt) {
+    cacheEntry = { modifiedAt, map: new Map() };
+    subjectDetailCaches.set(year, cacheEntry);
+  }
+
+  const cacheKey = `${track}:${meta.key}`;
+  let baseDetail = cacheEntry.map.get(cacheKey);
+
+  if (!baseDetail) {
+    const db = archiveDatabase(year);
+    const trackWhere = track === "science"
+      ? "(p.text_raw LIKE '%គីមី%' OR p.text_raw LIKE '%ជីវ%')"
+      : "(p.text_raw LIKE '%សីល-ពល%' OR p.text_raw LIKE '%ែផនដី%')";
+
+    // 1. Overview items
+    const allOverviews = getArchiveSubjectOverview(year);
+    const overview = allOverviews.find((o) => o.track === track && o.key === meta.key)!;
+    const otherTrack = track === "science" ? "social-science" : "science";
+    const otherTrackOverview = allOverviews.find((o) => o.track === otherTrack && o.key === meta.key);
+
+    // 2. High schools query
+    const schoolRows = db.prepare(`
+      SELECT
+        s.school_raw AS name,
+        MIN(s.id) AS sampleStudentId,
+        s.province AS province,
+        d.slug AS slug,
+        COUNT(s.id) AS total,
+        SUM(CASE WHEN s.${col} = 'A' THEN 1 ELSE 0 END) AS gradeA,
+        SUM(CASE WHEN s.${col} = 'B' THEN 1 ELSE 0 END) AS gradeB,
+        SUM(CASE WHEN s.${col} = 'C' THEN 1 ELSE 0 END) AS gradeC,
+        SUM(CASE WHEN s.${col} = 'D' THEN 1 ELSE 0 END) AS gradeD,
+        SUM(CASE WHEN s.${col} = 'E' THEN 1 ELSE 0 END) AS gradeE,
+        SUM(CASE WHEN s.${col} = 'F' THEN 1 ELSE 0 END) AS gradeF
+      FROM students s
+      JOIN pages p ON p.id = s.page_id
+      JOIN documents d ON d.id = s.document_id
+      WHERE ${trackWhere}
+      GROUP BY s.school_raw, s.province, d.slug
+    `).all() as Array<{
+      name: string; sampleStudentId: number; province: string; slug: string; total: number;
+      gradeA: number; gradeB: number; gradeC: number; gradeD: number; gradeE: number; gradeF: number;
+    }>;
+
+    const schools: SubjectSchoolItem[] = schoolRows.map((r) => {
+      const totalCandidates = Number(r.total || 0);
+      const gradeA = Number(r.gradeA || 0);
+      const gradeB = Number(r.gradeB || 0);
+      const gradeC = Number(r.gradeC || 0);
+      const gradeD = Number(r.gradeD || 0);
+      const gradeE = Number(r.gradeE || 0);
+      const gradeF = Number(r.gradeF || 0);
+      const passing = gradeA + gradeB + gradeC + gradeD + gradeE;
+      const gradeAPercent = totalCandidates > 0 ? Number(((gradeA / totalCandidates) * 100).toFixed(2)) : 0;
+      const passPercent = totalCandidates > 0 ? Number(((passing / totalCandidates) * 100).toFixed(2)) : 0;
+      return {
+        name: String(r.name).trim(),
+        sampleStudentId: Number(r.sampleStudentId),
+        province: String(r.province),
+        provinceId: provinceId(String(r.slug), year),
+        totalCandidates,
+        grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE, F: gradeF },
+        gradeA,
+        gradeAPercent,
+        passPercent,
+        rank: 0,
+      };
+    });
+
+    // 3. Provinces query
+    const provRows = db.prepare(`
+      SELECT
+        d.slug AS slug,
+        s.province AS province,
+        COUNT(s.id) AS total,
+        SUM(CASE WHEN s.${col} = 'A' THEN 1 ELSE 0 END) AS gradeA,
+        SUM(CASE WHEN s.${col} = 'B' THEN 1 ELSE 0 END) AS gradeB,
+        SUM(CASE WHEN s.${col} = 'C' THEN 1 ELSE 0 END) AS gradeC,
+        SUM(CASE WHEN s.${col} = 'D' THEN 1 ELSE 0 END) AS gradeD,
+        SUM(CASE WHEN s.${col} = 'E' THEN 1 ELSE 0 END) AS gradeE,
+        SUM(CASE WHEN s.${col} = 'F' THEN 1 ELSE 0 END) AS gradeF
+      FROM students s
+      JOIN pages p ON p.id = s.page_id
+      JOIN documents d ON d.id = s.document_id
+      WHERE ${trackWhere}
+      GROUP BY d.slug, s.province
+      ORDER BY gradeA DESC
+    `).all() as Array<{
+      slug: string; province: string; total: number;
+      gradeA: number; gradeB: number; gradeC: number; gradeD: number; gradeE: number; gradeF: number;
+    }>;
+
+    const provinces: SubjectProvinceItem[] = provRows.map((r, idx) => {
+      const totalCandidates = Number(r.total || 0);
+      const gradeA = Number(r.gradeA || 0);
+      const gradeB = Number(r.gradeB || 0);
+      const gradeC = Number(r.gradeC || 0);
+      const gradeD = Number(r.gradeD || 0);
+      const gradeE = Number(r.gradeE || 0);
+      const gradeF = Number(r.gradeF || 0);
+      const passing = gradeA + gradeB + gradeC + gradeD + gradeE;
+      const gradeAPercent = totalCandidates > 0 ? Number(((gradeA / totalCandidates) * 100).toFixed(2)) : 0;
+      const passPercent = totalCandidates > 0 ? Number(((passing / totalCandidates) * 100).toFixed(2)) : 0;
+      return {
+        id: provinceId(String(r.slug), year),
+        name: String(r.province),
+        totalCandidates,
+        grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE, F: gradeF },
+        gradeA,
+        gradeAPercent,
+        passPercent,
+        rank: idx + 1,
+      };
+    });
+
+    baseDetail = {
+      year,
+      track,
+      subject: meta.key,
+      subjectMeta: meta,
+      overview,
+      otherTrackOverview,
+      schools,
+      provinces,
+    };
+    cacheEntry.map.set(cacheKey, baseDetail);
+  }
+
+  // Apply filters and sorting
+  let filteredSchools = baseDetail.schools;
+  if (options.province && options.province !== "all") {
+    filteredSchools = filteredSchools.filter((s) => s.provinceId === options.province || s.province === options.province);
+  }
+  if (options.search) {
+    const q = options.search.trim().toLowerCase();
+    filteredSchools = filteredSchools.filter((s) => s.name.toLowerCase().includes(q) || s.province.toLowerCase().includes(q));
+  }
+
+  const sort = options.sort || "gradeA";
+  filteredSchools = filteredSchools.slice().sort((a, b) => {
+    if (sort === "gradeA") return b.gradeA - a.gradeA || b.totalCandidates - a.totalCandidates;
+    if (sort === "gradeAPercent") return b.gradeAPercent - a.gradeAPercent || b.gradeA - a.gradeA;
+    if (sort === "candidates") return b.totalCandidates - a.totalCandidates || b.gradeA - a.gradeA;
+    if (sort === "passRate") return b.passPercent - a.passPercent || b.gradeA - a.gradeA;
+    if (sort === "name") return a.name.localeCompare(b.name, "km");
+    return 0;
+  });
+
+  const rankedSchools = filteredSchools.map((s, idx) => ({ ...s, rank: idx + 1 }));
+  const finalSchools = options.limit && options.limit > 0 ? rankedSchools.slice(0, options.limit) : rankedSchools;
+
+  return {
+    ...baseDetail,
+    schools: finalSchools,
+  };
+}
+

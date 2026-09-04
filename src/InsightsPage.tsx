@@ -61,6 +61,7 @@ type ProvinceSummary = {
   candidateCount: number;
   centerCount: number;
   schoolCount: number;
+  pageCount: number;
   scienceCount: number;
   socialScienceCount: number;
   gradeA: number;
@@ -70,6 +71,7 @@ type ProvinceSummary = {
   gradeC: number;
   gradeD: number;
   gradeE: number;
+  grades: Record<Grade, number>;
 };
 
 type Summary = {
@@ -78,6 +80,7 @@ type Summary = {
   provinceCount: number;
   centerCount: number;
   schoolCount: number;
+  pageCount: number;
   grades: Array<{ grade: string; count: number }>;
   gradeTrackBreakdown?: Record<string, { science: number; social: number; total: number }>;
   provinces: ProvinceSummary[];

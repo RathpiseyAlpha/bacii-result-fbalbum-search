@@ -1190,6 +1190,7 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
       schoolType: "public" | "private";
       sampleStudentId: number;
       sampleRaw: string;
+      examCenters?: string;
       province: string;
       provinceId: string;
       candidateCount: number;
@@ -1295,6 +1296,9 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
         grades: { A: s.gradeA, B: s.gradeB, C: s.gradeC, D: s.gradeD, E: s.gradeE },
         gradeAPercent: gradeAPercentage,
         gradeAPercentage,
+        passRate: candidateCount > 0
+          ? Number((((s.gradeA + s.gradeB + s.gradeC + s.gradeD + s.gradeE) / candidateCount) * 100).toFixed(1))
+          : 0,
         rank: index + 1,
       };
     });

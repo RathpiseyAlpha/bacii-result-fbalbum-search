@@ -230,6 +230,19 @@ export function getArchiveCenters(year: string, province?: string) {
     .sort((left, right) => left.label.localeCompare(right.label, "km"));
 }
 
+export function normalizeSchoolRaw(raw: string): string {
+  if (!raw) return "";
+  let s = raw.replace(/[\u200b\u00a0]/g, " ").trim();
+  // Strip trailing room / table numbers (e.g. ០១, ០២, ..., ៣០, or latin digits 01, 02)
+  // which frequently leak from the adjacent column into school_raw
+  s = s.replace(/[\s\-_/]*[០-៩0-9]{1,3}[\s\-_/]*$/, "");
+  // Strip trailing unclosed brackets or punctuation caused by column clipping (e.g. '... (' or '... -')
+  s = s.replace(/[\s\(\[\{\-\.\,\_\/\:\;]+$/, "");
+  // Normalize internal whitespace sequences
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
 export type SchoolAnalysis = {
   name: string;
   sampleStudentId: number;
@@ -295,32 +308,71 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
       gradeA: number; gradeB: number; gradeC: number; gradeD: number; gradeE: number;
     }>;
 
-    allSchools = rows.map((row, index) => {
-      const candidateCount = Number(row.candidateCount || 0);
-      const gradeA = Number(row.gradeA || 0);
-      const gradeB = Number(row.gradeB || 0);
-      const gradeC = Number(row.gradeC || 0);
-      const gradeD = Number(row.gradeD || 0);
-      const gradeE = Number(row.gradeE || 0);
+    const schoolMap = new Map<string, {
+      name: string;
+      sampleStudentId: number;
+      province: string;
+      provinceId: string;
+      candidateCount: number;
+      femaleCount: number;
+      scienceCount: number;
+      socialCount: number;
+      socialScienceCount: number;
+      gradeA: number;
+      gradeB: number;
+      gradeC: number;
+      gradeD: number;
+      gradeE: number;
+    }>();
+
+    for (const row of rows) {
+      const norm = normalizeSchoolRaw(String(row.name));
+      if (!norm) continue;
+      const pId = provinceId(String(row.slug), year);
+      const key = `${pId}:::${norm}`;
+
+      const existing = schoolMap.get(key);
+      if (!existing) {
+        schoolMap.set(key, {
+          name: norm,
+          sampleStudentId: Number(row.sampleStudentId),
+          province: String(row.province),
+          provinceId: pId,
+          candidateCount: Number(row.candidateCount || 0),
+          femaleCount: Number(row.femaleCount || 0),
+          scienceCount: Number(row.scienceCount || 0),
+          socialCount: Number(row.socialScienceCount || 0),
+          socialScienceCount: Number(row.socialScienceCount || 0),
+          gradeA: Number(row.gradeA || 0),
+          gradeB: Number(row.gradeB || 0),
+          gradeC: Number(row.gradeC || 0),
+          gradeD: Number(row.gradeD || 0),
+          gradeE: Number(row.gradeE || 0),
+        });
+      } else {
+        if (Number(row.sampleStudentId) < existing.sampleStudentId) {
+          existing.sampleStudentId = Number(row.sampleStudentId);
+        }
+        existing.candidateCount += Number(row.candidateCount || 0);
+        existing.femaleCount += Number(row.femaleCount || 0);
+        existing.scienceCount += Number(row.scienceCount || 0);
+        existing.socialCount += Number(row.socialScienceCount || 0);
+        existing.socialScienceCount += Number(row.socialScienceCount || 0);
+        existing.gradeA += Number(row.gradeA || 0);
+        existing.gradeB += Number(row.gradeB || 0);
+        existing.gradeC += Number(row.gradeC || 0);
+        existing.gradeD += Number(row.gradeD || 0);
+        existing.gradeE += Number(row.gradeE || 0);
+      }
+    }
+
+    allSchools = [...schoolMap.values()].map((s, index) => {
+      const candidateCount = s.candidateCount;
+      const gradeA = s.gradeA;
       const gradeAPercentage = candidateCount > 0 ? Number(((gradeA / candidateCount) * 100).toFixed(2)) : 0;
-      const scienceCount = Number(row.scienceCount || 0);
-      const socialScienceCount = Number(row.socialScienceCount || 0);
       return {
-        name: String(row.name).trim(),
-        sampleStudentId: Number(row.sampleStudentId),
-        province: String(row.province),
-        provinceId: provinceId(String(row.slug), year),
-        candidateCount,
-        femaleCount: Number(row.femaleCount || 0),
-        scienceCount,
-        socialCount: socialScienceCount,
-        socialScienceCount,
-        gradeA,
-        gradeB,
-        gradeC,
-        gradeD,
-        gradeE,
-        grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE },
+        ...s,
+        grades: { A: s.gradeA, B: s.gradeB, C: s.gradeC, D: s.gradeD, E: s.gradeE },
         gradeAPercent: gradeAPercentage,
         gradeAPercentage,
         rank: index + 1,
@@ -681,7 +733,13 @@ export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailO
       gradeA: number; gradeB: number; gradeC: number; gradeD: number; gradeE: number; gradeF: number;
     }>;
 
-    const schools: SubjectSchoolItem[] = schoolRows.map((r) => {
+    const schoolMap = new Map<string, SubjectSchoolItem>();
+    for (const r of schoolRows) {
+      const normName = normalizeSchoolRaw(r.name);
+      if (!normName) continue;
+      const provId = provinceId(String(r.slug), year);
+      const groupKey = `${provId}:::${normName}`;
+
       const totalCandidates = Number(r.total || 0);
       const gradeA = Number(r.gradeA || 0);
       const gradeB = Number(r.gradeB || 0);
@@ -689,21 +747,41 @@ export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailO
       const gradeD = Number(r.gradeD || 0);
       const gradeE = Number(r.gradeE || 0);
       const gradeF = Number(r.gradeF || 0);
-      const passing = gradeA + gradeB + gradeC + gradeD + gradeE;
-      const gradeAPercent = totalCandidates > 0 ? Number(((gradeA / totalCandidates) * 100).toFixed(2)) : 0;
-      const passPercent = totalCandidates > 0 ? Number(((passing / totalCandidates) * 100).toFixed(2)) : 0;
-      return {
-        name: String(r.name).trim(),
-        sampleStudentId: Number(r.sampleStudentId),
-        province: String(r.province),
-        provinceId: provinceId(String(r.slug), year),
-        totalCandidates,
-        grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE, F: gradeF },
-        gradeA,
-        gradeAPercent,
-        passPercent,
-        rank: 0,
-      };
+
+      const existing = schoolMap.get(groupKey);
+      if (existing) {
+        existing.totalCandidates += totalCandidates;
+        existing.grades.A += gradeA;
+        existing.grades.B += gradeB;
+        existing.grades.C += gradeC;
+        existing.grades.D += gradeD;
+        existing.grades.E += gradeE;
+        existing.grades.F += gradeF;
+        existing.gradeA += gradeA;
+        if (Number(r.sampleStudentId) < existing.sampleStudentId) {
+          existing.sampleStudentId = Number(r.sampleStudentId);
+        }
+      } else {
+        schoolMap.set(groupKey, {
+          name: normName,
+          sampleStudentId: Number(r.sampleStudentId),
+          province: String(r.province),
+          provinceId: provId,
+          totalCandidates,
+          grades: { A: gradeA, B: gradeB, C: gradeC, D: gradeD, E: gradeE, F: gradeF },
+          gradeA,
+          gradeAPercent: 0,
+          passPercent: 0,
+          rank: 0,
+        });
+      }
+    }
+
+    const schools: SubjectSchoolItem[] = Array.from(schoolMap.values()).map((s) => {
+      const passing = s.grades.A + s.grades.B + s.grades.C + s.grades.D + s.grades.E;
+      s.gradeAPercent = s.totalCandidates > 0 ? Number(((s.gradeA / s.totalCandidates) * 100).toFixed(2)) : 0;
+      s.passPercent = s.totalCandidates > 0 ? Number(((passing / s.totalCandidates) * 100).toFixed(2)) : 0;
+      return s;
     });
 
     // 3. Provinces query

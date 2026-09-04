@@ -527,6 +527,96 @@
 :root[data-theme="dark"] .subject-chip-btn.active { background: rgba(96, 165, 250, .15); color: #93c5fd; }
 :root[data-theme="dark"] .pill-f { background: rgba(220, 38, 38, .18); border-color: rgba(220, 38, 38, .4); color: #fca5a5; }
 
+/* View Mode Toggle */
+.view-mode-toggle { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--paper); border: 1px solid var(--line); gap: 2px; }
+.view-toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 7px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s ease; }
+.view-toggle-btn:hover { color: var(--ink); }
+.view-toggle-btn.active { background: var(--card); color: var(--ink); box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+:root[data-theme="dark"] .view-toggle-btn.active { background: #1e2d47; color: #fff; }
+
+/* Podium Toggle Button */
+.champions-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.champions-header-left { display: flex; align-items: center; gap: 12px; }
+.podium-toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .2s ease; }
+.podium-toggle-btn:hover { color: var(--ink); border-color: rgba(37, 99, 235, .4); background: var(--paper); }
+
+/* Compact Analytics Table */
+.compact-table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--card); box-shadow: 0 4px 18px rgba(15, 23, 42, .04); margin-bottom: 20px; }
+.compact-school-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.compact-school-table thead { position: sticky; top: 0; z-index: 5; background: var(--paper); border-bottom: 1px solid var(--line); }
+.compact-school-table th { padding: 11px 14px; font: 700 11px "Inter", sans-serif; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); white-space: nowrap; user-select: none; }
+.compact-school-table td { padding: 8px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; transition: background .15s ease; }
+.compact-school-table tbody tr:hover { background: color-mix(in srgb, var(--green) 6%, transparent); }
+.compact-school-table tbody tr:last-child td { border-bottom: 0; }
+
+.th-rank, .td-rank { width: 44px; text-align: center; font: 700 12px "DM Mono", monospace; color: var(--muted); }
+.th-school, .td-school { min-width: 220px; max-width: 320px; }
+.table-school-cell { display: flex; align-items: center; min-height: 28px; }
+.table-school-cell .official-school-img-wrap { max-height: 28px; }
+.table-school-cell .official-school-img-wrap img { height: 26px; }
+
+.th-province, .td-province { width: 130px; white-space: nowrap; }
+.table-prov-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--paper); border: 1px solid var(--line); color: var(--muted); }
+
+.th-num, .td-num { width: 90px; text-align: right; font-variant-numeric: tabular-nums; }
+.td-num strong { font-weight: 700; color: var(--ink); }
+
+.th-female, .td-female { width: 75px; text-align: right; }
+.female-rate-badge { font: 600 11px "DM Mono", monospace; color: #db2777; background: rgba(219, 39, 119, .08); padding: 2px 6px; border-radius: 5px; }
+
+.th-pass, .td-pass { width: 85px; text-align: right; }
+.pass-rate-badge { font: 700 11px "DM Mono", monospace; color: #16a34a; background: rgba(22, 163, 74, .08); padding: 2px 6px; border-radius: 5px; }
+
+.th-grade-a, .td-grade-a { width: 110px; text-align: right; white-space: nowrap; }
+.grade-a-badge { display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 8px; border-radius: 6px; }
+.grade-a-badge.has-a { background: rgba(245, 158, 11, .12); color: #d97706; border: 1px solid rgba(245, 158, 11, .25); }
+.grade-a-badge.has-a strong { font-weight: 800; font-size: 13px; }
+.grade-a-badge.has-a small { font-size: 10px; font-weight: 600; opacity: .85; }
+.grade-a-badge.zero-a { color: var(--muted); opacity: .6; }
+
+.th-bar, .td-bar { min-width: 170px; width: 220px; }
+.td-bar .school-stacked-grade-bar { height: 10px; border-radius: 5px; }
+.td-bar .school-stacked-segment .segment-label { display: none; }
+
+/* Subject Difficulty Index Card */
+.subject-difficulty-card { margin-bottom: 28px; padding: 24px 28px; }
+.difficulty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 18px; }
+.difficulty-item { padding: 14px 16px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line); cursor: pointer; transition: all .2s ease; display: flex; flex-direction: column; gap: 10px; }
+.difficulty-item:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15, 23, 42, .06); }
+.difficulty-item.selected { border-color: var(--green); background: color-mix(in srgb, var(--green) 8%, var(--paper)); box-shadow: 0 0 0 1px var(--green); }
+
+.difficulty-item-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.difficulty-title-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.difficulty-rank { font: 700 12px "DM Mono", monospace; color: var(--muted); }
+.difficulty-icon { color: var(--green); display: grid; place-items: center; }
+.difficulty-name { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.difficulty-tags { display: flex; gap: 4px; flex-shrink: 0; }
+.diff-badge { padding: 2px 6px; border-radius: 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+.diff-badge.hardest { background: rgba(239, 68, 68, .15); color: #ef4444; border: 1px solid rgba(239, 68, 68, .3); }
+.diff-badge.easiest { background: rgba(34, 197, 94, .15); color: #16a34a; border: 1px solid rgba(34, 197, 94, .3); }
+.diff-badge.current { background: var(--green); color: #fff; }
+
+.difficulty-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+.diff-stat { display: flex; flex-direction: column; padding: 4px 6px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); }
+.diff-stat span { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.diff-stat strong { font: 700 13px "DM Mono", monospace; margin-top: 1px; }
+.diff-stat.fail strong { color: #ef4444; }
+.diff-stat.grade-a strong { color: #d97706; }
+.diff-stat.pass strong { color: #16a34a; }
+
+.difficulty-mini-bar { height: 6px; display: flex; border-radius: 999px; overflow: hidden; background: #e2e8f0; width: 100%; }
+.diff-bar-fail { background: #ef4444; height: 100%; }
+.diff-bar-pass { background: #16a34a; height: 100%; }
+
+:root[data-theme="dark"] .difficulty-mini-bar { background: #1e293b; }
+:root[data-theme="dark"] .compact-school-table thead { background: #0e1728; }
+:root[data-theme="dark"] .compact-school-table td { border-bottom-color: #1e2d47; }
+:root[data-theme="dark"] .table-prov-chip { background: #111c2f; border-color: #24354f; }
+:root[data-theme="dark"] .pass-rate-badge { background: rgba(34, 197, 94, .15); color: #4ade80; }
+:root[data-theme="dark"] .female-rate-badge { background: rgba(244, 114, 182, .15); color: #f472b6; }
+:root[data-theme="dark"] .diff-badge.current { color: #0b1220; }
+
 @media (max-width: 900px) {
   .track-comparison-grid { grid-template-columns: 1fr; }
   .subject-hero-top { flex-direction: column; align-items: stretch; }

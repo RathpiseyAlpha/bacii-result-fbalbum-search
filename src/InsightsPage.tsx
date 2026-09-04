@@ -6,21 +6,27 @@ import {
   BarChart3,
   BookOpen,
   Calculator,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Dna,
+  Flame,
   FlaskConical,
   Globe,
   GraduationCap,
   History,
   Images,
   Languages,
+  LayoutGrid,
   MapPin,
   Moon,
   Scale,
   School,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Sun,
+  Table as TableIcon,
   TrendingUp,
   Trophy,
   Users,
@@ -220,6 +226,29 @@ const copy = {
     trackComparisonTitle: "Track Comparison: Science vs. Social Science",
     trackComparisonHelp: "Side-by-side performance for subjects taken by both tracks.",
     gradeFNote: "Note: Grade F in an individual subject does not mean the candidate failed BacII, as overall passing is determined by aggregate scores.",
+    // UI Enhancements & Compact Table Strings
+    viewMode: "View",
+    viewTable: "Compact table",
+    viewCards: "Card view",
+    togglePodiumHide: "Hide podium",
+    togglePodiumShow: "Show podium",
+    colRank: "#",
+    colSchool: "High School (អាគតដ្ឋាន)",
+    colProvince: "Province",
+    colCandidates: "Candidates",
+    colFemale: "Female",
+    colTrack: "Track mix",
+    colGradeA: "Grade A",
+    colPassRate: "Pass rate",
+    colGradeDistribution: "Grade distribution (A–E)",
+    colSubjectDistribution: "Subject grades (A–F)",
+    subjectDifficultyTitle: "Subject Difficulty Index",
+    subjectDifficultySubtitle: "Comparative ranking of subjects by failure rate (Grade F) vs. Grade A yield",
+    hardestSubject: "Most Challenging",
+    easiestSubject: "Highest Scoring",
+    gradeFRate: "Grade F rate",
+    gradeAPct: "Grade A rate",
+    subjectSelected: "Selected",
   },
   km: {
     brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរកតាម Facebook", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
@@ -271,6 +300,29 @@ const copy = {
     trackComparisonTitle: "ការប្រៀបធៀបរវាងថ្នាក់វិទ្យាសាស្ត្រ និងវិទ្យាសាស្ត្រសង្គម",
     trackComparisonHelp: "ការប្រៀបធៀបនិទ្ទេសសម្រាប់មុខវិជ្ជាដែលមានទាំងពីរថ្នាក់ (ដូចជា គណិតវិទ្យា ភាសាខ្មែរ ប្រវត្តិវិទ្យា ភាសាបរទេស)។",
     gradeFNote: "សម្គាល់៖ និទ្ទេស F ក្នុងមុខវិជ្ជាជាក់លាក់មួយ មិនមែនមានន័យថាធ្លាក់បាក់ឌុបនោះទេ ព្រោះលទ្ធផលជាប់សរុបគិតលើពិន្ទុសរុបគ្រប់មុខវិជ្ជា។",
+    // UI Enhancements & Compact Table Strings
+    viewMode: "ទម្រង់បង្ហាញ",
+    viewTable: "តារាងសង្ខេប",
+    viewCards: "កាតលម្អិត",
+    togglePodiumHide: "លាក់ផ្ទាំងឆ្នើម",
+    togglePodiumShow: "បង្ហាញផ្ទាំងឆ្នើម",
+    colRank: "ល.រ",
+    colSchool: "អាគតដ្ឋាន",
+    colProvince: "រាជធានី/ខេត្ត",
+    colCandidates: "បេក្ខជន",
+    colFemale: "នារី",
+    colTrack: "សមាមាត្រថ្នាក់",
+    colGradeA: "និទ្ទេស A",
+    colPassRate: "អត្រាជាប់ (A–E)",
+    colGradeDistribution: "សមាមាត្រនិទ្ទេស (A–E)",
+    colSubjectDistribution: "សមាមាត្រនិទ្ទេស (A–F)",
+    subjectDifficultyTitle: "សន្ទស្សន៍កម្រិតលំបាកតាមមុខវិជ្ជា",
+    subjectDifficultySubtitle: "ការប្រៀបធៀបកម្រិតលំបាកនៃមុខវិជ្ជានីមួយៗ តាមរយៈអត្រានិទ្ទេស F និងនិទ្ទេស A",
+    hardestSubject: "មុខវិជ្ជាពិបាកជាងគេ",
+    easiestSubject: "មុខវិជ្ជាពិន្ទុខ្ពស់ជាងគេ",
+    gradeFRate: "អត្រានិទ្ទេស F",
+    gradeAPct: "អត្រានិទ្ទេស A",
+    subjectSelected: "បានជ្រើសរើស",
   },
 } as const;
 
@@ -399,13 +451,18 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // View mode & UX states
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [showOverviewPodium, setShowOverviewPodium] = useState(true);
+  const [showSubjectPodium, setShowSubjectPodium] = useState(true);
+
   // High School (អាគតដ្ឋាន) Explorer state
   const [schools, setSchools] = useState<SchoolAnalysis[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [schoolSearch, setSchoolSearch] = useState("");
   const [schoolProvince, setSchoolProvince] = useState("all");
   const [schoolSort, setSchoolSort] = useState<"gradeA" | "gradeAPercent" | "candidates" | "name">("gradeA");
-  const [schoolDisplayLimit, setSchoolDisplayLimit] = useState(20);
+  const [schoolDisplayLimit, setSchoolDisplayLimit] = useState(25);
 
   // Subject Analysis state
   const [selectedTrack, setSelectedTrack] = useState<"science" | "social-science">("science");
@@ -416,7 +473,7 @@ export default function InsightsPage() {
   const [subjectSearch, setSubjectSearch] = useState("");
   const [subjectProvince, setSubjectProvince] = useState("all");
   const [subjectSort, setSubjectSort] = useState<"gradeA" | "gradeAPercent" | "candidates" | "passRate" | "name">("gradeA");
-  const [subjectDisplayLimit, setSubjectDisplayLimit] = useState(20);
+  const [subjectDisplayLimit, setSubjectDisplayLimit] = useState(25);
 
   const t = copy[language];
 
@@ -629,6 +686,22 @@ export default function InsightsPage() {
   const visibleSubjectSchools = useMemo(() => {
     return filteredSubjectSchools.slice(0, subjectDisplayLimit);
   }, [filteredSubjectSchools, subjectDisplayLimit]);
+
+  const trackSubjectRankings = useMemo(() => {
+    const currentTrackOverviews = subjectOverviews.filter((o) => o.track === selectedTrack);
+    return currentTrackOverviews.map((item) => {
+      const total = item.totalCandidates || 1;
+      const gradeFRate = Number(((item.grades.F / total) * 100).toFixed(1));
+      const gradeARate = item.gradeAPercent;
+      const passRate = item.passPercent;
+      return {
+        ...item,
+        gradeFRate,
+        gradeARate,
+        passRate,
+      };
+    }).sort((a, b) => b.gradeFRate - a.gradeFRate); // Ranked by highest failure rate first
+  }, [subjectOverviews, selectedTrack]);
 
   return (
     <main className="insights-page">
@@ -844,77 +917,90 @@ export default function InsightsPage() {
                 {champions.length > 0 && (
                   <div className="school-champions-block">
                     <div className="champions-header">
-                      <Trophy size={18} className="champions-trophy-icon" />
-                      <div>
-                        <h3>{t.gradeAChampions}</h3>
-                        <p>{t.gradeAChampionsHelp}</p>
+                      <div className="champions-header-left">
+                        <Trophy size={18} className="champions-trophy-icon" />
+                        <div>
+                          <h3>{t.gradeAChampions}</h3>
+                          <p>{t.gradeAChampionsHelp}</p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        className="podium-toggle-btn"
+                        onClick={() => setShowOverviewPodium(!showOverviewPodium)}
+                        aria-expanded={showOverviewPodium}
+                      >
+                        {showOverviewPodium ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        <span>{showOverviewPodium ? t.togglePodiumHide : t.togglePodiumShow}</span>
+                      </button>
                     </div>
 
-                    <div className="school-champions-grid">
-                      {champions.map((champion, idx) => {
-                        const medalClass = idx === 0 ? "gold" : idx === 1 ? "silver" : "bronze";
-                        const femalePct =
-                          champion.candidateCount > 0
-                            ? Math.round((champion.femaleCount / champion.candidateCount) * 100)
-                            : 0;
-                        const provObj = selected.provinces.find(
-                          (p) => p.id === champion.provinceId || p.id === champion.province || p.name === champion.province
-                        );
-                        const provLabel =
-                          language === "km"
-                            ? provObj?.name || champion.province
-                            : provinceEnglish[champion.provinceId || champion.province] || champion.province;
+                    {showOverviewPodium && (
+                      <div className="school-champions-grid">
+                        {champions.map((champion, idx) => {
+                          const medalClass = idx === 0 ? "gold" : idx === 1 ? "silver" : "bronze";
+                          const femalePct =
+                            champion.candidateCount > 0
+                              ? Math.round((champion.femaleCount / champion.candidateCount) * 100)
+                              : 0;
+                          const provObj = selected.provinces.find(
+                            (p) => p.id === champion.provinceId || p.id === champion.province || p.name === champion.province
+                          );
+                          const provLabel =
+                            language === "km"
+                              ? provObj?.name || champion.province
+                              : provinceEnglish[champion.provinceId || champion.province] || champion.province;
 
-                        return (
-                          <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
-                            <div className="champion-card-top">
-                              <span className={`champion-rank-badge rank-${idx + 1}`}>
-                                <Award size={14} />
-                                #{idx + 1}
-                              </span>
-                              <span className="province-chip">
-                                <MapPin size={11} /> {provLabel}
-                              </span>
-                            </div>
-
-                            <div className="champion-school-name-box">
-                              <OfficialSchoolImage
-                                year={selected.year}
-                                studentId={champion.sampleStudentId}
-                                fallback={champion.name}
-                              />
-                            </div>
-
-                            <div className="champion-stat-hero">
-                              <div className="champion-stat-main">
-                                <strong>{numberFormat.format(champion.grades.A)}</strong>
-                                <span>{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
-                              </div>
-                              <div className="champion-stat-sub">
-                                <b>{champion.gradeAPercent.toFixed(1)}%</b>
-                                <small>{language === "km" ? "នៃបេក្ខជនសរុប" : "of candidates"}</small>
-                              </div>
-                            </div>
-
-                            <SchoolStackedGradeBar grades={champion.grades} total={champion.candidateCount} />
-
-                            <div className="champion-footer-stats">
-                              <span>{numberFormat.format(champion.candidateCount)} {t.candidatesUnit}</span>
-                              <span className="gender-dot">♀ {femalePct}% {t.femalePercent}</span>
-                            </div>
-
-                            <div className="champion-pills">
-                              {grades.map((g) => (
-                                <span key={g} className={`pill-mini pill-${g.toLowerCase()}`}>
-                                  <b>{g}</b> {numberFormat.format(champion.grades[g] || 0)}
+                          return (
+                            <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
+                              <div className="champion-card-top">
+                                <span className={`champion-rank-badge rank-${idx + 1}`}>
+                                  <Award size={14} />
+                                  #{idx + 1}
                                 </span>
-                              ))}
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
+                                <span className="province-chip">
+                                  <MapPin size={11} /> {provLabel}
+                                </span>
+                              </div>
+
+                              <div className="champion-school-name-box">
+                                <OfficialSchoolImage
+                                  year={selected.year}
+                                  studentId={champion.sampleStudentId}
+                                  fallback={champion.name}
+                                />
+                              </div>
+
+                              <div className="champion-stat-hero">
+                                <div className="champion-stat-main">
+                                  <strong>{numberFormat.format(champion.grades.A)}</strong>
+                                  <span>{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
+                                </div>
+                                <div className="champion-stat-sub">
+                                  <b>{champion.gradeAPercent.toFixed(1)}%</b>
+                                  <small>{language === "km" ? "នៃបេក្ខជនសរុប" : "of candidates"}</small>
+                                </div>
+                              </div>
+
+                              <SchoolStackedGradeBar grades={champion.grades} total={champion.candidateCount} />
+
+                              <div className="champion-footer-stats">
+                                <span>{numberFormat.format(champion.candidateCount)} {t.candidatesUnit}</span>
+                                <span className="gender-dot">♀ {femalePct}% {t.femalePercent}</span>
+                              </div>
+
+                              <div className="champion-pills">
+                                {grades.map((g) => (
+                                  <span key={g} className={`pill-mini pill-${g.toLowerCase()}`}>
+                                    <b>{g}</b> {numberFormat.format(champion.grades[g] || 0)}
+                                  </span>
+                                ))}
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -958,18 +1044,105 @@ export default function InsightsPage() {
                     </label>
                   </div>
 
+                  <div className="view-mode-toggle" role="group" aria-label={t.viewMode}>
+                    <button
+                      type="button"
+                      className={`view-toggle-btn ${viewMode === "table" ? "active" : ""}`}
+                      onClick={() => setViewMode("table")}
+                      title={t.viewTable}
+                      aria-pressed={viewMode === "table"}
+                    >
+                      <TableIcon size={14} />
+                      <span>{t.viewTable}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`view-toggle-btn ${viewMode === "cards" ? "active" : ""}`}
+                      onClick={() => setViewMode("cards")}
+                      title={t.viewCards}
+                      aria-pressed={viewMode === "cards"}
+                    >
+                      <LayoutGrid size={14} />
+                      <span>{t.viewCards}</span>
+                    </button>
+                  </div>
+
                   <div className="school-count-chip">
                     {t.showingCount(Math.min(visibleSchools.length, filteredSchools.length), filteredSchools.length)}
                   </div>
                 </div>
 
-                {/* High School Cards / Leaderboard */}
+                {/* High School Table or Cards */}
                 {loadingSchools ? (
                   <div className="archive-state">{t.loading}</div>
                 ) : filteredSchools.length === 0 ? (
                   <div className="archive-empty">
                     <School size={32} />
                     <h3>{t.noSchoolsFound}</h3>
+                  </div>
+                ) : viewMode === "table" ? (
+                  <div className="compact-table-wrap">
+                    <table className="compact-school-table">
+                      <thead>
+                        <tr>
+                          <th className="th-rank">{t.colRank}</th>
+                          <th className="th-school">{t.colSchool}</th>
+                          <th className="th-province">{t.colProvince}</th>
+                          <th className="th-num">{t.colCandidates}</th>
+                          <th className="th-female">{t.colFemale}</th>
+                          <th className="th-grade-a">{t.colGradeA}</th>
+                          <th className="th-bar">{t.colGradeDistribution}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleSchools.map((school, index) => {
+                          const femalePct =
+                            school.candidateCount > 0
+                              ? Math.round((school.femaleCount / school.candidateCount) * 100)
+                              : 0;
+                          const provObj = selected.provinces.find(
+                            (p) => p.id === school.provinceId || p.id === school.province || p.name === school.province
+                          );
+                          const provLabel =
+                            language === "km"
+                              ? provObj?.name || school.province
+                              : provinceEnglish[school.provinceId || school.province] || school.province;
+
+                          return (
+                            <tr key={`${school.province}-${school.name}`}>
+                              <td className="td-rank">#{index + 1}</td>
+                              <td className="td-school">
+                                <div className="table-school-cell">
+                                  <OfficialSchoolImage
+                                    year={selected.year}
+                                    studentId={school.sampleStudentId}
+                                    fallback={school.name}
+                                  />
+                                </div>
+                              </td>
+                              <td className="td-province">
+                                <span className="table-prov-chip">{provLabel}</span>
+                              </td>
+                              <td className="td-num">
+                                <strong>{numberFormat.format(school.candidateCount)}</strong>
+                              </td>
+                              <td className="td-female">
+                                <span className="female-rate-badge">♀ {femalePct}%</span>
+                              </td>
+                              <td className="td-grade-a">
+                                <span className={`grade-a-badge ${school.grades.A > 0 ? "has-a" : "zero-a"}`}>
+                                  <strong>{numberFormat.format(school.grades.A)}</strong>
+                                  <small>({school.gradeAPercent.toFixed(1)}%)</small>
+                                </span>
+                              </td>
+                              <td className="td-bar">
+                                <SchoolStackedGradeBar grades={school.grades} total={school.candidateCount} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <div className="school-list-grid">
@@ -1273,77 +1446,157 @@ export default function InsightsPage() {
                       </article>
                     )}
 
+                    {/* Subject Difficulty Index Card */}
+                    {trackSubjectRankings.length > 0 && (
+                      <article className="insight-card subject-difficulty-card">
+                        <div className="dashboard-card-head">
+                          <div>
+                            <span className="eyebrow"><Flame size={14} /> {selected.year} · {selectedTrack === "science" ? t.scienceTrack : t.socialTrack}</span>
+                            <h2>{t.subjectDifficultyTitle}</h2>
+                            <p className="card-subtext">{t.subjectDifficultySubtitle}</p>
+                          </div>
+                        </div>
+                        <div className="difficulty-grid">
+                          {trackSubjectRankings.map((subj, idx) => {
+                            const isSelected = subj.key === selectedSubject;
+                            const isHardest = idx === 0;
+                            const isEasiest = idx === trackSubjectRankings.length - 1;
+                            return (
+                              <div
+                                key={subj.key}
+                                className={`difficulty-item ${isSelected ? "selected" : ""}`}
+                                onClick={() => setSelectedSubject(subj.key)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") setSelectedSubject(subj.key);
+                                }}
+                              >
+                                <div className="difficulty-item-header">
+                                  <div className="difficulty-title-left">
+                                    <span className="difficulty-rank">#{idx + 1}</span>
+                                    <span className="difficulty-icon">{renderSubjectIcon(subj.key)}</span>
+                                    <strong className="difficulty-name">
+                                      {language === "km" ? subj.nameKm : subj.nameEn}
+                                    </strong>
+                                  </div>
+                                  <div className="difficulty-tags">
+                                    {isHardest && <span className="diff-badge hardest">{t.hardestSubject}</span>}
+                                    {isEasiest && <span className="diff-badge easiest">{t.easiestSubject}</span>}
+                                    {isSelected && <span className="diff-badge current">{t.subjectSelected}</span>}
+                                  </div>
+                                </div>
+
+                                <div className="difficulty-stats-row">
+                                  <div className="diff-stat fail">
+                                    <span>{t.gradeFRate}</span>
+                                    <strong>{subj.gradeFRate}%</strong>
+                                  </div>
+                                  <div className="diff-stat grade-a">
+                                    <span>{t.gradeAPct}</span>
+                                    <strong>{subj.gradeARate.toFixed(1)}%</strong>
+                                  </div>
+                                  <div className="diff-stat pass">
+                                    <span>{t.subjectPassRate}</span>
+                                    <strong>{subj.passRate.toFixed(1)}%</strong>
+                                  </div>
+                                </div>
+
+                                <div className="difficulty-mini-bar" title={`F: ${subj.gradeFRate}%, Pass: ${subj.passRate}%`}>
+                                  <div className="diff-bar-fail" style={{ width: `${Math.min(100, subj.gradeFRate)}%` }} />
+                                  <div className="diff-bar-pass" style={{ width: `${Math.max(0, 100 - subj.gradeFRate)}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </article>
+                    )}
+
                     {/* Top 3 អាគតដ្ឋាន Champions in this Subject */}
                     {subjectChampions.length > 0 && (
                       <div className="school-champions-block">
                         <div className="champions-header">
-                          <Trophy size={18} className="champions-trophy-icon" />
-                          <div>
-                            <h3>{t.subjectChampionsTitle}</h3>
-                            <p>{t.subjectChampionsHelp}</p>
+                          <div className="champions-header-left">
+                            <Trophy size={18} className="champions-trophy-icon" />
+                            <div>
+                              <h3>{t.subjectChampionsTitle}</h3>
+                              <p>{t.subjectChampionsHelp}</p>
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            className="podium-toggle-btn"
+                            onClick={() => setShowSubjectPodium(!showSubjectPodium)}
+                            aria-expanded={showSubjectPodium}
+                          >
+                            {showSubjectPodium ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            <span>{showSubjectPodium ? t.togglePodiumHide : t.togglePodiumShow}</span>
+                          </button>
                         </div>
 
-                        <div className="school-champions-grid">
-                          {subjectChampions.map((champion, idx) => {
-                            const medalClass = idx === 0 ? "gold" : idx === 1 ? "silver" : "bronze";
-                            const provObj = selected.provinces.find(
-                              (p) => p.id === champion.provinceId || p.id === champion.province || p.name === champion.province
-                            );
-                            const provLabel =
-                              language === "km"
-                                ? provObj?.name || champion.province
-                                : provinceEnglish[champion.provinceId || champion.province] || champion.province;
+                        {showSubjectPodium && (
+                          <div className="school-champions-grid">
+                            {subjectChampions.map((champion, idx) => {
+                              const medalClass = idx === 0 ? "gold" : idx === 1 ? "silver" : "bronze";
+                              const provObj = selected.provinces.find(
+                                (p) => p.id === champion.provinceId || p.id === champion.province || p.name === champion.province
+                              );
+                              const provLabel =
+                                language === "km"
+                                  ? provObj?.name || champion.province
+                                  : provinceEnglish[champion.provinceId || champion.province] || champion.province;
 
-                            return (
-                              <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
-                                <div className="champion-card-top">
-                                  <span className={`champion-rank-badge rank-${idx + 1}`}>
-                                    <Award size={14} />
-                                    #{idx + 1}
-                                  </span>
-                                  <span className="province-chip">
-                                    <MapPin size={11} /> {provLabel}
-                                  </span>
-                                </div>
-
-                                <div className="champion-school-name-box">
-                                  <OfficialSchoolImage
-                                    year={selected.year}
-                                    studentId={champion.sampleStudentId}
-                                    fallback={champion.name}
-                                  />
-                                </div>
-
-                                <div className="champion-stat-hero">
-                                  <div className="champion-stat-main">
-                                    <strong>{numberFormat.format(champion.gradeA)}</strong>
-                                    <span>{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
-                                  </div>
-                                  <div className="champion-stat-sub">
-                                    <b>{champion.gradeAPercent.toFixed(1)}%</b>
-                                    <small>{language === "km" ? "នៃបេក្ខជនក្នុងមុខវិជ្ជា" : "in this subject"}</small>
-                                  </div>
-                                </div>
-
-                                <SubjectStackedGradeBar grades={champion.grades} total={champion.totalCandidates} />
-
-                                <div className="champion-footer-stats">
-                                  <span>{numberFormat.format(champion.totalCandidates)} {t.candidatesUnit}</span>
-                                  <span className="gender-dot">{t.subjectPassRate}: {champion.passPercent.toFixed(1)}%</span>
-                                </div>
-
-                                <div className="champion-pills">
-                                  {subjectGrades.map((g) => (
-                                    <span key={g} className={`pill-mini pill-${g.toLowerCase()}`}>
-                                      <b>{g}</b> {numberFormat.format(champion.grades[g] || 0)}
+                              return (
+                                <article key={`${champion.province}-${champion.name}`} className={`school-champion-card medal-${medalClass}`}>
+                                  <div className="champion-card-top">
+                                    <span className={`champion-rank-badge rank-${idx + 1}`}>
+                                      <Award size={14} />
+                                      #{idx + 1}
                                     </span>
-                                  ))}
-                                </div>
-                              </article>
-                            );
-                          })}
-                        </div>
+                                    <span className="province-chip">
+                                      <MapPin size={11} /> {provLabel}
+                                    </span>
+                                  </div>
+
+                                  <div className="champion-school-name-box">
+                                    <OfficialSchoolImage
+                                      year={selected.year}
+                                      studentId={champion.sampleStudentId}
+                                      fallback={champion.name}
+                                    />
+                                  </div>
+
+                                  <div className="champion-stat-hero">
+                                    <div className="champion-stat-main">
+                                      <strong>{numberFormat.format(champion.gradeA)}</strong>
+                                      <span>{language === "km" ? "និទ្ទេស A" : "Grade A"}</span>
+                                    </div>
+                                    <div className="champion-stat-sub">
+                                      <b>{champion.gradeAPercent.toFixed(1)}%</b>
+                                      <small>{language === "km" ? "នៃបេក្ខជនក្នុងមុខវិជ្ជា" : "in this subject"}</small>
+                                    </div>
+                                  </div>
+
+                                  <SubjectStackedGradeBar grades={champion.grades} total={champion.totalCandidates} />
+
+                                  <div className="champion-footer-stats">
+                                    <span>{numberFormat.format(champion.totalCandidates)} {t.candidatesUnit}</span>
+                                    <span className="gender-dot">{t.subjectPassRate}: {champion.passPercent.toFixed(1)}%</span>
+                                  </div>
+
+                                  <div className="champion-pills">
+                                    {subjectGrades.map((g) => (
+                                      <span key={g} className={`pill-mini pill-${g.toLowerCase()}`}>
+                                        <b>{g}</b> {numberFormat.format(champion.grades[g] || 0)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </article>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1394,6 +1647,29 @@ export default function InsightsPage() {
                         </label>
                       </div>
 
+                      <div className="view-mode-toggle" role="group" aria-label={t.viewMode}>
+                        <button
+                          type="button"
+                          className={`view-toggle-btn ${viewMode === "table" ? "active" : ""}`}
+                          onClick={() => setViewMode("table")}
+                          title={t.viewTable}
+                          aria-pressed={viewMode === "table"}
+                        >
+                          <TableIcon size={14} />
+                          <span>{t.viewTable}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`view-toggle-btn ${viewMode === "cards" ? "active" : ""}`}
+                          onClick={() => setViewMode("cards")}
+                          title={t.viewCards}
+                          aria-pressed={viewMode === "cards"}
+                        >
+                          <LayoutGrid size={14} />
+                          <span>{t.viewCards}</span>
+                        </button>
+                      </div>
+
                       <div className="school-count-chip">
                         {t.showingCount(Math.min(visibleSubjectSchools.length, filteredSubjectSchools.length), filteredSubjectSchools.length)}
                       </div>
@@ -1403,6 +1679,66 @@ export default function InsightsPage() {
                       <div className="archive-empty">
                         <School size={32} />
                         <h3>{t.noSchoolsFound}</h3>
+                      </div>
+                    ) : viewMode === "table" ? (
+                      <div className="compact-table-wrap">
+                        <table className="compact-school-table">
+                          <thead>
+                            <tr>
+                              <th className="th-rank">{t.colRank}</th>
+                              <th className="th-school">{t.colSchool}</th>
+                              <th className="th-province">{t.colProvince}</th>
+                              <th className="th-num">{t.colCandidates}</th>
+                              <th className="th-pass">{t.colPassRate}</th>
+                              <th className="th-grade-a">{t.colGradeA}</th>
+                              <th className="th-bar">{t.colSubjectDistribution}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleSubjectSchools.map((school, index) => {
+                              const provObj = selected.provinces.find(
+                                (p) => p.id === school.provinceId || p.id === school.province || p.name === school.province
+                              );
+                              const provLabel =
+                                language === "km"
+                                  ? provObj?.name || school.province
+                                  : provinceEnglish[school.provinceId || school.province] || school.province;
+
+                              return (
+                                <tr key={`${school.province}-${school.name}`}>
+                                  <td className="td-rank">#{index + 1}</td>
+                                  <td className="td-school">
+                                    <div className="table-school-cell">
+                                      <OfficialSchoolImage
+                                        year={selected.year}
+                                        studentId={school.sampleStudentId}
+                                        fallback={school.name}
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="td-province">
+                                    <span className="table-prov-chip">{provLabel}</span>
+                                  </td>
+                                  <td className="td-num">
+                                    <strong>{numberFormat.format(school.totalCandidates)}</strong>
+                                  </td>
+                                  <td className="td-pass">
+                                    <span className="pass-rate-badge">{school.passPercent.toFixed(1)}%</span>
+                                  </td>
+                                  <td className="td-grade-a">
+                                    <span className={`grade-a-badge ${school.gradeA > 0 ? "has-a" : "zero-a"}`}>
+                                      <strong>{numberFormat.format(school.gradeA)}</strong>
+                                      <small>({school.gradeAPercent.toFixed(1)}%)</small>
+                                    </span>
+                                  </td>
+                                  <td className="td-bar">
+                                    <SubjectStackedGradeBar grades={school.grades} total={school.totalCandidates} />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     ) : (
                       <div className="school-list-grid">

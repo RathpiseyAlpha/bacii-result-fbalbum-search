@@ -8,6 +8,7 @@ git-ignored because it contains large public result documents and student data.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import csv
 import hashlib
 import http.client
@@ -121,6 +122,77 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def download_parallel_segments(url: str, target: Path, expected_size: int, num_workers: int = 6) -> bool:
+    if expected_size < 4_000_000:
+        return False
+    segment_size = (expected_size + num_workers - 1) // num_workers
+    tasks = []
+    for i in range(num_workers):
+        start = i * segment_size
+        end = min(expected_size - 1, (i + 1) * segment_size - 1)
+        tasks.append((i, start, end))
+
+    try:
+        with target.open("wb") as f:
+            f.seek(expected_size - 1)
+            f.write(b"\0")
+    except Exception:
+        return False
+
+    downloaded = [0] * num_workers
+    stop_event = False
+
+    def fetch_range(worker_id: int, start: int, end: int) -> bool:
+        nonlocal stop_event
+        expected_len = end - start + 1
+        for retry in range(1, 8):
+            if stop_event:
+                return False
+            req = urllib.request.Request(url, headers={**BROWSER_HEADERS, "Range": f"bytes={start}-{end}"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    if resp.status not in (200, 206):
+                        return False
+                    data = resp.read()
+                    if len(data) == expected_len:
+                        with target.open("r+b") as f:
+                            f.seek(start)
+                            f.write(data)
+                        downloaded[worker_id] = len(data)
+                        return True
+            except Exception:
+                time.sleep(1)
+        stop_event = True
+        return False
+
+    t0 = time.time()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(fetch_range, w_id, s, e) for w_id, s, e in tasks]
+        while any(not f.done() for f in futures):
+            time.sleep(2)
+            done_bytes = sum(downloaded)
+            pct = (done_bytes / expected_size * 100) if expected_size > 0 else 0
+            elapsed = time.time() - t0
+            spd = (done_bytes / 1024) / max(0.001, elapsed)
+            print(f"        parallel downloading: {done_bytes:,}/{expected_size:,} bytes ({pct:.1f}%) @ {spd:.1f} KB/s", flush=True)
+
+    if stop_event or not all(f.result() for f in futures):
+        return False
+
+    try:
+        with target.open("rb") as f:
+            if f.read(4) != b"%PDF":
+                return False
+        doc = pymupdf.open(target)
+        if doc.page_count < 1:
+            doc.close()
+            return False
+        doc.close()
+        return True
+    except Exception:
+        return False
+
+
 def download_pdf(url: str, target: Path, expected_size: int) -> None:
     parsed = urlparse(url)
     allowed_hosts = {"moeys.gov.kh", "file.go.gov.kh", "drive.usercontent.google.com"}
@@ -147,6 +219,17 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
         if not is_valid_pdf or (expected_size >= 100_000 and target.stat().st_size > expected_size):
             print(f"    removing invalid/corrupted staging PDF file: {target.name}", flush=True)
             target.unlink()
+
+    # Fast path: multi-worker parallel range download for large files (>= 4MB)
+    if expected_size >= 4_000_000 and not target.exists():
+        print(f"    starting multi-threaded range download ({expected_size:,} bytes)...", flush=True)
+        if download_parallel_segments(url, target, expected_size, num_workers=6):
+            print(f"    parallel download completed successfully ({expected_size:,} bytes).", flush=True)
+            return
+        else:
+            print("    parallel download interrupted or unsupported, falling back to sequential resume...", flush=True)
+            if target.exists():
+                target.unlink()
 
     curl_bin = "curl.exe" if sys.platform == "win32" else "curl"
     has_curl = False

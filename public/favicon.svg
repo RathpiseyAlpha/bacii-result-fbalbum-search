@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="baciiBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="60%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="baciiGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="capShade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Base emblem squircle -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#baciiBg)"/>
+  <rect x="3" y="3" width="58" height="58" rx="14" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+
+  <!-- Graduation Cap (Mortarboard) -->
+  <g filter="url(#shadow)">
+    <!-- Cap skull base / under-cup -->
+    <path d="M20,33 L20,41 C20,45.5 25.5,48.5 32,48.5 C38.5,48.5 44,45.5 44,41 L44,33 L32,38.5 Z" fill="#cbd5e1"/>
+    <path d="M22,34 L22,40 C22,43.5 26.5,46.5 32,46.5 C37.5,46.5 42,43.5 42,40 L42,34 L32,38.5 Z" fill="#94a3b8"/>
+    
+    <!-- Cap rhombus top -->
+    <polygon points="32,15 55,26.5 32,38 9,26.5" fill="url(#capShade)"/>
+    <polygon points="32,16 53,26.5 32,36.5 11,26.5" fill="#ffffff"/>
+
+    <!-- Center button -->
+    <circle cx="32" cy="26.5" r="2.5" fill="url(#baciiGold)"/>
+
+    <!-- Tassel string & fringe -->
+    <path d="M33,27 C38,29 48,32 48,39 L50,45.5 L46.5,45.5 L48,39" fill="url(#baciiGold)" stroke="url(#baciiGold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Academic Star Accent at Bottom -->
+  <path d="M32,50.5 L33.2,53.8 L36.7,54 L34,56.2 L34.8,59.5 L32,57.7 L29.2,59.5 L30,56.2 L27.3,54 L30.8,53.8 Z" fill="url(#baciiGold)"/>
+</svg>

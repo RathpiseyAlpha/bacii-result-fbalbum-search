@@ -707,14 +707,14 @@ export default function InsightsPage() {
     <main className="insights-page">
       <nav className="nav site-header shell">
         <a className="brand" href="#insights">
-          <span className="brand-mark"><Images size={20} /></span>
+          <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
           <span>{t.brand}</span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
-            <a href="#top" aria-label={t.facebook}><Images size={15} /><span>{t.facebook}</span></a>
-            <a href="#archive" aria-label={t.archive}><Archive size={15} /><span>{t.archive}</span></a>
-            <a className="active" href="#insights" aria-current="page" aria-label={t.insights}><BarChart3 size={15} /><span>{t.insights}</span></a>
+            <a href="#top" aria-label={t.facebook}><Search size={18} /><span>{t.facebook}</span></a>
+            <a href="#archive" aria-label={t.archive}><Archive size={18} /><span>{t.archive}</span></a>
+            <a className="active" href="#insights" aria-current="page" aria-label={t.insights}><BarChart3 size={18} /><span>{t.insights}</span></a>
           </div>
           <div className="header-actions">
             <button

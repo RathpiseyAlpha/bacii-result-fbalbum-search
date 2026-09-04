@@ -248,12 +248,12 @@ export default function ArchivePage() {
   return (
     <main className="archive-page">
       <nav className="nav site-header shell">
-        <a className="brand" href="#archive"><span className="brand-mark"><Images size={20} strokeWidth={2.2} /></span><span>{t.brandName}</span></a>
+        <a className="brand" href="#archive"><span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span><span>{t.brandName}</span></a>
         <div className="site-header-right">
           <div className="primary-nav">
-            <a href="#top" aria-label={t.facebookSearch}><Images size={15} /><span>{t.facebookSearch}</span></a>
-            <a className="active" href="#archive" aria-current="page" aria-label={t.archive}><Archive size={15} /><span>{t.archive}</span></a>
-            <a href="#insights" aria-label={t.insightsMenu}><BarChart3 size={15} /><span>{t.insightsMenu}</span></a>
+            <a href="#top" aria-label={t.facebookSearch}><Search size={18} /><span>{t.facebookSearch}</span></a>
+            <a className="active" href="#archive" aria-current="page" aria-label={t.archive}><Archive size={18} /><span>{t.archive}</span></a>
+            <a href="#insights" aria-label={t.insightsMenu}><BarChart3 size={18} /><span>{t.insightsMenu}</span></a>
           </div>
           <div className="header-actions">
           <button type="button" className="language-toggle" onClick={() => setLanguage(language === "en" ? "km" : "en")}><Languages size={15} /> {language === "en" ? "ខ្មែរ" : "EN"}</button>

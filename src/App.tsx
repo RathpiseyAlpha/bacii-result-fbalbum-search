@@ -581,14 +581,14 @@ function App() {
     <main>
       <nav className="nav site-header shell">
         <a className="brand" href="#top" aria-label={t("home")}>
-          <span className="brand-mark"><Images size={20} strokeWidth={2.2} /></span>
+          <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
           <span>{t("brandName")}</span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
-            <a className="active" href="#top" aria-current="page" aria-label={t("facebookSearch")}><Images size={15} /><span>{t("facebookSearch")}</span></a>
-            <a href="#archive" aria-label={t("resultsArchive")}><Archive size={15} /><span>{t("resultsArchive")}</span></a>
-            <a href="#insights" aria-label={t("insightsMenu")}><BarChart3 size={15} /><span>{t("insightsMenu")}</span></a>
+            <a className="active" href="#top" aria-current="page" aria-label={t("facebookSearch")}><Search size={18} /><span>{t("facebookSearch")}</span></a>
+            <a href="#archive" aria-label={t("resultsArchive")}><Archive size={18} /><span>{t("resultsArchive")}</span></a>
+            <a href="#insights" aria-label={t("insightsMenu")}><BarChart3 size={18} /><span>{t("insightsMenu")}</span></a>
           </div>
           <div className="header-actions">
             <button type="button" className="language-toggle" onClick={() => setLanguage((current) => current === "en" ? "km" : "en")}
@@ -876,7 +876,7 @@ function App() {
 
       <footer>
         <div className="shell footer-inner">
-          <div><a className="brand" href="#top"><span className="brand-mark"><Images size={18} /></span><span>{t("brandName")}</span></a><p>{t("tagline")}</p></div>
+          <div><a className="brand" href="#top"><span className="brand-mark"><GraduationCap size={20} strokeWidth={2.2} /></span><span>{t("brandName")}</span></a><p>{t("tagline")}</p></div>
           <p className="legal">{t("legal")}</p>
           <a className="source-link" href="#top">{t("backTop")} <ChevronRight size={15} /></a>
         </div>

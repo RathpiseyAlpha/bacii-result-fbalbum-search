@@ -123,7 +123,7 @@ def sha256_file(path: Path) -> str:
 
 
 def download_parallel_segments(url: str, target: Path, expected_size: int, num_workers: int = 6) -> bool:
-    if expected_size < 4_000_000:
+    if expected_size < 2_000_000:
         return False
     curl_bin = "curl.exe" if sys.platform == "win32" else "curl"
     segment_size = (expected_size + num_workers - 1) // num_workers
@@ -253,12 +253,13 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
             print(f"    removing invalid/corrupted staging PDF file: {target.name}", flush=True)
             target.unlink()
 
-    # Fast path: multi-worker parallel range download for large files (>= 4MB)
-    if expected_size >= 4_000_000 and (not target.exists() or target.stat().st_size != expected_size):
-        print(f"    starting multi-threaded range download ({expected_size:,} bytes)...", flush=True)
+    # Fast path: multi-worker parallel range download for files >= 2MB
+    if expected_size >= 2_000_000 and (not target.exists() or target.stat().st_size != expected_size):
+        workers = 6 if expected_size >= 8_000_000 else 4
+        print(f"    starting multi-threaded range download ({expected_size:,} bytes, {workers} workers)...", flush=True)
         if target.exists():
             target.unlink()
-        if download_parallel_segments(url, target, expected_size, num_workers=6):
+        if download_parallel_segments(url, target, expected_size, num_workers=workers):
             print(f"    parallel download completed successfully ({expected_size:,} bytes).", flush=True)
             return
         else:

@@ -420,6 +420,10 @@ export function classifySchoolType(name: string, raw?: string): "public" | "priv
     "Ǖល់េអȢហǒន", "អាល់អៀហសាន", "al-ihsan", "al ihsan", "ihsan",
     // Royal Intercon & Royal
     "រ៉ូǌ៉ល់អុិនធឺខន", "រ៉ូយ៉ាល់អ៊ិនធឺខន", "រ៉ូǌ៉ល់", "រ៉ូǌល់", "អុិនធឺខន", "អ៊ិនធឺខន", "royal intercon", "royal",
+    // Libkhun High School
+    "លិបឃុន", "លីបឃុន", "libkhun",
+    // Edson / Addition School of Siem Reap
+    "អធសណ", "សƀូល អហƛ", "ស្គូល អហ្វ", "ស្គូល", "សƀូល", "edson",
     "សនƎǒវីេយ", "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
     "ǒǎេរȢន", "សាលារៀន", "ǒǎ", "វិ.សាលា", "Ǖƴេដមី", "អាខាដេមី", "ƙគីប", "គ្រីប",
     "ឯកជន", "private", "school",
@@ -960,6 +964,31 @@ export function resolveSchoolBranch(
     raw.includes("រ៉ូយ៉ាល់ភ្នំពេញ")
   ) {
     const baseName = "វិ.រ៉ូយ៉ាល់ភ្នំពេញ";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 27. Libkhun High School (វិ.លិបឃុន)
+  if (raw.includes("លិបឃុន") || raw.includes("លីបឃុន") || raw.toLowerCase().includes("libkhun")) {
+    const baseName = "វិ.លិបឃុន";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 28. Edson / Addition School of Siem Reap (វិ.អធសណ ស្គូល អហ្វ សៀមរាប)
+  if (
+    raw.includes("អធសណ") ||
+    (raw.includes("សƀូល") && raw.includes("អហƛ")) ||
+    (raw.includes("ស្គូល") && raw.includes("អហ្វ")) ||
+    raw.toLowerCase().includes("edson")
+  ) {
+    const baseName = "វិ.អធសណ ស្គូល អហ្វ សៀមរាប";
     return {
       baseName,
       branch: undefined,

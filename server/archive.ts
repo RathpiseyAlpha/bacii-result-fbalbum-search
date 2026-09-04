@@ -387,6 +387,17 @@ export function resolveSchoolBranch(
   const raw = (rawSchool || "").replace(/[\u200b\u00a0]/g, " ").trim();
   const centers = examCenters || "";
 
+  // 0. Separate school in Preah Sihanouk: វិ.អន្តរទ្វីប (Intercon High School - not a branch of AIS)
+  if (
+    (raw.includes("អនƎរទƛីប") || raw.includes("អន្តរទ្វីប")) &&
+    (province.includes("ព្រះសីហនុ") || (!raw.includes("ǕេមរិƳំង") && !raw.includes("អាមេរិកាំង")))
+  ) {
+    return {
+      baseName: "វិ.អន្តរទ្វីប",
+      groupKey: "វិ.អន្តរទ្វីប",
+    };
+  }
+
   // 1. AIS (American Intercon School / អន្តរទ្វីប អាមេរិកាំង)
   if (raw.includes("អនƎរទƛីប") || raw.includes("អន្តរទ្វីប")) {
     const baseName = "វិ.សាលារៀន អន្តរទ្វីប អាមេរិកាំង";
@@ -412,8 +423,6 @@ export function resolveSchoolBranch(
       branch = "សាខាតាកែវ";
     } else if (province.includes("សៀមរាប")) {
       branch = "សាខាសៀមរាប";
-    } else if (province.includes("ព្រះសីហនុ")) {
-      branch = "សាខាព្រះសីហនុ";
     } else {
       // Check exam centers for truncated records (e.g. ending in '(' or 'ែ...')
       if (

@@ -190,12 +190,29 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
                 "-H", "Accept: application/pdf,text/html,application/xhtml+xml,*/*",
                 "-H", "Accept-Language: en-US,en;q=0.9,km;q=0.8",
                 "--connect-timeout", "20",
+                "--speed-limit", "1024",
+                "--speed-time", "15",
                 url,
                 "-o", str(target),
             ]
-            res = subprocess.run(cmd, capture_output=True, text=True)
-            if res.stderr and "transfer closed" not in res.stderr and "curl: (18)" not in res.stderr:
-                print(f"    curl log: {res.stderr.strip()}", flush=True)
+            proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+            last_size = current
+            last_change = time.time()
+            while proc.poll() is None:
+                time.sleep(3)
+                now_size = target.stat().st_size if target.exists() else 0
+                if now_size != last_size:
+                    last_size = now_size
+                    last_change = time.time()
+                    pct = (now_size / expected_size * 100) if expected_size > 0 else 0
+                    print(f"        downloading: {now_size:,}/{expected_size:,} bytes ({pct:.1f}%)", flush=True)
+                elif time.time() - last_change > 25:
+                    print("        transfer stalled, restarting attempt...", flush=True)
+                    proc.kill()
+                    break
+            stderr = proc.stderr.read() if proc.stderr else ""
+            if stderr and "transfer closed" not in stderr and "curl: (18)" not in stderr:
+                print(f"    curl log: {stderr.strip()}", flush=True)
         else:
             req = urllib.request.Request(url, headers=BROWSER_HEADERS)
             if current > 0:
@@ -222,6 +239,7 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
                         mode = "wb"
                         current = 0
 
+                    last_logged = current
                     with target.open(mode) as f:
                         while True:
                             try:
@@ -229,6 +247,11 @@ def download_pdf(url: str, target: Path, expected_size: int) -> None:
                                 if not chunk:
                                     break
                                 f.write(chunk)
+                                now_sz = target.stat().st_size if target.exists() else 0
+                                if now_sz - last_logged >= 2 * 1024 * 1024:
+                                    last_logged = now_sz
+                                    pct = (now_sz / expected_size * 100) if expected_size > 0 else 0
+                                    print(f"        downloading: {now_sz:,}/{expected_size:,} bytes ({pct:.1f}%)", flush=True)
                             except (http.client.IncompleteRead, urllib.error.URLError, TimeoutError) as chunk_err:
                                 if hasattr(chunk_err, "partial") and chunk_err.partial:
                                     f.write(chunk_err.partial)

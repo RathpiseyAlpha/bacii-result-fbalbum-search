@@ -414,6 +414,12 @@ export function classifySchoolType(name: string, raw?: string): "public" | "priv
     "Ǖត់ǂៃម៉យូស", "អាត់តាម៉ៃយូស", "អាត់តាម៉េយូស", "emmaus", "athameus",
     // Adventist
     "Ǖត់េវនទីស", "អាត់វេនទីស្ត", "adventist",
+    // CIA First International School
+    "សុី Ǖយ េអ", "សុីǕយេអ", "សុីǕយ", "ស៊ី អាយ អេ", "ស៊ីអាយអេ", "ហƛឺសត៍", "ហ្វឺសត៍", "ហ្កឹស្ត", "cia first", "cia",
+    // Al-Ihsan
+    "Ǖល់េអȢហǒន", "អាល់អៀហសាន", "al-ihsan", "al ihsan", "ihsan",
+    // Royal Intercon & Royal
+    "រ៉ូǌ៉ល់អុិនធឺខន", "រ៉ូយ៉ាល់អ៊ិនធឺខន", "រ៉ូǌ៉ល់", "រ៉ូǌល់", "អុិនធឺខន", "អ៊ិនធឺខន", "royal intercon", "royal",
     "សនƎǒវីេយ", "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
     "ǒǎេរȢន", "សាលារៀន", "ǒǎ", "វិ.សាលា", "Ǖƴេដមី", "អាខាដេមី", "ƙគីប", "គ្រីប",
     "ឯកជន", "private", "school",
@@ -893,6 +899,67 @@ export function resolveSchoolBranch(
     raw.toLowerCase().includes("athameus")
   ) {
     const baseName = "វិ.អាត់តាម៉ៃយូស";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 23. CIA First International School (វិ.សាលាអន្តរជាតិ ស៊ី អាយ អេ ហ្វឺសត៍)
+  if (
+    raw.includes("សុី Ǖយ េអ") ||
+    raw.includes("សុីǕយេអ") ||
+    raw.includes("សុីǕយ") ||
+    raw.includes("ស៊ី អាយ អេ") ||
+    raw.includes("ស៊ីអាយអេ") ||
+    raw.toLowerCase().includes("cia")
+  ) {
+    const baseName = "វិ.សាលាអន្តរជាតិ ស៊ី អាយ អេ ហ្វឺសត៍";
+    const branch = raw.includes("ចǙរអំេǺ") || raw.includes("ច្បារអំពៅ") ? "សាខាច្បារអំពៅ" : "សាខាសែនសុខ";
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch}`,
+    };
+  }
+
+  // 24. Al-Ihsan High School (វិ.អាល់អៀហសាន)
+  if (
+    raw.includes("Ǖល់េអȢហǒន") ||
+    raw.includes("អាល់អៀហសាន") ||
+    raw.toLowerCase().includes("ihsan")
+  ) {
+    const baseName = "វិ.អាល់អៀហសាន";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 25. Royal Intercon High School (វិ.រ៉ូយ៉ាល់អ៊ិនធឺខន)
+  if (
+    raw.includes("រ៉ូǌ៉ល់អុិនធឺខន") ||
+    raw.includes("រ៉ូយ៉ាល់អ៊ិនធឺខន") ||
+    raw.includes("អុិនធឺខន") ||
+    raw.includes("អ៊ិនធឺខន") ||
+    raw.toLowerCase().includes("royal intercon")
+  ) {
+    const baseName = "វិ.រ៉ូយ៉ាល់អ៊ិនធឺខន";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 26. Royal High School Phnom Penh (វិ.រ៉ូយ៉ាល់ភ្នំពេញ)
+  if (
+    raw.includes("រ៉ូǌល់ភƒំេពញ") ||
+    raw.includes("រ៉ូយ៉ាល់ភ្នំពេញ")
+  ) {
+    const baseName = "វិ.រ៉ូយ៉ាល់ភ្នំពេញ";
     return {
       baseName,
       branch: undefined,

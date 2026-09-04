@@ -309,63 +309,99 @@ export function cleanLimonBranch(rawBranch: string): string {
 }
 
 export function classifySchoolType(name: string, raw?: string): "public" | "private" {
-  const text = `${name} ${raw || ""}`.toLowerCase();
+  const rawStr = `${name} ${raw || ""}`;
+  const lowerStr = rawStr.toLowerCase();
 
-  // Explicit Public overrides (state schools that contain friendship countries or geography)
+  // Explicit Public overrides (state schools, Hun Sen, royal public figures, teacher colleges)
   if (
-    text.includes("មិត្តភាពខ្មែរ-ជប៉ុន") ||
-    text.includes("ខ្មែរ-ជប៉ុន") ||
-    text.includes("កោះចិន") ||
-    text.includes("គរុកោសល្យ") ||
-    text.includes("មជƆ.គរុ") ||
-    text.includes("ពុទ្ធិក") ||
-    text.includes("ព្រះសុរាម្រឹត")
+    rawStr.includes("ហ៊ុន សែន") ||
+    rawStr.includes("ហ៊ុនែសន") ||
+    rawStr.includes("វិ.ហស") ||
+    rawStr.includes(" ហស ") ||
+    rawStr.includes("សម្តេច") ||
+    rawStr.includes("សេមƎច") ||
+    rawStr.includes("ព្រះ") ||
+    rawStr.includes("ƙពះ") ||
+    rawStr.includes("មិត្តភាពខ្មែរ-ជប៉ុន") ||
+    rawStr.includes("ខ្មែរ-ជប៉ុន") ||
+    rawStr.includes("កោះចិន") ||
+    rawStr.includes("គរុកោសល្យ") ||
+    rawStr.includes("មជƆ.គរុ") ||
+    rawStr.includes("ពុទ្ធិក") ||
+    rawStr.includes("ព្រះសុរាម្រឹត") ||
+    rawStr.includes("បឋមសិក្សា") ||
+    rawStr.includes("អនុវិទ្យាល័យ") ||
+    rawStr.includes("អនុ.") ||
+    rawStr.includes("ចំរើនវិជ្ជា")
   ) {
     return "public";
   }
 
-  // Known Private identifiers (networks, international schools, private institutions)
+  // Known Private identifiers (networks, English loanwords written in Khmer, Limon glyphs, international schools)
   const privateKeywords = [
-    "អន្តរជាតិ", "អនƎរƺតិ", "អនƎរ", "international",
+    // International & English loanwords in Khmer / Limon
+    "អន្តរជាតិ", "អនƎរƺតិ", "អនƎរ", "អន្តរ", "អ៊ិនធើ", "អុិនធើ", "អ៊ិនថើ", "អុីនធើ", "international", "internat",
+    "អាមេរិកាំង", "ǕេមរិƳំង", "Ǖេមរិ", "Ǖេមរិកាំង", "អាមេរិក", "american", "usa", "យូ េអស េអ", "យូេសអេ",
+    "អារីហ្សូន", "Ǖរីហƞូន", "Ǖរីហ", "ǖរីហ", "arizona",
+    "ហ្គេតវ៉េ", "ហ្គេត", "េហƀតេវ៉", "េហƀត", "gateway", "newgate", "new-gate", "ញូវ", "new york", "new world", "newton", "ញូវេǃន",
+    "ដារ៉ាហ្កាន", "ដារ៉ាហ្គាន", "ដារ៉ា", "ǈǍ៉ហƀន", "ǈǍ៉", "daraghane", "daragane",
+    "បញ្ញាសាស្ត្រ", "បȦƈ ǒȝសƎ", "បȦƈ", "psic", "psis", "puc",
+    "មីលលេននៀម", "មីលលេន", "មីល", "មីលេលនេនȢម", "មីលេលន", "millennium",
+    "វេស្តើន", "េវេស", "េវ៉ស", "វេសថឺន", "វេសធើន", "វេសហ្គេត", "េវសេហƀត", "វេសឡាញ", "វេសឡាញន៍", "western", "westgate", "westline", "westland",
     "ប៊ែលធី", "ប៊លធី", "ែប៊លធី", "beltei",
     "សុវណ្ណភូមិ", "សុវណƍភូមិ", "sovannaphumi",
-    "អន្តរទ្វីប", "american intercon", " ais ", "ais",
-    "វេស្តើន", "េវេស", "េវ៉ស", "វេសថឺន", "វេសធើន", "western", "westland",
-    "បញ្ញាសាស្ត្រ", "psic", "psis",
-    "ទួនហ្វា", "ទួនǓƛ", "tuan hoa",
-    "ចុងហ្វា", "ប៉េកាំង", "ដួងហ្វា",
-    "អាមេរិកាំង", "american", "us ", "usa", "យូ េអស េអ",
-    "អារីហ្សូន", "arizona",
+    "អន្តរទ្វីប", "អនƎរទƛីប", "american intercon", " ais ", "ais",
+    "ទួនហ្វា", "ទួនǓƛ", "tuan hoa", "ចុងហ្វា", "ប៉េកាំង", "ដួងហ្វា",
+    "ឌូវី", "dewey",
+    "ខេមប៊្រីដ", "ខេមប្រ៊ីជ", "េខមƙប៊ីត", "េខមƙប៊ីជ", "ƙប៊ីជ", "cambridge", "bridge",
+    "ភƘូឆឺរ", "ភ្យូឆឺរ", "future", "ែȜហƀន", "ប្រាយស្តារ", "brightstar", "bright",
+    "Ȝហƀីន", "ហ្គ្រីន", "green", "េȜហƀន", "ហ្គ្រេន", "grand", "េǓƀ លឌិន", "ហ្គោលឌិន", "ហ្គោលដិន", "golden",
+    "គ្លូប៊ល", "គƚូប៊ល", "global",
+    "សឹង្ហបុរី", "សិង្ហបុរី", "សុីងǓƀ ពួរ", "singapore",
+    "អូស្ត្រាលី", "អូȝǒƎ លី", "Ǉ៉សុីហƛិក", "australian", "australia", "pacific",
+    "កាណាដា", "canadian", "canadia",
+    "ឡាហ្គូស", "េǎហƀូស", "logos",
+    "មីគីេវ៉", "មីលគីវ៉េ", "milky way", "ប៊ីគិន", "beacon",
+    "Ǖល់រ៉ះǋ៉ស់", "អាល់រ៉ះម៉ាស់", "al-rahmah",
+    "ǒƗ ធ-ឃីដ", "ǒƗ ធឃីដ", "south-kid", "south kid",
+    "Ǖǒ៊នហូប", "asian hope", "Ǖǒ៊នƙប៊ីជ",
+    "ǕយឃƘូ", "ǖយឃƘូ", "iq ", "iq",
+    "ហƛរេរ៉ស", "forest hill",
+    "ហǜយអិន", "high-in",
+    "អុិសេវ៉ស", "east-west", "east west",
+    "េប៊\uf155ខឹលី", "berkeley",
+    "េអសǕយេអស", "sis ", "sis",
+    "េអេឡហƀឹន", "elephant",
+    "ែមនន័រ", "manor",
     "រ៉ូយ៉ាល់", "royal",
     "ខូលីងវូដ", "collingwood",
-    "ឌូវី", "dewey",
-    "ញូវយ៉ក", "new york",
-    "ប្រាយស្តារ", "brightstar",
-    "ហ្គោលដិន", "golden",
-    "គ្លូប៊ល", "global",
-    "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
-    "ញូវវើលដ៍", "new world",
-    "ǖយឃƘូ", "ǕយឃƘូ", "iq ",
-    "ភƘូឆឺរ", "future bright",
-    "សឹង្ហបុរី", "សិង្ហបុរី", "singapore",
-    "កាណាដា", "canadian", "canadia",
-    "អូស្ត្រាលី", "australian",
-    "ខេមប៊្រីដ", "cambridge",
-    "ហ្សាម៉ាន់", "zaman", "paragon",
+    "បូស្តុន", "boston",
+    "ឡាយហ្វ", "life school", "life",
+    "ប៊្លូស្កាយ", "blue sky",
+    "ហ្វូតព្រីន", "footprint",
+    "ខេមអេដ", "camed",
+    "ហ្សាម៉ាន់", "paragon", "zaman",
+    "ប៊ែលវីដៀ", "belvedere",
+    "ǒǎេសƉǎ", "ស្តេលា", "stella",
+    "េអស អូ េអស", "sos",
     "ស៊ី អាយ អេ", "cia",
     "ណ័រប្រ៊ីជ", "northbridge",
-    "ឡាយហ្វ", "life school",
-    "ចេនឡា", "ប៊្លូស្កាយ", "ហ្វូតព្រីន",
-    "វិ.សាលា", "សាលារៀនឯកជន", "ឯកជន",
-    "អាស៊ី អឺរ៉ុប", "បូស្តុន", "boston",
-    "សំបូរណ៍វិជ្ជា", "និវត្តន៍", "ប៊ែលវីដៀ",
-    "ខេមអេដ", "camed", "សហរដ្ឋ",
-    "ចរិយាវត្ត", "មេគង្គ", "mekong",
-    "ហុងកុង", "hong kong", "ភាសាបរទេស",
+    "ែហ៊រ៉ុដស៍", "harrods",
+    "អុីលីត", "elite",
+    "អុីសិន", "easton",
+    "េបស", "best",
+    "េខមថប", "camtop",
+    "េអស ជី Ǖយ េអស", "sgis",
+    "ឃីងគƚរី", "kingsbury",
+    "េជភីេអ", "jpa",
+    "សនƎǒវីេយ", "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
+    "ǒǎេរȢន", "សាលារៀន", "ǒǎ", "វិ.សាលា", "Ǖƴេដមី", "អាខាដេមី", "ƙគីប", "គ្រីប",
+    "ឯកជន", "private", "school",
   ];
 
   for (const kw of privateKeywords) {
-    if (text.includes(kw)) {
+    // Crucial: check both raw exact case (prevents Limon uppercase letter damage) and lowerStr
+    if (rawStr.includes(kw) || lowerStr.includes(kw.toLowerCase())) {
       return "private";
     }
   }
@@ -595,7 +631,95 @@ export function resolveSchoolBranch(
     };
   }
 
-  // 6. Generic parenthetical branch or province codes
+  // 9. Arizona School (វិ.សាលារៀនអារីហ្សូន / វិ.អារីហ្សូន)
+  if (raw.includes("Ǖរីហƞូន") || raw.includes("Ǖរីហ") || raw.includes("អារីហ្សូន") || raw.toLowerCase().includes("arizona")) {
+    const baseName = "វិ.សាលារៀនអារីហ្សូន";
+    let branch: string | undefined;
+    if (raw.includes("េសȢមǍប") || raw.includes("សៀមរាប") || province.includes("សៀមរាប")) {
+      branch = "សាខាសៀមរាប";
+    } else if (raw.includes("កំពង់ធំ") || province.includes("កំពង់ធំ")) {
+      branch = "សាខាកំពង់ធំ";
+    } else if (raw.includes("ឫសƞីែកវ") || raw.includes("ឫស្សីកែវ")) {
+      branch = "សាខាឫស្សីកែវ";
+    } else if (raw.includes("ចǙរអំេǺ") || raw.includes("ច្បារអំពៅ")) {
+      branch = "សាខាច្បារអំពៅ";
+    } else {
+      branch = "សាខារាជធានីភ្នំពេញ";
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch || ""}`,
+    };
+  }
+
+  // 10. Paññāsāstra International School (វិ.សាលាបញ្ញាសាស្ត្រអន្តរជាតិ)
+  if (raw.includes("បȦƈ ǒȝសƎ") || raw.includes("បȦƈ") || raw.includes("បញ្ញាសាស្ត្រ") || raw.toLowerCase().includes("psis") || raw.toLowerCase().includes("psic")) {
+    const baseName = "វិ.សាលាបញ្ញាសាស្ត្រអន្តរជាតិ";
+    let branch: string | undefined;
+    if (raw.includes("ទី១") || raw.includes("ទី ១")) {
+      branch = "សាខាទី ១";
+    } else if (raw.includes("ទី២") || raw.includes("ទី ២")) {
+      branch = "សាខាទី ២";
+    } else if (raw.includes("ទី៣") || raw.includes("ទី ៣")) {
+      branch = "សាខាទី ៣";
+    } else if (raw.includes("ទី៥") || raw.includes("ទី ៥")) {
+      branch = "សាខាទី ៥";
+    } else if (raw.includes("ទី៨") || raw.includes("ទី ៨")) {
+      branch = "សាខាទី ៨";
+    } else if (raw.includes("ទី៩") || raw.includes("ទី ៩")) {
+      branch = "សាខាទី ៩";
+    } else if (raw.includes("ឧ.ហ") || raw.includes("ឧកញ៉ាហុង")) {
+      branch = "សាខាឧកញ៉ាហុង (ច្បារអំពៅ)";
+    } else if (raw.includes("បǆƐ យǋនជ័យ") || province.includes("បន្ទាយមានជ័យ")) {
+      branch = "សាខាបន្ទាយមានជ័យ";
+    } else {
+      branch = "សាខាកណ្តាល (ទួលគោក)";
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch || ""}`,
+    };
+  }
+
+  // 11. New Gateway International School (វិ.ញូវហ្គេតវ៉េអន្តរជាតិ)
+  if (raw.includes("ញូវេហƀត") || raw.includes("ញូវហ្គេត") || raw.toLowerCase().includes("newgate")) {
+    const baseName = "វិ.ញូវហ្គេតវ៉េអន្តរជាតិ";
+    let branch: string | undefined;
+    if (raw.includes("២") || raw.includes("2")) {
+      branch = "សាខាទី ២";
+    } else {
+      branch = "សាខាទី ១";
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch || ""}`,
+    };
+  }
+
+  // 12. Daraghane International School (វិ.សាលាអន្តរជាតិដារ៉ាហ្កាន)
+  if (raw.includes("ǈǍ៉ហƀន") || raw.includes("ដារ៉ាហ្កាន") || raw.includes("ដារ៉ាហ្គាន")) {
+    const baseName = "វិ.សាលាអន្តរជាតិដារ៉ាហ្កាន";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 13. Millennium School (វិ.សាលាមីលលេននៀម)
+  if (raw.includes("មីលេលន") || raw.includes("មីលលេន") || raw.toLowerCase().includes("millennium")) {
+    const baseName = "វិ.សាលាមីលលេននៀម";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // Generic parenthetical branch or province codes
   if (raw.includes("ជ័យវរƗ័ន") || raw.includes("ជ័យវរ្ម័ន")) {
     return {
       baseName: raw,

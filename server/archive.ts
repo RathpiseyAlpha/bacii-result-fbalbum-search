@@ -404,6 +404,16 @@ export function classifySchoolType(name: string, raw?: string): "public" | "priv
     "មេត្តូឌីស្ត", "មេតូឌីស្ត", "េមតូឌីសƐ", "េមតូឌីស", "េមតƎូឌីស", "methodist",
     // Nation Line High School
     "ណាត្យូនឡាញន៍", "ណាត្យូន", "ណតƞន៍ǔញន៍", "ណតƞន៍", "nation line",
+    // SOS Hermann Gmeiner
+    "េអសអូេអស", "េអស អូ េអស", "អេសអូអេស", "អេស អូ អេស", "sos", "hermann", "gmeiner", "ហ៊រម៉ាន", "ហ័រǋ៉នៃម៉ន័រ", "ហ៊រម៉ានម៉ៃន័រ", "ហ័រម៉ាន",
+    // Arnh Sa Kor CFC School
+    "Ǖរȥƈǒគរ", "អាញសាគរ", "សុីេអហƛសុី", "ស៊ីអេហ្វស៊ី", "cfc", "caring for cambodia",
+    // Golden Valley
+    "េǓƀ លដិន Ǐ៉លី", "េǓƀ លដិន", "Ǐ៉លី", "ហ្គោលដិន វ៉ាលី", "ហ្គោលឌិន វ៉ាលី", "golden valley",
+    // Emmaus High School (Athameus)
+    "Ǖត់ǂៃម៉យូស", "អាត់តាម៉ៃយូស", "អាត់តាម៉េយូស", "emmaus", "athameus",
+    // Adventist
+    "Ǖត់េវនទីស", "អាត់វេនទីស្ត", "adventist",
     "សនƎǒវីេយ", "សន្តហ្វ្រង់ស័រ", "saint", "សន្ត", "សេន ",
     "ǒǎេរȢន", "សាលារៀន", "ǒǎ", "វិ.សាលា", "Ǖƴេដមី", "អាខាដេមី", "ƙគីប", "គ្រីប",
     "ឯកជន", "private", "school",
@@ -809,6 +819,80 @@ export function resolveSchoolBranch(
     raw.toLowerCase().includes("bethel")
   ) {
     const baseName = "វិ.បេតអែល";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 19. SOS Children's Village / Hermann Gmeiner School (វិ.អេសអូអេស ហ៊រម៉ានម៉ៃន័រ)
+  if (
+    raw.includes("េអសអូេអស") ||
+    raw.includes("េអស អូ េអស") ||
+    raw.includes("អេសអូអេស") ||
+    raw.includes("ហ័រǋ៉នៃម៉ន័រ") ||
+    raw.includes("ហ៊រម៉ាន") ||
+    raw.toLowerCase().includes("hermann") ||
+    raw.toLowerCase().includes("gmeiner")
+  ) {
+    const baseName = "វិ.អេសអូអេស ហ៊រម៉ានម៉ៃន័រ";
+    let branch: string | undefined;
+    if (province.includes("បាត់ដំបង") || raw.includes("Ǉត់ដំបង")) {
+      branch = "សាខាបាត់ដំបង";
+    } else if (province.includes("សៀមរាប") || raw.includes("េសȢមǍប")) {
+      branch = "សាខាសៀមរាប";
+    } else {
+      branch = "សាខារាជធានីភ្នំពេញ";
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch}`,
+    };
+  }
+
+  // 20. Arnh Sa Kor CFC High School (វិ.អាញសាគរស៊ីអេហ្វស៊ី)
+  if (
+    raw.includes("Ǖរȥƈǒគរ") ||
+    raw.includes("អាញសាគរ") ||
+    raw.includes("សុីេអហƛសុី") ||
+    raw.includes("ស៊ីអេហ្វស៊ី") ||
+    raw.toLowerCase().includes("cfc")
+  ) {
+    const baseName = "វិ.អាញសាគរស៊ីអេហ្វស៊ី";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 21. Golden Valley High School (វិ.ហ្គោលដិន វ៉ាលី)
+  if (
+    raw.includes("េǓƀ លដិន Ǐ៉លី") ||
+    raw.includes("ហ្គោលដិន វ៉ាលី") ||
+    raw.includes("ហ្គោលឌិន វ៉ាលី") ||
+    (raw.includes("េǓƀ លដិន") && raw.includes("Ǐ៉លី")) ||
+    raw.toLowerCase().includes("golden valley")
+  ) {
+    const baseName = "វិ.ហ្គោលដិន វ៉ាលី";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 22. Emmaus High School (វិ.អាត់តាម៉ៃយូស)
+  if (
+    raw.includes("Ǖត់ǂៃម៉យូស") ||
+    raw.includes("អាត់តាម៉ៃយូស") ||
+    raw.includes("អាត់តាម៉េយូស") ||
+    raw.toLowerCase().includes("emmaus") ||
+    raw.toLowerCase().includes("athameus")
+  ) {
+    const baseName = "វិ.អាត់តាម៉ៃយូស";
     return {
       baseName,
       branch: undefined,

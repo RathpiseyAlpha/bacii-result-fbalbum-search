@@ -9,6 +9,7 @@ import {
   BookOpen,
   Building2,
   Calculator,
+  Calendar,
   ChevronDown,
   ChevronUp,
   Compass,
@@ -434,17 +435,17 @@ const copy = {
     femaleRatioLabel: "Female candidates",
     // Student Analysis & Straight A
     tabStudents: "Students & Straight A",
-    straightABadge: "⭐ 36 Straight A",
+    straightABadgeGeneric: "⭐ Straight A",
     studentAnalysisTitle: "Student Performance & Straight A (7/7 As) Analysis",
-    studentAnalysisSubtitle: "In-depth candidate intelligence, gender metrics, and full roster of all 36 candidates nationwide who achieved Grade A in every subject.",
+    studentAnalysisSubtitle: "In-depth candidate intelligence, gender metrics, and full roster of candidates nationwide who achieved Grade A across all 7 subjects.",
     kpiStraightA: "Straight A Achievers (7/7 A)",
-    kpiStraightASub: "100% Science track · 23 female, 13 male",
+    kpiStraightASub: "All subjects passed with Grade A across Science and Social tracks",
     kpiTotalCandidates: "Total Passing Candidates",
     kpiTotalCandidatesSub: "Official published passing cohort",
     kpiGradeAAll: "Overall Grade A Candidates",
     kpiGradeAAllSub: "National total achieving Grade A overall",
-    kpiPublicVsPrivate: "Straight A Public vs Private",
-    kpiPublicVsPrivateSub: "23 public (63.9%) · 13 private (36.1%)",
+    kpiPublicVsPrivate: "Straight A: Public vs Private",
+    kpiPublicVsPrivateSub: "Distribution of straight A achievers between public and private high schools",
     aCountBreakdownTitle: "Grade A Distribution (By Number of As Achieved)",
     aCountBreakdownSub: "Breakdown of candidates by the number of Grade A subjects they earned (from 1 up to all 7)",
     topStraightAProvinces: "Top Provinces for Straight A",
@@ -452,14 +453,14 @@ const copy = {
     straightAExplorationTitle: "Straight A & Grade A Student Explorer",
     straightAExplorationSub: "Browse official names (PDF crops), desk numbers, schools, and individual subject grades for top candidates",
     filterByACount: "Grade A Count",
-    chip7As: "⭐ 7 As (Straight A - 36)",
-    chip6As: "6 As (183)",
-    chip5As: "5 As (301)",
-    chip4As: "4 As (378)",
-    chip3As: "3 As (374)",
-    chip2As: "2 As (385)",
-    chip1A: "1 A (365)",
-    chipAllA: "All Grade A (2,022)",
+    chip7As: "⭐ Straight A (7 As)",
+    chip6As: "6 As",
+    chip5As: "5 As",
+    chip4As: "4 As",
+    chip3As: "3 As",
+    chip2As: "2 As",
+    chip1A: "1 A",
+    chipAllA: "All Grade A",
     searchStudentPlaceholder: "Search desk #, school name, exam center, province…",
     allTracks: "All Tracks",
     allGenders: "All Genders",
@@ -585,17 +586,17 @@ const copy = {
     femaleRatioLabel: "សមាមាត្រនារី",
     // Student Analysis & Straight A
     tabStudents: "វិភាគសិស្ស & A គ្រប់មុខ",
-    straightABadge: "⭐ ៣៦ នាក់ A គ្រប់មុខ",
+    straightABadgeGeneric: "⭐ A គ្រប់មុខ",
     studentAnalysisTitle: "វិភាគទិន្នន័យបេក្ខជន & សិស្សឆ្នើមនិទ្ទេស A គ្រប់មុខ (៧/៧)",
-    studentAnalysisSubtitle: "ទិន្នន័យបេក្ខជនសរុប យេនឌ័រ អត្រាជាប់ និងបញ្ជីឈ្មោះសិស្សឆ្នើមពិសេសទាំង ៣៦ នាក់ទូទាំងប្រទេស ដែលទទួលបាននិទ្ទេស A គ្រប់មុខវិជ្ជាទាំង ៧",
+    studentAnalysisSubtitle: "ទិន្នន័យបេក្ខជនសរុប យេនឌ័រ អត្រាជាប់ និងបញ្ជីឈ្មោះសិស្សឆ្នើមពិសេសទូទាំងប្រទេស ដែលទទួលបាននិទ្ទេស A គ្រប់មុខវិជ្ជាទាំង ៧",
     kpiStraightA: "សិស្សឆ្នើម A គ្រប់មុខ (៧/៧ A)",
-    kpiStraightASub: "១០០% ថ្នាក់វិទ្យាសាស្ត្រ · ស្រី ២៣ នាក់, ប្រុស ១៣ នាក់",
+    kpiStraightASub: "និទ្ទេស A គ្រប់មុខវិជ្ជាទាំង ៧ ទាំងថ្នាក់វិទ្យាសាស្ត្រ និងសង្គម",
     kpiTotalCandidates: "បេក្ខជនជាប់សរុប",
     kpiTotalCandidatesSub: "ចំនួនបេក្ខជនដែលបានប្រកាសថាជាប់ជាផ្លូវការ",
     kpiGradeAAll: "និទ្ទេសរួម A ទូទាំងប្រទេស",
     kpiGradeAAllSub: "បេក្ខជនទទួលបាននិទ្ទេសរួម A ក្នុងការប្រឡងបាក់ឌុប",
     kpiPublicVsPrivate: "A គ្រប់មុខ (សាលារដ្ឋ vs ឯកជន)",
-    kpiPublicVsPrivateSub: "រដ្ឋ ២៣ នាក់ (៦៣.៩%) · ឯកជន ១៣ នាក់ (៣៦.១%)",
+    kpiPublicVsPrivateSub: "ការបែងចែកសិស្សឆ្នើម A គ្រប់មុខ រវាងអាគតដ្ឋានរដ្ឋ និងឯកជន",
     aCountBreakdownTitle: "ការបែងចែកតាមចំនួននិទ្ទេស A ទទួលបាន",
     aCountBreakdownSub: "ចំនួនសិស្សដែលទទួលបាននិទ្ទេស A ចំនួន ៧មុខ, ៦មុខ, ៥មុខ រហូតដល់ ១មុខ",
     topStraightAProvinces: "រាជធានី-ខេត្ត មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
@@ -603,14 +604,14 @@ const copy = {
     straightAExplorationTitle: "បញ្ជីឈ្មោះសិស្សឆ្នើម A គ្រប់មុខ & បេក្ខជននិទ្ទេស A",
     straightAExplorationSub: "ស្វែងរកឈ្មោះផ្លូវការ (កាត់ចេញពី PDF) លេខតុ អាគតដ្ឋាន និងនិទ្ទេសមុខវិជ្ជាទាំង ៧ របស់បេក្ខជនឆ្នើម",
     filterByACount: "ចំនួននិទ្ទេស A",
-    chip7As: "⭐ A គ្រប់មុខ ៧ មុខ (៣៦ នាក់)",
-    chip6As: "A ៦ មុខ (១៨៣ នាក់)",
-    chip5As: "A ៥ មុខ (៣០១ នាក់)",
-    chip4As: "A ៤ មុខ (៣៧៨ នាក់)",
-    chip3As: "A ៣ មុខ (៣៧៤ នាក់)",
-    chip2As: "A ២ មុខ (៣៨៥ នាក់)",
-    chip1A: "A ១ មុខ (៣៦៥ នាក់)",
-    chipAllA: "និទ្ទេសរួម A ទាំងអស់ (២,០២២ នាក់)",
+    chip7As: "⭐ A គ្រប់មុខ ៧ មុខ",
+    chip6As: "A ៦ មុខ",
+    chip5As: "A ៥ មុខ",
+    chip4As: "A ៤ មុខ",
+    chip3As: "A ៣ មុខ",
+    chip2As: "A ២ មុខ",
+    chip1A: "A ១ មុខ",
+    chipAllA: "និទ្ទេសរួម A ទាំងអស់",
     searchStudentPlaceholder: "ស្វែងរកលេខតុ ឈ្មោះអាគតដ្ឋាន មណ្ឌលប្រឡង រាជធានី-ខេត្ត…",
     allTracks: "គ្រប់ថ្នាក់",
     allGenders: "គ្រប់ភេទ",
@@ -728,6 +729,41 @@ function OfficialStudentNameImage({
         loading="lazy"
       />
     </span>
+  );
+}
+
+function YearSelector({
+  selectedYear,
+  summaries,
+  onSelectYear,
+  label,
+  className = "",
+}: {
+  selectedYear: string;
+  summaries: Summary[];
+  onSelectYear: (year: string) => void;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div className={`tab-year-selector-wrap ${className}`}>
+      <span className="tab-year-label">
+        <Calendar size={13} />
+        {label}:
+      </span>
+      <select
+        value={selectedYear}
+        onChange={(event) => onSelectYear(event.target.value)}
+        className="tab-year-dropdown"
+        aria-label={label}
+      >
+        {summaries.map((item) => (
+          <option key={item.year} value={item.year}>
+            {item.year}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -906,6 +942,16 @@ export default function InsightsPage() {
   const [studentSearch, setStudentSearch] = useState("");
   const [studentViewMode, setStudentViewMode] = useState<"cards" | "table">("cards");
   const [studentDisplayLimit, setStudentDisplayLimit] = useState(36);
+
+  const aCountCountMap = useMemo(() => {
+    const map = new Map<number, number>();
+    if (studentStats?.aCountDistribution) {
+      for (const item of studentStats.aCountDistribution) {
+        map.set(item.aCount, item.count);
+      }
+    }
+    return map;
+  }, [studentStats]);
 
   const t = copy[language];
 
@@ -1360,32 +1406,10 @@ export default function InsightsPage() {
       </nav>
 
       <header className="insights-hero shell">
-        <div>
+        <div className="insights-hero-text">
           <span className="eyebrow"><TrendingUp size={14} /> {t.eyebrow}</span>
           <h1>{t.title}</h1>
           <p>{t.intro}</p>
-        </div>
-        <div className="insight-controls">
-          <label>
-            <span>{t.year}</span>
-            <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
-              {summaries.map((item) => (
-                <option key={item.year}>{item.year}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{t.metric}</span>
-            <select value={metric} onChange={(event) => setMetric(event.target.value as Metric)}>
-              <option value="candidates">{t.candidates}</option>
-              {grades.map((grade) => (
-                <option key={grade} value={grade}>{language === "km" ? "និទ្ទេស" : "Grade"} {grade}</option>
-              ))}
-              <option value="centers">{t.centers}</option>
-              <option value="schools">{t.schools}</option>
-              <option value="pages">{t.pages}</option>
-            </select>
-          </label>
         </div>
       </header>
 
@@ -1446,7 +1470,13 @@ export default function InsightsPage() {
         >
           <Award size={15} />
           <span>{t.tabStudents}</span>
-          <span className="tab-pill-badge gold-pill-badge">{t.straightABadge}</span>
+          <span className="tab-pill-badge gold-pill-badge">
+            {studentStats?.straightACount != null && studentStats.straightACount > 0
+              ? language === "km"
+                ? `⭐ ${studentStats.straightACount} A គ្រប់មុខ`
+                : `⭐ ${studentStats.straightACount} Straight A`
+              : t.straightABadgeGeneric}
+          </span>
         </button>
       </div>
 
@@ -1456,9 +1486,43 @@ export default function InsightsPage() {
         <div className="archive-state error-banner shell">{error || t.unavailable}</div>
       ) : (
         <>
-          {/* TAB 1: OVERVIEW & HIGH SCHOOLS (អាគតដ្ឋាន) */}
+          {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <div className="tab-pane">
+              <div className="tab-control-bar shell">
+                <div className="tab-title-group">
+                  <span className="eyebrow"><BarChart3 size={14} /> {t.nationalSnapshot}</span>
+                  <h2>{t.tabOverview}</h2>
+                </div>
+                <div className="tab-controls-right">
+                  <YearSelector
+                    selectedYear={selectedYear}
+                    summaries={summaries}
+                    onSelectYear={setSelectedYear}
+                    label={t.year}
+                  />
+                  <div className="tab-metric-selector-wrap">
+                    <span className="tab-year-label">{t.metric}:</span>
+                    <select
+                      value={metric}
+                      onChange={(event) => setMetric(event.target.value as Metric)}
+                      className="tab-year-dropdown"
+                      aria-label={t.metric}
+                    >
+                      <option value="candidates">{t.candidates}</option>
+                      {grades.map((grade) => (
+                        <option key={grade} value={grade}>
+                          {language === "km" ? "និទ្ទេស" : "Grade"} {grade}
+                        </option>
+                      ))}
+                      <option value="centers">{t.centers}</option>
+                      <option value="schools">{t.schools}</option>
+                      <option value="pages">{t.pages}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <section className="insight-kpis shell" aria-label={t.nationalSnapshot}>
                 <article>
                   <Users />
@@ -1615,9 +1679,17 @@ export default function InsightsPage() {
               <section className="school-analysis-section shell" aria-label={t.schoolAnalysis}>
                 <div className="school-section-header">
                   <div className="school-section-title-wrap">
-                    <span className="eyebrow"><Sparkles size={14} /> {t.schoolAnalysis} ({selected.year})</span>
+                    <span className="eyebrow"><Sparkles size={14} /> {t.schoolAnalysis}</span>
                     <h2>{t.allSchoolsExplorer}</h2>
                     <p>{t.schoolAnalysisSubtitle}</p>
+                  </div>
+                  <div className="tab-controls-right">
+                    <YearSelector
+                      selectedYear={selectedYear}
+                      summaries={summaries}
+                      onSelectYear={setSelectedYear}
+                      label={t.year}
+                    />
                   </div>
                 </div>
 
@@ -2210,6 +2282,20 @@ export default function InsightsPage() {
                   <div className="school-filter-selects">
                     <label className="school-filter-item">
                       <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        aria-label={t.year}
+                      >
+                        {summaries.map((s) => (
+                          <option key={s.year} value={s.year}>
+                            {s.year}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="school-filter-item">
+                      <select
                         value={schoolTypeFilter}
                         onChange={(e) => setSchoolTypeFilter(e.target.value as any)}
                       >
@@ -2688,13 +2774,21 @@ export default function InsightsPage() {
               <section className="subject-section shell" aria-label={t.subjectAnalysisTitle}>
                 <div className="subject-section-head">
                   <div>
-                    <span className="eyebrow"><Sparkles size={14} /> {t.subjectAnalysisTitle} ({selected.year})</span>
+                    <span className="eyebrow"><Sparkles size={14} /> {t.subjectAnalysisTitle}</span>
                     <h2>{t.subjectAnalysisTitle}</h2>
                     <p>{t.subjectAnalysisSubtitle}</p>
                   </div>
 
-                  {/* Track Segmented Switcher */}
-                  <div className="subject-track-switch" role="group" aria-label={t.chooseTrack}>
+                  <div className="tab-controls-right">
+                    <YearSelector
+                      selectedYear={selectedYear}
+                      summaries={summaries}
+                      onSelectYear={setSelectedYear}
+                      label={t.year}
+                    />
+
+                    {/* Track Segmented Switcher */}
+                    <div className="subject-track-switch" role="group" aria-label={t.chooseTrack}>
                     <button
                       type="button"
                       className={`track-switch-btn ${selectedTrack === "science" ? "active" : ""}`}
@@ -2723,6 +2817,7 @@ export default function InsightsPage() {
                     </button>
                   </div>
                 </div>
+              </div>
 
                 {/* Subject Pills Row */}
                 <div className="subject-pills-row" role="tablist" aria-label={t.chooseSubject}>
@@ -3343,12 +3438,22 @@ export default function InsightsPage() {
               {/* Hero Banner */}
               <section className="student-hero-banner shell">
                 <div className="student-hero-content">
-                  <div className="student-hero-badge">
-                    <Award size={18} />
-                    <span>{selected.year} · {t.tabStudents}</span>
+                  <div className="student-hero-left">
+                    <div className="student-hero-badge">
+                      <Award size={18} />
+                      <span>{t.tabStudents}</span>
+                    </div>
+                    <h2>{t.studentAnalysisTitle}</h2>
+                    <p>{t.studentAnalysisSubtitle}</p>
                   </div>
-                  <h2>{t.studentAnalysisTitle}</h2>
-                  <p>{t.studentAnalysisSubtitle}</p>
+                  <div className="tab-controls-right">
+                    <YearSelector
+                      selectedYear={selectedYear}
+                      summaries={summaries}
+                      onSelectYear={setSelectedYear}
+                      label={t.year}
+                    />
+                  </div>
                 </div>
               </section>
 
@@ -3369,7 +3474,7 @@ export default function InsightsPage() {
                     setStudentGenderFilter("all");
                     setStudentSchoolTypeFilter("all");
                   }}
-                  title="Click to view all 36 straight A students"
+                  title={language === "km" ? "ចុចដើម្បីមើលសិស្ស A គ្រប់មុខ" : "Click to view straight A achievers"}
                 >
                   <div className="kpi-top">
                     <span>{t.kpiStraightA}</span>
@@ -3379,7 +3484,7 @@ export default function InsightsPage() {
                   </div>
                   <div className="kpi-value-row">
                     <strong style={{ color: "#d97706" }}>
-                      {numberFormat.format(studentStats ? studentStats.straightACount : 36)}
+                      {numberFormat.format(studentStats ? studentStats.straightACount : 0)}
                     </strong>
                     <span className="kpi-unit">{language === "km" ? "នាក់" : "students"}</span>
                   </div>
@@ -3393,10 +3498,10 @@ export default function InsightsPage() {
                     />
                   </div>
                   <small className="kpi-subtext">
-                    {studentStats
+                    {studentStats && studentStats.straightACount > 0
                       ? language === "km"
-                        ? `ស្រី ${studentStats.femaleStraightA} នាក់ (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ប្រុស ${studentStats.maleStraightA} នាក់ · វិទ្យាសាស្ត្រ ១០០%`
-                        : `${studentStats.femaleStraightA} female (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ${studentStats.maleStraightA} male · 100% Science`
+                        ? `ស្រី ${studentStats.femaleStraightA} នាក់ (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ប្រុស ${studentStats.maleStraightA} នាក់ · ${studentStats.scienceStraightA > 0 && studentStats.socialStraightA === 0 ? "វិទ្យាសាស្ត្រ ១០០%" : `វិទ្យាសាស្ត្រ ${studentStats.scienceStraightA}, សង្គម ${studentStats.socialStraightA}`}`
+                        : `${studentStats.femaleStraightA} female (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ${studentStats.maleStraightA} male · ${studentStats.scienceStraightA > 0 && studentStats.socialStraightA === 0 ? "100% Science" : `Science: ${studentStats.scienceStraightA}, Social: ${studentStats.socialStraightA}`}`
                       : t.kpiStraightASub}
                   </small>
                 </article>
@@ -3454,7 +3559,7 @@ export default function InsightsPage() {
                   </div>
                   <div className="kpi-value-row">
                     <strong style={{ color: "#d97706" }}>
-                      {numberFormat.format(studentStats ? studentStats.gradeACount : 2022)}
+                      {numberFormat.format(studentStats ? studentStats.gradeACount : (selected.grades.find(g => g.grade === 'A')?.count || 0))}
                     </strong>
                     <span className="kpi-unit">{language === "km" ? "នាក់" : "candidates"}</span>
                   </div>
@@ -3462,13 +3567,13 @@ export default function InsightsPage() {
                     <div
                       className="kpi-progress-bar"
                       style={{
-                        width: `${studentStats ? ((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(0) : 90.4}%`,
+                        width: `${studentStats && studentStats.gradeACount > 0 ? ((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(0) : 90}%`,
                         background: "#06b6d4",
                       }}
                     />
                   </div>
                   <small className="kpi-subtext">
-                    {studentStats
+                    {studentStats && studentStats.gradeACount > 0
                       ? language === "km"
                         ? `វិទ្យាសាស្ត្រ ${numberFormat.format(studentStats.scienceGradeA)} (${((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(1)}%) · សង្គម ${numberFormat.format(studentStats.socialGradeA)}`
                         : `Science: ${numberFormat.format(studentStats.scienceGradeA)} (${((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(1)}%) · Social: ${numberFormat.format(studentStats.socialGradeA)}`
@@ -3486,14 +3591,14 @@ export default function InsightsPage() {
                   </div>
                   <div className="kpi-value-row">
                     <strong>
-                      {studentStats?.publicVsPrivateStraightA?.public ?? 22} <span style={{ fontSize: "16px", color: "var(--muted)", fontWeight: 500 }}>vs</span> {studentStats?.publicVsPrivateStraightA?.private ?? 14}
+                      {studentStats?.publicVsPrivateStraightA?.public ?? 0} <span style={{ fontSize: "16px", color: "var(--muted)", fontWeight: 500 }}>vs</span> {studentStats?.publicVsPrivateStraightA?.private ?? 0}
                     </strong>
                     <span className="kpi-unit">{language === "km" ? "រដ្ឋ / ឯកជន" : "Pub / Priv"}</span>
                   </div>
                   <div className="kpi-progress-track" style={{ display: "flex", gap: "2px" }}>
                     <div
                       style={{
-                        width: `${studentStats?.publicVsPrivateStraightA ? (studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100 : 61.1}%`,
+                        width: `${studentStats?.publicVsPrivateStraightA && studentStats.straightACount > 0 ? (studentStats.publicVsPrivateStraightA.public / studentStats.straightACount) * 100 : 50}%`,
                         height: "100%",
                         background: "#3b82f6",
                         borderRadius: "3px 0 0 3px",
@@ -3502,7 +3607,7 @@ export default function InsightsPage() {
                     />
                     <div
                       style={{
-                        width: `${studentStats?.publicVsPrivateStraightA ? (studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100 : 38.9}%`,
+                        width: `${studentStats?.publicVsPrivateStraightA && studentStats.straightACount > 0 ? (studentStats.publicVsPrivateStraightA.private / studentStats.straightACount) * 100 : 50}%`,
                         height: "100%",
                         background: "#10b981",
                         borderRadius: "0 3px 3px 0",
@@ -3511,95 +3616,124 @@ export default function InsightsPage() {
                     />
                   </div>
                   <small className="kpi-subtext">
-                    {studentStats && studentStats.publicVsPrivateStraightA
+                    {studentStats && studentStats.publicVsPrivateStraightA && studentStats.straightACount > 0
                       ? language === "km"
-                        ? `រដ្ឋ ${studentStats.publicVsPrivateStraightA.public} នាក់ (${((studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100).toFixed(1)}%) · ឯកជន ${studentStats.publicVsPrivateStraightA.private} នាក់ (${((studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100).toFixed(1)}%)`
-                        : `Public: ${studentStats.publicVsPrivateStraightA.public} (${((studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100).toFixed(1)}%) · Private: ${studentStats.publicVsPrivateStraightA.private} (${((studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100).toFixed(1)}%)`
+                        ? `រដ្ឋ ${studentStats.publicVsPrivateStraightA.public} នាក់ (${((studentStats.publicVsPrivateStraightA.public / studentStats.straightACount) * 100).toFixed(1)}%) · ឯកជន ${studentStats.publicVsPrivateStraightA.private} នាក់ (${((studentStats.publicVsPrivateStraightA.private / studentStats.straightACount) * 100).toFixed(1)}%)`
+                        : `Public: ${studentStats.publicVsPrivateStraightA.public} (${((studentStats.publicVsPrivateStraightA.public / studentStats.straightACount) * 100).toFixed(1)}%) · Private: ${studentStats.publicVsPrivateStraightA.private} (${((studentStats.publicVsPrivateStraightA.private / studentStats.straightACount) * 100).toFixed(1)}%)`
                       : t.kpiPublicVsPrivateSub}
                   </small>
                 </article>
               </section>
 
               {/* A-Count Distribution Chips */}
-              <section className="shell" style={{ marginTop: "24px" }}>
-                <div className="student-acount-box">
-                  <div className="student-acount-header">
-                    <div>
-                      <h3>{t.aCountBreakdownTitle}</h3>
-                      <p>{t.aCountBreakdownSub}</p>
-                    </div>
-                    <span className="student-filter-indicator">
-                      {studentACountFilter === 7 ? (
-                        <span className="gold-text-badge">⭐ {language === "km" ? "កំពុងជ្រើសរើស A គ្រប់មុខ (៧/៧)" : "Viewing Straight A (7/7)"}</span>
-                      ) : studentACountFilter === "all" ? (
-                        <span>{language === "km" ? "និទ្ទេស A ទាំងអស់" : "All Grade A"}</span>
-                      ) : (
-                        <span>{studentACountFilter} {language === "km" ? "មុខ A" : "As"}</span>
-                      )}
-                    </span>
-                  </div>
+              {(() => {
+                const count7 = studentStats?.straightACount ?? aCountCountMap.get(7) ?? 0;
+                const count6 = aCountCountMap.get(6) ?? 0;
+                const count5 = aCountCountMap.get(5) ?? 0;
+                const count4 = aCountCountMap.get(4) ?? 0;
+                const count3 = aCountCountMap.get(3) ?? 0;
+                const count2 = aCountCountMap.get(2) ?? 0;
+                const count1 = aCountCountMap.get(1) ?? 0;
+                const countAll = studentStats?.gradeACount ?? 0;
 
-                  <div className="acount-chips-row">
-                    <button
-                      type="button"
-                      className={`acount-chip-btn straight-a-chip ${studentACountFilter === 7 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(7)}
-                    >
-                      <Trophy size={14} />
-                      <span className="chip-label">{t.chip7As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 6 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(6)}
-                    >
-                      <span className="chip-label">{t.chip6As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 5 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(5)}
-                    >
-                      <span className="chip-label">{t.chip5As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 4 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(4)}
-                    >
-                      <span className="chip-label">{t.chip4As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 3 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(3)}
-                    >
-                      <span className="chip-label">{t.chip3As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 2 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(2)}
-                    >
-                      <span className="chip-label">{t.chip2As}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn ${studentACountFilter === 1 ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter(1)}
-                    >
-                      <span className="chip-label">{t.chip1A}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`acount-chip-btn all-a-chip ${studentACountFilter === "all" ? "active" : ""}`}
-                      onClick={() => setStudentACountFilter("all")}
-                    >
-                      <span className="chip-label">{t.chipAllA}</span>
-                    </button>
-                  </div>
-                </div>
-              </section>
+                return (
+                  <section className="shell" style={{ marginTop: "24px" }}>
+                    <div className="student-acount-box">
+                      <div className="student-acount-header">
+                        <div>
+                          <h3>{t.aCountBreakdownTitle}</h3>
+                          <p>{t.aCountBreakdownSub}</p>
+                        </div>
+                        <span className="student-filter-indicator">
+                          {studentACountFilter === 7 ? (
+                            <span className="gold-text-badge">⭐ {language === "km" ? "កំពុងជ្រើសរើស A គ្រប់មុខ (៧/៧)" : "Viewing Straight A (7/7)"}</span>
+                          ) : studentACountFilter === "all" ? (
+                            <span>{language === "km" ? "និទ្ទេស A ទាំងអស់" : "All Grade A"}</span>
+                          ) : (
+                            <span>{studentACountFilter} {language === "km" ? "មុខ A" : "As"}</span>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="acount-chips-row">
+                        <button
+                          type="button"
+                          className={`acount-chip-btn straight-a-chip ${studentACountFilter === 7 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(7)}
+                        >
+                          <Trophy size={14} />
+                          <span className="chip-label">
+                            {t.chip7As} ({numberFormat.format(count7)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 6 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(6)}
+                        >
+                          <span className="chip-label">
+                            {t.chip6As} ({numberFormat.format(count6)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 5 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(5)}
+                        >
+                          <span className="chip-label">
+                            {t.chip5As} ({numberFormat.format(count5)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 4 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(4)}
+                        >
+                          <span className="chip-label">
+                            {t.chip4As} ({numberFormat.format(count4)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 3 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(3)}
+                        >
+                          <span className="chip-label">
+                            {t.chip3As} ({numberFormat.format(count3)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 2 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(2)}
+                        >
+                          <span className="chip-label">
+                            {t.chip2As} ({numberFormat.format(count2)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn ${studentACountFilter === 1 ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter(1)}
+                        >
+                          <span className="chip-label">
+                            {t.chip1A} ({numberFormat.format(count1)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`acount-chip-btn all-a-chip ${studentACountFilter === "all" ? "active" : ""}`}
+                          onClick={() => setStudentACountFilter("all")}
+                        >
+                          <span className="chip-label">
+                            {t.chipAllA} ({numberFormat.format(countAll)}{language === "km" ? " នាក់" : ""})
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                );
+              })()}
 
               {/* Straight A Deep-Dive Widgets (Top Provinces & Top Schools) */}
               {studentStats && Array.isArray(studentStats.topStraightAProvinces) && Array.isArray(studentStats.topStraightASchools) && (
@@ -3741,6 +3875,22 @@ export default function InsightsPage() {
                         ×
                       </button>
                     )}
+                  </div>
+
+                  {/* Year Filter */}
+                  <div className="school-filter-select">
+                    <Calendar size={15} />
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      aria-label={t.year}
+                    >
+                      {summaries.map((s) => (
+                        <option key={s.year} value={s.year}>
+                          {s.year}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Province Filter */}

@@ -2858,18 +2858,171 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   font-weight: 700;
 }
 
+/* =========================================================
+   IN-TAB CONTROLS & YEAR SELECTOR STYLES (ALL TABS)
+   ========================================================= */
+
+.tab-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.tab-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tab-title-group h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tab-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tab-year-selector-wrap,
+.tab-metric-selector-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="dark"] .tab-year-selector-wrap,
+:root[data-theme="dark"] .tab-metric-selector-wrap {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.tab-year-selector-wrap:hover,
+.tab-metric-selector-wrap:hover,
+.tab-year-selector-wrap:focus-within,
+.tab-metric-selector-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+}
+
+.tab-year-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tab-year-dropdown {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  padding: 2px 4px 2px 0;
+  font-family: inherit;
+}
+
+.tab-year-dropdown option {
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* School Section Header (Tab 2) */
+.school-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.school-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 680px;
+}
+
+.school-section-title-wrap h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.school-section-title-wrap p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+/* Subject Section Head (Tab 3) */
+.subject-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.subject-section-head h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.subject-section-head p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
 /* Student Hero Banner */
 .student-hero-banner {
   margin-bottom: 24px;
 }
 
 .student-hero-content {
-  padding: 24px 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 26px 30px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 20px;
   position: relative;
   overflow: hidden;
+}
+
+.student-hero-title-wrap {
+  flex: 1 1 360px;
+  max-width: 760px;
 }
 
 :root[data-theme="dark"] .student-hero-content {

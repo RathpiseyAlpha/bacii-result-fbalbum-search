@@ -190,7 +190,7 @@ app.get("/api/archive/:year/subjects/detail", (request, response) => {
 
 app.get("/api/archive/:year/students/stats", (request, response) => {
   try {
-    response.setHeader("Cache-Control", "public, max-age=300");
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     const stats = getArchiveStudentStats(request.params.year);
     response.json(stats);
   } catch (error) {
@@ -200,7 +200,7 @@ app.get("/api/archive/:year/students/stats", (request, response) => {
 
 app.get("/api/archive/:year/students", (request, response) => {
   try {
-    response.setHeader("Cache-Control", "public, max-age=300");
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     const aCount = request.query.aCount ? (request.query.aCount === "all" ? "all" : Number(request.query.aCount)) : undefined;
     const grade = String(request.query.grade || "") || undefined;
     const province = String(request.query.province || "") || undefined;

@@ -596,13 +596,13 @@ const copy = {
     kpiGradeAAll: "និទ្ទេសរួម A ទូទាំងប្រទេស",
     kpiGradeAAllSub: "បេក្ខជនទទួលបាននិទ្ទេសរួម A ក្នុងការប្រឡងបាក់ឌុប",
     kpiPublicVsPrivate: "A គ្រប់មុខ (សាលារដ្ឋ vs ឯកជន)",
-    kpiPublicVsPrivateSub: "ការបែងចែកសិស្សឆ្នើម A គ្រប់មុខ រវាងអាគតដ្ឋានរដ្ឋ និងឯកជន",
+    kpiPublicVsPrivateSub: "ការបែងចែកសិស្សឆ្នើម A គ្រប់មុខ រវាងវិទ្យាល័យរដ្ឋ និងឯកជន",
     aCountBreakdownTitle: "ការបែងចែកតាមចំនួននិទ្ទេស A ទទួលបាន",
     aCountBreakdownSub: "ចំនួនសិស្សដែលទទួលបាននិទ្ទេស A ចំនួន ៧មុខ, ៦មុខ, ៥មុខ រហូតដល់ ១មុខ",
     topStraightAProvinces: "រាជធានី-ខេត្ត មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
-    topStraightASchools: "អាគតដ្ឋាន មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
+    topStraightASchools: "វិទ្យាល័យ មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
     straightAExplorationTitle: "បញ្ជីឈ្មោះសិស្សឆ្នើម A គ្រប់មុខ & បេក្ខជននិទ្ទេស A",
-    straightAExplorationSub: "ស្វែងរកឈ្មោះផ្លូវការ (កាត់ចេញពី PDF) លេខតុ អាគតដ្ឋាន និងនិទ្ទេសមុខវិជ្ជាទាំង ៧ របស់បេក្ខជនឆ្នើម",
+    straightAExplorationSub: "ស្វែងរកឈ្មោះផ្លូវការ (កាត់ចេញពី PDF) លេខតុ វិទ្យាល័យ និងនិទ្ទេសមុខវិជ្ជាទាំង ៧ របស់បេក្ខជនឆ្នើម",
     filterByACount: "ចំនួននិទ្ទេស A",
     chip7As: "⭐ A គ្រប់មុខ ៧ មុខ",
     chip6As: "A ៦ មុខ",
@@ -612,7 +612,7 @@ const copy = {
     chip2As: "A ២ មុខ",
     chip1A: "A ១ មុខ",
     chipAllA: "និទ្ទេសរួម A ទាំងអស់",
-    searchStudentPlaceholder: "ស្វែងរកលេខតុ ឈ្មោះអាគតដ្ឋាន មណ្ឌលប្រឡង រាជធានី-ខេត្ត…",
+    searchStudentPlaceholder: "ស្វែងរកលេខតុ ឈ្មោះវិទ្យាល័យ មណ្ឌលប្រឡង រាជធានី-ខេត្ត…",
     allTracks: "គ្រប់ថ្នាក់",
     allGenders: "គ្រប់ភេទ",
     genderFemale: "ស្រី",
@@ -3458,7 +3458,7 @@ export default function InsightsPage() {
               </section>
 
               {/* Student KPI Cards */}
-              <section className="insight-kpis shell" aria-label="Student Analysis KPIs">
+              <section className="student-kpis-grid shell" aria-label="Student Analysis KPIs">
                 {/* Straight A 36 Hero Card */}
                 <article
                   className="insight-kpi-card student-hero-kpi-card"
@@ -3966,9 +3966,9 @@ export default function InsightsPage() {
                 {/* Showing Count */}
                 <div className="school-count-bar">
                   <span>{t.showingStudentsCount(students.length, totalStudents)}</span>
-                  {studentACountFilter === 7 && (
+                  {studentACountFilter === 7 && studentStats && studentStats.straightACount > 0 && (
                     <span className="straight-a-filter-note">
-                      ⭐ <strong>{language === "km" ? "និទ្ទេស A គ្រប់មុខ (៧ មុខ)" : "Straight A (7/7 Subjects)"}</strong>: 100% {language === "km" ? "វិទ្យាសាស្ត្រ" : "Science"} · {language === "km" ? "ស្រី ២៣ នាក់ (៦៣.៩%) · ប្រុស ១៣ នាក់" : "23 Female (63.9%), 13 Male"}
+                      ⭐ <strong>{language === "km" ? "និទ្ទេស A គ្រប់មុខ (៧ មុខ)" : "Straight A (7/7 Subjects)"}</strong>: {studentStats.straightACount} {language === "km" ? "នាក់" : "students"} · {language === "km" ? `ស្រី ${studentStats.femaleStraightA} នាក់ (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ប្រុស ${studentStats.maleStraightA} នាក់` : `${studentStats.femaleStraightA} female (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ${studentStats.maleStraightA} male`}
                     </span>
                   )}
                 </div>

@@ -3008,11 +3008,11 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 
 .student-hero-content {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
   flex-wrap: wrap;
-  padding: 26px 30px;
+  padding: 24px 30px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -3020,6 +3020,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   overflow: hidden;
 }
 
+.student-hero-left,
 .student-hero-title-wrap {
   flex: 1 1 360px;
   max-width: 760px;
@@ -3071,12 +3072,127 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   line-height: 1.5;
 }
 
+/* Dedicated Student KPIs Grid */
+.student-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.insight-kpi-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.insight-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+}
+
+.insight-kpi-card .kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.insight-kpi-card .kpi-top span:first-child {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.insight-kpi-card .kpi-icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.insight-kpi-card .kpi-icon-pill svg {
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.insight-kpi-card .kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.insight-kpi-card .kpi-value-row strong {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.insight-kpi-card .kpi-unit {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.insight-kpi-card .kpi-progress-track {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+:root[data-theme="dark"] .insight-kpi-card .kpi-progress-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.insight-kpi-card .kpi-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.insight-kpi-card .kpi-subtext {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 /* Hero KPI Card Straight A */
 .student-hero-kpi-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.18);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.22);
   border-color: rgba(245, 158, 11, 0.6) !important;
-  transition: all 0.2s ease;
+}
+
+@media (max-width: 1100px) {
+  .student-kpis-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .student-kpis-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* A-Count Distribution Section */
@@ -3202,6 +3318,132 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   padding: 4px 10px;
   border-radius: 8px;
   border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Student / School Filters Toolbar in Tab 4 */
+.school-filters-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  margin-top: 14px;
+  margin-bottom: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+:root[data-theme="dark"] .school-filters-toolbar {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.school-filters-toolbar .school-search-box {
+  min-width: 240px;
+  flex: 1 1 240px;
+  height: 40px;
+}
+
+.school-filter-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  position: relative;
+  transition: border-color 0.15s ease;
+}
+
+:root[data-theme="dark"] .school-filter-select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.school-filter-select:hover,
+.school-filter-select:focus-within {
+  border-color: var(--accent);
+}
+
+.school-filter-select svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.school-filter-select select {
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding-right: 4px;
+}
+
+.school-filter-select select option {
+  background: var(--card);
+  color: var(--ink);
+}
+
+.school-type-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 3px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+:root[data-theme="dark"] .school-type-toggle-group {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.type-toggle-pill {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.type-toggle-pill:hover {
+  color: var(--ink);
+}
+
+.type-toggle-pill.active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+}
+
+.school-count-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 6px 2px 14px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 /* Student Cards Grid */

@@ -987,6 +987,19 @@ export default function InsightsPage() {
     return () => window.removeEventListener("hashchange", handleHash);
   }, []);
 
+  const switchTab = (tab: "overview" | "schools" | "heatmap" | "subjects" | "students", hash: string) => {
+    setActiveTab(tab);
+    window.location.hash = hash;
+    const anchor = document.getElementById("insights-tab-anchor");
+    if (anchor) {
+      const navHeight = window.innerWidth <= 520 ? 70 : 86;
+      const targetY = anchor.getBoundingClientRect().top + window.scrollY - navHeight;
+      if (window.scrollY > targetY) {
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+      }
+    }
+  };
+
   const loadedSchoolsYear = useRef<string>("");
   const loadedDistrictsYear = useRef<string>("");
   const loadedSubjectsYear = useRef<string>("");
@@ -1476,85 +1489,73 @@ export default function InsightsPage() {
         </div>
       </header>
 
-      {/* Primary Insights Tabs */}
-      <div className="insights-tab-nav shell" role="tablist" aria-label="Insights tabs">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "overview"}
-          className={`tab-pill-btn ${activeTab === "overview" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("overview");
-            window.location.hash = "#insights";
-          }}
-        >
-          <BarChart3 size={15} />
-          <span>{t.tabOverview}</span>
-        </button>
+      {/* Primary Insights Tabs (Frozen / Sticky Toolbar) */}
+      <div id="insights-tab-anchor" />
+      <div className="insights-tab-bar-sticky">
+        <div className="insights-tab-nav shell" role="tablist" aria-label="Insights tabs">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "overview"}
+            className={`tab-pill-btn ${activeTab === "overview" ? "active" : ""}`}
+            onClick={() => switchTab("overview", "#insights")}
+          >
+            <BarChart3 size={15} />
+            <span>{t.tabOverview}</span>
+          </button>
 
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "schools"}
-          className={`tab-pill-btn ${activeTab === "schools" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("schools");
-            window.location.hash = "#insights/schools";
-          }}
-        >
-          <School size={15} />
-          <span>{t.tabSchools}</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "schools"}
+            className={`tab-pill-btn ${activeTab === "schools" ? "active" : ""}`}
+            onClick={() => switchTab("schools", "#insights/schools")}
+          >
+            <School size={15} />
+            <span>{t.tabSchools}</span>
+          </button>
 
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "heatmap"}
-          className={`tab-pill-btn ${activeTab === "heatmap" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("heatmap");
-            window.location.hash = "#insights/heatmap";
-          }}
-        >
-          <MapPin size={15} />
-          <span>{t.tabHeatmap}</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "heatmap"}
+            className={`tab-pill-btn ${activeTab === "heatmap" ? "active" : ""}`}
+            onClick={() => switchTab("heatmap", "#insights/heatmap")}
+          >
+            <MapPin size={15} />
+            <span>{t.tabHeatmap}</span>
+          </button>
 
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "subjects"}
-          className={`tab-pill-btn ${activeTab === "subjects" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("subjects");
-            window.location.hash = "#insights/subjects";
-          }}
-        >
-          <BookOpen size={15} />
-          <span>{t.tabSubjects}</span>
-          <span className="tab-pill-badge">{t.newBadge}</span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "subjects"}
+            className={`tab-pill-btn ${activeTab === "subjects" ? "active" : ""}`}
+            onClick={() => switchTab("subjects", "#insights/subjects")}
+          >
+            <BookOpen size={15} />
+            <span>{t.tabSubjects}</span>
+            <span className="tab-pill-badge">{t.newBadge}</span>
+          </button>
 
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "students"}
-          className={`tab-pill-btn ${activeTab === "students" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("students");
-            window.location.hash = "#insights/students";
-          }}
-        >
-          <Award size={15} />
-          <span>{t.tabStudents}</span>
-          <span className="tab-pill-badge gold-pill-badge">
-            {studentStats?.straightACount != null && studentStats.straightACount > 0
-              ? language === "km"
-                ? `⭐ ${studentStats.straightACount} A គ្រប់មុខ`
-                : `⭐ ${studentStats.straightACount} Straight A`
-              : t.straightABadgeGeneric}
-          </span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "students"}
+            className={`tab-pill-btn ${activeTab === "students" ? "active" : ""}`}
+            onClick={() => switchTab("students", "#insights/students")}
+          >
+            <Award size={15} />
+            <span>{t.tabStudents}</span>
+            <span className="tab-pill-badge gold-pill-badge">
+              {studentStats?.straightACount != null && studentStats.straightACount > 0
+                ? language === "km"
+                  ? `⭐ ${studentStats.straightACount} A គ្រប់មុខ`
+                  : `⭐ ${studentStats.straightACount} Straight A`
+                : t.straightABadgeGeneric}
+            </span>
+          </button>
+        </div>
       </div>
 
       {loading ? (

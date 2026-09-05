@@ -1,40 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,500&display=swap');
-
-/* Custom Khmer Fonts */
-@font-face {
-  font-family: "Inter Khmer";
-  src: url("/fonts/InterKhmerLoopless-Medium.KH.ttf") format("truetype");
-  font-weight: 100 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Inter Khmer";
-  src: url("/fonts/InterKhmer-Black.KH.ttf") format("truetype");
-  font-weight: 700 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Inter Khmer Loopless";
-  src: url("/fonts/InterKhmerLoopless-Medium.KH.ttf") format("truetype");
-  font-weight: 100 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Inter Khmer Loopless";
-  src: url("/fonts/InterKhmer-Black.KH.ttf") format("truetype");
-  font-weight: 700 900;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Kantumruy+Pro:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,500&display=swap');
 
 :root {
-  font-family: "Inter", "Inter Khmer Loopless", "Inter Khmer", sans-serif;
+  font-family: "Inter", "Kantumruy Pro", sans-serif;
   color: #172033;
   background: #f5f8ff;
   font-synthesis: none;
@@ -1472,7 +1439,7 @@ a { color: inherit; text-decoration: none; }
 .primary-nav a.active { color: var(--green); background: color-mix(in srgb, var(--green) 12%, var(--card)); }
 .primary-nav a::after { content: ""; position: absolute; right: 14px; bottom: 0; left: 14px; height: 3px; transform: scaleX(0); border-radius: 3px 3px 0 0; background: var(--green); transition: transform .2s ease; }
 .primary-nav a:hover::after, .primary-nav a.active::after { transform: scaleX(1); }
-:root[data-language="km"] .primary-nav a { font-family: "Inter Khmer Loopless", "Inter Khmer", sans-serif; font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+:root[data-language="km"] .primary-nav a { font-family: "Kantumruy Pro", sans-serif; font-size: 15.5px; font-weight: 600; letter-spacing: .01em; }
 :root[data-language="en"] .primary-nav a { font-family: "Inter", sans-serif; font-size: 15px; font-weight: 700; letter-spacing: -.015em; }
 .header-actions { display: flex; align-items: center; gap: 8px; }
 .nav-pills { display: flex; align-items: center; gap: 28px; color: #5f6559; font-size: 13px; font-weight: 600; }
@@ -1495,17 +1462,11 @@ h1 em { font-family: "Newsreader", serif; font-weight: 500; color: var(--green);
 .hero-how-link { margin: 18px auto 0; display: inline-flex; align-items: center; gap: 4px; color: var(--green); font-size: 12px; font-weight: 800; }
 .hero-how-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 
-:root[data-language="km"] { font-family: "Inter Khmer Loopless", "Inter Khmer", "Inter", sans-serif; }
-:root[data-language="km"] h1,
-:root[data-language="km"] h2,
-:root[data-language="km"] h3,
-:root[data-language="km"] strong,
-:root[data-language="km"] b { font-family: "Inter Khmer", "Inter Khmer Loopless", "Inter", sans-serif; }
+:root[data-language="km"] { font-family: "Kantumruy Pro", "Inter", sans-serif; }
 :root[data-language="km"] h1 { max-width: 1000px; font-size: clamp(42px, 6vw, 72px); line-height: 1.28; letter-spacing: -.035em; }
-:root[data-language="km"] h1 em { font-family: "Inter Khmer", "Inter Khmer Loopless", sans-serif; font-style: normal; }
-:root[data-language="km"] .brand { font-family: "Inter Khmer", "Inter Khmer Loopless", "Inter", sans-serif; }
+:root[data-language="km"] h1 em { font-family: "Kantumruy Pro", sans-serif; font-style: normal; }
 :root[data-language="km"] .eyebrow,
-:root[data-language="km"] .section-kicker { font-family: "Inter Khmer Loopless", "Inter Khmer", sans-serif; letter-spacing: .06em; }
+:root[data-language="km"] .section-kicker { font-family: "Kantumruy Pro", sans-serif; letter-spacing: .06em; }
 
 .workspace-card { text-align: left; width: min(870px, 100%); margin: 48px auto 0; background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden; }
 .mode-tabs { display: flex; padding: 7px; background: #edf3fc; border-bottom: 1px solid var(--line); }

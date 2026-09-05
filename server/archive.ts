@@ -273,6 +273,10 @@ export const KHMER_FONT_DECODING_RULES: Array<[string, string]> = [
   ["ǒǎអនƎរƺតិ យូ េអស េអ", "សាលាអន្តរជាតិ យូ អេស អេ"],
   ["ǒǎអនƎរƺតិេវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសលែនដ៏"],
   ["ǒǎអនƎរƺតិ េវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសលែនដ៏"],
+  ["អនƎរƺតិអុិសេវ៉ស", "អន្តរជាតិអ៊ិសវ៉េស"],
+  ["អនƎរƺតិ អុិសេវ៉ស", "អន្តរជាតិ អ៊ិសវ៉េស"],
+  ["េម៉ងហួណ័រេវ៉សƐ", "ម៉េងហួណ័រវ៉េស្ត"],
+  ["េម៉ងហួណ័រ", "ម៉េងហួណ័រ"],
   ["ǒǎេរȢនទួនǓƛ", "សាលារៀនទួនហ្វា"],
   ["ǒǎេរȢន ទួនǓƛ", "សាលារៀនទួនហ្វា"],
   ["ǒǎេវេសƐនអនƎរƺតិ", "សាលាវេស្តើនអន្តរជាតិ"],
@@ -372,6 +376,11 @@ export const KHMER_FONT_DECODING_RULES: Array<[string, string]> = [
   ["េវ៉សƐǔញន៍", "វ៉េសឡាញន៍"],
   ["េវ៉សǔញន៍", "វ៉េសឡាញន៍"],
   ["េវ៉សǔញ", "វ៉េសឡាញ"],
+  ["េម៉ង", "ម៉េង"],
+  ["អុិសេវ៉ស", "អ៊ិសវ៉េស"],
+  ["អុិស", "អ៊ិស"],
+  ["េវ៉សƐ", "វ៉េស្ត"],
+  ["េវ៉ស", "វ៉េស"],
   ["វឌƌនៈ", "វឌ្ឍនៈ"],
   ["វិƺƅ", "វិទ្យា"],
   ["អងƀឌួង", "អង្គឌួង"],
@@ -496,6 +505,7 @@ export function cleanLimonBranch(rawBranch: string): string {
     return "សាខាភ្នំពេញថ្មី";
   }
   if (b.includes("បឹងƙតែបក") || b.includes("បឹងត្របែក")) return "សាខាបឹងត្របែក";
+  if (b.includes("បឹងឈូក")) return "សាខាបឹងឈូក";
   if (b.includes("ចǙរអំេǺ") || b.includes("ច្បារអំពៅ")) return "សាខាច្បារអំពៅ";
   if (b.includes("ចំƳរដូង") || b.includes("ចំការដូង")) return "សាខាចំការដូង";
   if (b.includes("ទួលǒƛ") || b.includes("ទួលស្វាយព្រៃ")) return "សាខាទួលស្វាយព្រៃ";
@@ -581,7 +591,8 @@ export function classifySchoolType(name: string, raw?: string): "public" | "priv
     "ǕយឃƘូ", "ǖយឃƘូ", "iq ", "iq",
     "ហƛរេរ៉ស", "forest hill",
     "ហǜយអិន", "high-in",
-    "អុិសេវ៉ស", "east-west", "east west",
+    "អុិសេវ៉ស", "អ៊ិសវ៉េស", "east-west", "east west",
+    "ម៉េងហួណ័រ", "េម៉ងហួណ័រ", "ម៉េងហួ", "menghour",
     "េប៊\uf155ខឹលី", "berkeley",
     "េអសǕយេអស", "sis ", "sis",
     "េអេឡហƀឹន", "elephant",
@@ -764,10 +775,42 @@ export function resolveSchoolBranch(
     };
   }
 
+  // 3b. East-West International School (វិ.អន្តរជាតិអ៊ិសវ៉េស)
+  if (
+    raw.includes("អុិសេវ៉ស") ||
+    raw.includes("អ៊ិសវ៉េស") ||
+    raw.includes("អុីសវ៉េស") ||
+    raw.toLowerCase().includes("east-west") ||
+    raw.toLowerCase().includes("east west")
+  ) {
+    const baseName = "វិ.អន្តរជាតិអ៊ិសវ៉េស";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
+  // 3c. Menghour Northwest High School (វិ.ម៉េងហួណ័រវ៉េស្ត)
+  if (
+    raw.includes("េម៉ងហួណ័រ") ||
+    raw.includes("ម៉េងហួណ័រ") ||
+    raw.includes("េម៉ងហួ") ||
+    raw.includes("ម៉េងហួ") ||
+    raw.toLowerCase().includes("menghour")
+  ) {
+    const baseName = "វិ.ម៉េងហួណ័រវ៉េស្ត";
+    return {
+      baseName,
+      branch: undefined,
+      groupKey: baseName,
+    };
+  }
+
   // 4. Western International School (សាលាវេស្តើនអន្តរជាតិ)
   if (
+    raw.includes("េវេសƐន") ||
     raw.includes("េវេស") ||
-    raw.includes("េវ៉ស") ||
     raw.includes("វេសថឺន") ||
     raw.includes("វេសធើន") ||
     raw.includes("វេស្តើន") ||
@@ -777,6 +820,10 @@ export function resolveSchoolBranch(
     let branch: string | undefined;
     if (raw.includes("ភƒំ") || raw.includes("ភ្នំពេញ")) {
       branch = "សាខាភ្នំពេញថ្មី";
+    } else if (raw.includes("បឹងឈូក")) {
+      branch = "សាខាបឹងឈូក";
+    } else if (raw.includes("បឹងƙតែបក") || raw.includes("បឹងត្របែក") || raw.includes("អង់េគƚស")) {
+      branch = "សាខាបឹងត្របែក";
     } else if (raw.includes("ចǙរអំេǺ") || raw.includes("ច្បារអំពៅ")) {
       branch = "សាខាច្បារអំពៅ";
     } else if (raw.includes("សនƑរម៉ុក") || raw.includes("សន្ធរម៉ុក")) {

@@ -3831,24 +3831,25 @@ export default function InsightsPage() {
                   </div>
 
                   {/* View Mode Toggle */}
-                  <div className="insights-view-toggle">
-                    <span className="toggle-label">{t.viewMode}:</span>
+                  <div className="view-mode-toggle" role="group" aria-label={t.viewMode}>
                     <button
                       type="button"
-                      className={`toggle-btn ${studentViewMode === "cards" ? "active" : ""}`}
+                      className={`view-toggle-btn ${studentViewMode === "cards" ? "active" : ""}`}
                       onClick={() => setStudentViewMode("cards")}
                       title={t.viewCards}
+                      aria-pressed={studentViewMode === "cards"}
                     >
-                      <LayoutGrid size={15} />
+                      <LayoutGrid size={14} />
                       <span>{t.viewCards}</span>
                     </button>
                     <button
                       type="button"
-                      className={`toggle-btn ${studentViewMode === "table" ? "active" : ""}`}
+                      className={`view-toggle-btn ${studentViewMode === "table" ? "active" : ""}`}
                       onClick={() => setStudentViewMode("table")}
                       title={t.viewTable}
+                      aria-pressed={studentViewMode === "table"}
                     >
-                      <TableIcon size={15} />
+                      <TableIcon size={14} />
                       <span>{t.viewTable}</span>
                     </button>
                   </div>

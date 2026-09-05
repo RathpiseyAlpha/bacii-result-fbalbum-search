@@ -1191,11 +1191,58 @@
 :root[data-theme="dark"] .pill-f { background: rgba(220, 38, 38, .18); border-color: rgba(220, 38, 38, .4); color: #fca5a5; }
 
 /* View Mode Toggle */
-.view-mode-toggle { display: inline-flex; padding: 3px; border-radius: 9px; background: var(--paper); border: 1px solid var(--line); gap: 2px; }
-.view-toggle-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 7px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s ease; }
-.view-toggle-btn:hover { color: var(--ink); }
-.view-toggle-btn.active { background: var(--card); color: var(--ink); box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
-:root[data-theme="dark"] .view-toggle-btn.active { background: #1e2d47; color: #fff; }
+.view-mode-toggle,
+.insights-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  gap: 2px;
+}
+
+:root[data-theme="dark"] .view-mode-toggle,
+:root[data-theme="dark"] .insights-view-toggle {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.view-toggle-btn,
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+
+.view-toggle-btn:hover,
+.toggle-btn:hover {
+  color: var(--ink);
+}
+
+.view-toggle-btn.active,
+.toggle-btn.active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+}
+
+:root[data-theme="dark"] .view-toggle-btn.active,
+:root[data-theme="dark"] .toggle-btn.active {
+  background: #1e2d47;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+}
 
 /* Podium Toggle Button */
 .champions-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }

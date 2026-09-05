@@ -7,8 +7,9 @@ import { cancelOcr, OcrQueueFullError, ocrJobs, ocrRuntimeStatus, startOcr } fro
 import { fetchFacebookImage } from "./security.ts";
 import { databaseStats } from "./database.ts";
 import {
-  getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveSubjectDetail,
-  getArchiveSubjectOverview, getArchiveSummary, getPhnomPenhDistrictStats, listArchiveYears, searchArchive,
+  getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveStudentStats, getArchiveStudents,
+  getArchiveSubjectDetail, getArchiveSubjectOverview, getArchiveSummary, getPhnomPenhDistrictStats,
+  listArchiveYears, searchArchive,
 } from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
@@ -184,6 +185,50 @@ app.get("/api/archive/:year/subjects/detail", (request, response) => {
     response.json(detail);
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "Subject data not found." });
+  }
+});
+
+app.get("/api/archive/:year/students/stats", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const stats = getArchiveStudentStats(request.params.year);
+    response.json(stats);
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Student stats not found." });
+  }
+});
+
+app.get("/api/archive/:year/students", (request, response) => {
+  try {
+    response.setHeader("Cache-Control", "public, max-age=300");
+    const aCount = request.query.aCount ? (request.query.aCount === "all" ? "all" : Number(request.query.aCount)) : undefined;
+    const grade = String(request.query.grade || "") || undefined;
+    const province = String(request.query.province || "") || undefined;
+    const khan = String(request.query.khan || "") || undefined;
+    const schoolType = (request.query.schoolType as "all" | "public" | "private") || undefined;
+    const track = (request.query.track as "science" | "social-science") || undefined;
+    const gender = (request.query.gender as "all" | "female" | "male") || undefined;
+    const search = String(request.query.search || "") || undefined;
+    const sort = (request.query.sort as "aCount" | "tableNumber" | "name") || undefined;
+    const limit = request.query.limit ? Number(request.query.limit) : undefined;
+    const offset = request.query.offset ? Number(request.query.offset) : undefined;
+
+    const data = getArchiveStudents(request.params.year, {
+      aCount,
+      grade,
+      province,
+      khan,
+      schoolType,
+      track,
+      gender,
+      search,
+      sort,
+      limit,
+      offset,
+    });
+    response.json(data);
+  } catch (error) {
+    response.status(404).json({ error: error instanceof Error ? error.message : "Student data not found." });
   }
 });
 

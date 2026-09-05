@@ -2299,3 +2299,430 @@ export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailO
   };
 }
 
+export interface StudentSubjectGrade {
+  key: string;
+  nameKm: string;
+  grade: string;
+}
+
+export interface ArchiveStudentItem {
+  id: number;
+  tableNumber: number;
+  name: string;
+  nameImage: string;
+  gender: string;
+  genderLabel: string;
+  school: string;
+  schoolBaseName: string;
+  schoolBranch?: string;
+  schoolType: "public" | "private";
+  schoolImage: string;
+  province: string;
+  provinceId: string;
+  examCenter: string;
+  track: "science" | "social-science";
+  trackLabel: string;
+  grade: string;
+  aCount: number;
+  subjects: StudentSubjectGrade[];
+  pageNumber: number;
+  documentId: number;
+  pdfFileName: string;
+}
+
+export interface StudentStats {
+  totalCandidates: number;
+  passedCount: number;
+  passRate: number;
+  gradeACount: number;
+  straightACount: number;
+  femaleTotal: number;
+  femalePercent: number;
+  maleTotal: number;
+  malePercent: number;
+  femaleStraightA: number;
+  maleStraightA: number;
+  femaleGradeA: number;
+  maleGradeA: number;
+  scienceCandidates: number;
+  socialCandidates: number;
+  scienceGradeA: number;
+  socialGradeA: number;
+  scienceStraightA: number;
+  socialStraightA: number;
+  aCountDistribution: Array<{ aCount: number; count: number; scienceCount: number; socialCount: number }>;
+  gradeDistribution: Array<{ grade: string; count: number }>;
+  topStraightAProvinces: Array<{ id: string; name: string; count: number }>;
+  topStraightASchools: Array<{ name: string; schoolType: "public" | "private"; province: string; count: number }>;
+  publicVsPrivateStraightA: { public: number; private: number };
+}
+
+export interface GetStudentsOptions {
+  aCount?: number | "all";
+  grade?: string;
+  province?: string;
+  khan?: string;
+  schoolType?: "all" | "public" | "private";
+  track?: "science" | "social-science";
+  gender?: "all" | "female" | "male";
+  search?: string;
+  sort?: "aCount" | "tableNumber" | "name";
+  limit?: number;
+  offset?: number;
+}
+
+const studentStatsCaches = new Map<string, { modifiedAt: number; stats: StudentStats }>();
+const gradeAStudentCaches = new Map<string, { modifiedAt: number; students: ArchiveStudentItem[] }>();
+
+const SCIENCE_SUBJECTS_INFO = [
+  { key: "khmer", nameKm: "ភាសាខ្មែរ" },
+  { key: "math", nameKm: "គណិតវិទ្យា" },
+  { key: "biology", nameKm: "ជីវវិទ្យា" },
+  { key: "history", nameKm: "ប្រវត្តិវិទ្យា" },
+  { key: "chemistry", nameKm: "គីមីវិទ្យា" },
+  { key: "physics", nameKm: "រូបវិទ្យា" },
+  { key: "foreign_language", nameKm: "ភាសាបរទេស" },
+];
+
+const SOCIAL_SUBJECTS_INFO = [
+  { key: "khmer", nameKm: "ភាសាខ្មែរ" },
+  { key: "math", nameKm: "គណិតវិទ្យា" },
+  { key: "earth_science", nameKm: "ផែនដីវិទ្យា" },
+  { key: "geography", nameKm: "ភូមិវិទ្យា" },
+  { key: "history", nameKm: "ប្រវត្តិវិទ្យា" },
+  { key: "civics", nameKm: "សីលធម៌-ពលរដ្ឋ" },
+  { key: "foreign_language", nameKm: "ភាសាបរទេស" },
+];
+
+export function getArchiveStudentStats(year: string): StudentStats {
+  const directory = archiveDirectory(year);
+  if (!directory) throw new Error(`Archive ${year} is not available.`);
+  const modifiedAt = statSync(resolve(directory, `bacii-${year}.sqlite`)).mtimeMs;
+  const cached = studentStatsCaches.get(year);
+  if (cached?.modifiedAt === modifiedAt) return cached.stats;
+
+  const db = archiveDatabase(year);
+
+  // Overall counts
+  const countRow = db.prepare(`
+    SELECT 
+      COUNT(*) AS total,
+      SUM(CASE WHEN gender_raw LIKE '%ស%' THEN 1 ELSE 0 END) AS femaleTotal,
+      SUM(CASE WHEN ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialCandidates,
+      SUM(CASE WHEN ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceCandidates,
+      SUM(CASE WHEN grade_raw IN ('A', 'B', 'C', 'D', 'E') THEN 1 ELSE 0 END) AS passedCount,
+      SUM(CASE WHEN grade_raw = 'A' THEN 1 ELSE 0 END) AS gradeACount,
+      SUM(CASE WHEN grade_raw = 'A' AND gender_raw LIKE '%ស%' THEN 1 ELSE 0 END) AS femaleGradeA,
+      SUM(CASE WHEN grade_raw = 'A' AND ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceGradeA,
+      SUM(CASE WHEN grade_raw = 'A' AND ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialGradeA
+    FROM students s JOIN pages p ON p.id = s.page_id
+  `).get() as {
+    total: number;
+    femaleTotal: number;
+    socialCandidates: number;
+    scienceCandidates: number;
+    passedCount: number;
+    gradeACount: number;
+    femaleGradeA: number;
+    scienceGradeA: number;
+    socialGradeA: number;
+  };
+
+  const totalCandidates = countRow.total || 0;
+  const femaleTotal = countRow.femaleTotal || 0;
+  const maleTotal = Math.max(0, totalCandidates - femaleTotal);
+  const femalePercent = totalCandidates > 0 ? Number(((femaleTotal / totalCandidates) * 100).toFixed(1)) : 0;
+  const malePercent = totalCandidates > 0 ? Number(((maleTotal / totalCandidates) * 100).toFixed(1)) : 0;
+  const passedCount = countRow.passedCount || 0;
+  const passRate = totalCandidates > 0 ? Number(((passedCount / totalCandidates) * 100).toFixed(1)) : 0;
+  const gradeACount = countRow.gradeACount || 0;
+  const femaleGradeA = countRow.femaleGradeA || 0;
+  const maleGradeA = Math.max(0, gradeACount - femaleGradeA);
+
+  // A-Count distribution among Grade A
+  const aDistRows = db.prepare(`
+    SELECT 
+      (CASE WHEN s.subject_1 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_2 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_3 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_4 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_5 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_6 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_7 = 'A' THEN 1 ELSE 0 END) AS aCount,
+      SUM(CASE WHEN ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceCount,
+      SUM(CASE WHEN ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialCount,
+      COUNT(*) AS totalCount
+    FROM students s JOIN pages p ON p.id = s.page_id
+    WHERE s.grade_raw = 'A'
+    GROUP BY aCount
+    ORDER BY aCount DESC
+  `).all() as Array<{ aCount: number; scienceCount: number; socialCount: number; totalCount: number }>;
+
+  const aCountDistribution = [7, 6, 5, 4, 3, 2, 1].map((aCount) => {
+    const found = aDistRows.find((r) => r.aCount === aCount);
+    return {
+      aCount,
+      count: found?.totalCount || 0,
+      scienceCount: found?.scienceCount || 0,
+      socialCount: found?.socialCount || 0,
+    };
+  });
+
+  const straightRow = aDistRows.find((r) => r.aCount === 7);
+  const straightACount = straightRow?.totalCount || 0;
+  const scienceStraightA = straightRow?.scienceCount || 0;
+  const socialStraightA = straightRow?.socialCount || 0;
+
+  // Grade distribution
+  const gradeRows = db.prepare(`
+    SELECT grade_raw AS grade, COUNT(*) AS count
+    FROM students
+    WHERE grade_raw IN ('A', 'B', 'C', 'D', 'E')
+    GROUP BY grade_raw
+    ORDER BY grade_raw
+  `).all() as Array<{ grade: string; count: number }>;
+
+  // Query all Straight A students to compute province & school breakdowns
+  const straightStudents = db.prepare(`
+    SELECT 
+      s.id, s.province, d.slug, s.school_raw AS schoolRaw, s.gender_raw AS genderRaw
+    FROM students s
+    JOIN documents d ON d.id = s.document_id
+    JOIN pages p ON p.id = s.page_id
+    WHERE s.subject_1 = 'A' AND s.subject_2 = 'A' AND s.subject_3 = 'A'
+      AND s.subject_4 = 'A' AND s.subject_5 = 'A' AND s.subject_6 = 'A'
+      AND s.subject_7 = 'A'
+  `).all() as Array<{ id: number; province: string; slug: string; schoolRaw: string; genderRaw: string }>;
+
+  let femaleStraightA = 0;
+  let maleStraightA = 0;
+  const provMap = new Map<string, { id: string; name: string; count: number }>();
+  const schoolMap = new Map<string, { name: string; schoolType: "public" | "private"; province: string; count: number }>();
+  let publicStraightA = 0;
+  let privateStraightA = 0;
+
+  for (const st of straightStudents) {
+    if ((st.genderRaw || "").includes("ស")) femaleStraightA++;
+    else maleStraightA++;
+
+    const pId = provinceId(st.slug, year);
+    const existingP = provMap.get(pId) || { id: pId, name: st.province, count: 0 };
+    existingP.count++;
+    provMap.set(pId, existingP);
+
+    const resolved = resolveSchoolBranch(st.schoolRaw || "", "", st.province || "");
+    const schoolType = classifySchoolType(resolved.baseName, st.schoolRaw || "");
+    if (schoolType === "private") privateStraightA++;
+    else publicStraightA++;
+
+    const schoolKey = resolved.baseName;
+    const existingS = schoolMap.get(schoolKey) || { name: resolved.baseName, schoolType, province: st.province, count: 0 };
+    existingS.count++;
+    schoolMap.set(schoolKey, existingS);
+  }
+
+  const topStraightAProvinces = [...provMap.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "km"));
+  const topStraightASchools = [...schoolMap.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "km"));
+
+  const stats: StudentStats = {
+    totalCandidates,
+    passedCount,
+    passRate,
+    gradeACount,
+    straightACount,
+    femaleTotal,
+    femalePercent,
+    maleTotal,
+    malePercent,
+    femaleStraightA,
+    maleStraightA,
+    femaleGradeA,
+    maleGradeA,
+    scienceCandidates: countRow.scienceCandidates || 0,
+    socialCandidates: countRow.socialCandidates || 0,
+    scienceGradeA: countRow.scienceGradeA || 0,
+    socialGradeA: countRow.socialGradeA || 0,
+    scienceStraightA,
+    socialStraightA,
+    aCountDistribution,
+    gradeDistribution: gradeRows,
+    topStraightAProvinces,
+    topStraightASchools,
+    publicVsPrivateStraightA: { public: publicStraightA, private: privateStraightA },
+  };
+
+  studentStatsCaches.set(year, { modifiedAt, stats });
+  return stats;
+}
+
+export function getArchiveGradeAStudents(year: string): ArchiveStudentItem[] {
+  const directory = archiveDirectory(year);
+  if (!directory) throw new Error(`Archive ${year} is not available.`);
+  const modifiedAt = statSync(resolve(directory, `bacii-${year}.sqlite`)).mtimeMs;
+  const cached = gradeAStudentCaches.get(year);
+  if (cached?.modifiedAt === modifiedAt) return cached.students;
+
+  const db = archiveDatabase(year);
+  const rows = db.prepare(`
+    SELECT 
+      s.id,
+      s.table_number AS tableNumber,
+      s.name_raw AS nameRaw,
+      s.gender_raw AS genderRaw,
+      s.school_raw AS schoolRaw,
+      s.province AS province,
+      d.slug AS slug,
+      d.id AS documentId,
+      s.page_number AS pageNumber,
+      d.local_path AS pdfPath,
+      s.exam_center_raw AS examCenterRaw,
+      ${TRACK_SQL} AS track,
+      s.grade_raw AS gradeRaw,
+      s.subject_1 AS s1,
+      s.subject_2 AS s2,
+      s.subject_3 AS s3,
+      s.subject_4 AS s4,
+      s.subject_5 AS s5,
+      s.subject_6 AS s6,
+      s.subject_7 AS s7,
+      (CASE WHEN s.subject_1 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_2 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_3 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_4 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_5 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_6 = 'A' THEN 1 ELSE 0 END +
+       CASE WHEN s.subject_7 = 'A' THEN 1 ELSE 0 END) AS aCount
+    FROM students s
+    JOIN documents d ON d.id = s.document_id
+    JOIN pages p ON p.id = s.page_id
+    WHERE s.grade_raw = 'A'
+    ORDER BY aCount DESC, s.province, s.table_number
+  `).all() as Array<{
+    id: number;
+    tableNumber: number;
+    nameRaw: string;
+    genderRaw: string;
+    schoolRaw: string;
+    province: string;
+    slug: string;
+    documentId: number;
+    pageNumber: number;
+    pdfPath: string;
+    examCenterRaw: string;
+    track: "science" | "social-science";
+    gradeRaw: string;
+    s1: string; s2: string; s3: string; s4: string; s5: string; s6: string; s7: string;
+    aCount: number;
+  }>;
+
+  const students: ArchiveStudentItem[] = rows.map((r) => {
+    const isScience = r.track !== "social-science";
+    const subInfo = isScience ? SCIENCE_SUBJECTS_INFO : SOCIAL_SUBJECTS_INFO;
+    const grades = [r.s1, r.s2, r.s3, r.s4, r.s5, r.s6, r.s7];
+    const subjects: StudentSubjectGrade[] = subInfo.map((info, idx) => ({
+      key: info.key,
+      nameKm: info.nameKm,
+      grade: grades[idx] || "-",
+    }));
+
+    const resolved = resolveSchoolBranch(r.schoolRaw || "", r.examCenterRaw || "", r.province || "");
+    const schoolType = classifySchoolType(resolved.baseName, r.schoolRaw || "");
+    const isFemale = (r.genderRaw || "").includes("ស");
+    const pId = provinceId(r.slug, year);
+
+    return {
+      id: r.id,
+      tableNumber: r.tableNumber,
+      name: r.nameRaw || "",
+      nameImage: `/api/archive/${year}/students/${r.id}/name-image`,
+      gender: isFemale ? "ស" : "ប",
+      genderLabel: isFemale ? "ស្រី" : "ប្រុស",
+      school: r.schoolRaw || "",
+      schoolBaseName: resolved.baseName,
+      schoolBranch: resolved.branch,
+      schoolType,
+      schoolImage: `/api/archive/${year}/students/${r.id}/school-image`,
+      province: r.province || "",
+      provinceId: pId,
+      examCenter: r.examCenterRaw || "",
+      track: isScience ? "science" : "social-science",
+      trackLabel: isScience ? "វិទ្យាសាស្ត្រ" : "វិទ្យាសាស្ត្រសង្គម",
+      grade: r.gradeRaw || "A",
+      aCount: r.aCount || 0,
+      subjects,
+      pageNumber: r.pageNumber,
+      documentId: r.documentId,
+      pdfFileName: archivePdfFileName(r.pdfPath || ""),
+    };
+  });
+
+  gradeAStudentCaches.set(year, { modifiedAt, students });
+  return students;
+}
+
+export function getArchiveStudents(year: string, options: GetStudentsOptions = {}) {
+  const allGradeA = getArchiveGradeAStudents(year);
+  let filtered = allGradeA;
+
+  // Filter by A-count
+  if (options.aCount !== undefined && options.aCount !== "all") {
+    const minA = Number(options.aCount);
+    filtered = filtered.filter((s) => s.aCount === minA);
+  }
+
+  // Filter by province
+  if (options.province && options.province !== "all") {
+    filtered = filtered.filter((s) => s.provinceId === options.province || s.province === options.province);
+  }
+
+  // Filter by track
+  if (options.track && options.track !== "all" as any) {
+    filtered = filtered.filter((s) => s.track === options.track);
+  }
+
+  // Filter by gender
+  if (options.gender && options.gender !== "all") {
+    const target = options.gender === "female" ? "ស" : "ប";
+    filtered = filtered.filter((s) => s.gender === target);
+  }
+
+  // Filter by schoolType
+  if (options.schoolType && options.schoolType !== "all") {
+    filtered = filtered.filter((s) => s.schoolType === options.schoolType);
+  }
+
+  // Search by name, table number, school, or center
+  if (options.search) {
+    const q = options.search.trim().toLowerCase();
+    filtered = filtered.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        String(s.tableNumber).includes(q) ||
+        s.school.toLowerCase().includes(q) ||
+        s.schoolBaseName.toLowerCase().includes(q) ||
+        (s.schoolBranch && s.schoolBranch.toLowerCase().includes(q)) ||
+        s.examCenter.toLowerCase().includes(q) ||
+        s.province.toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
+  const sort = options.sort || "aCount";
+  filtered = filtered.slice().sort((a, b) => {
+    if (sort === "aCount") return b.aCount - a.aCount || a.tableNumber - b.tableNumber;
+    if (sort === "tableNumber") return a.tableNumber - b.tableNumber;
+    if (sort === "name") return a.name.localeCompare(b.name, "km");
+    return 0;
+  });
+
+  const total = filtered.length;
+  const offset = options.offset || 0;
+  const limit = options.limit && options.limit > 0 ? options.limit : 100;
+  const paginated = filtered.slice(offset, offset + limit);
+
+  return {
+    students: paginated,
+    total,
+  };
+}
+

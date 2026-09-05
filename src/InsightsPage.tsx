@@ -13,6 +13,8 @@ import {
   ChevronUp,
   Compass,
   Dna,
+  ExternalLink,
+  FileText,
   Flame,
   FlaskConical,
   Globe,
@@ -41,7 +43,65 @@ type Grade = "A" | "B" | "C" | "D" | "E";
 type SubjectGrade = "A" | "B" | "C" | "D" | "E" | "F";
 type Metric = "candidates" | "A" | "B" | "C" | "D" | "E" | "centers" | "schools" | "pages";
 type GradeTotals = Record<Grade, number>;
-type TabMode = "overview" | "schools" | "subjects";
+type TabMode = "overview" | "schools" | "subjects" | "students";
+
+type StudentSubjectGrade = {
+  key: string;
+  nameKm: string;
+  grade: string;
+};
+
+type ArchiveStudentItem = {
+  id: number;
+  tableNumber: number;
+  name: string;
+  nameImage: string;
+  gender: string;
+  genderLabel: string;
+  school: string;
+  schoolBaseName: string;
+  schoolBranch?: string;
+  schoolType: "public" | "private";
+  schoolImage: string;
+  province: string;
+  provinceId: string;
+  examCenter: string;
+  track: "science" | "social-science";
+  trackLabel: string;
+  grade: string;
+  aCount: number;
+  subjects: StudentSubjectGrade[];
+  pageNumber: number;
+  documentId: number;
+  pdfFileName: string;
+};
+
+type StudentStats = {
+  totalCandidates: number;
+  passedCount: number;
+  passRate: number;
+  gradeACount: number;
+  straightACount: number;
+  femaleTotal: number;
+  femalePercent: number;
+  maleTotal: number;
+  malePercent: number;
+  femaleStraightA: number;
+  maleStraightA: number;
+  femaleGradeA: number;
+  maleGradeA: number;
+  scienceCandidates: number;
+  socialCandidates: number;
+  scienceGradeA: number;
+  socialGradeA: number;
+  scienceStraightA: number;
+  socialStraightA: number;
+  aCountDistribution: Array<{ aCount: number; count: number; scienceCount: number; socialCount: number }>;
+  gradeDistribution: Array<{ grade: string; count: number }>;
+  topStraightAProvinces: Array<{ id: string; name: string; count: number }>;
+  topStraightASchools: Array<{ name: string; schoolType: "public" | "private"; province: string; count: number }>;
+  publicVsPrivateStraightA: { public: number; private: number };
+};
 
 type SubjectKey =
   | "math"
@@ -372,6 +432,48 @@ const copy = {
     passRateLabel: "Pass rate (A–E)",
     gradeARateLabel: "Grade A rate",
     femaleRatioLabel: "Female candidates",
+    // Student Analysis & Straight A
+    tabStudents: "Students & Straight A",
+    straightABadge: "⭐ 36 Straight A",
+    studentAnalysisTitle: "Student Performance & Straight A (7/7 As) Analysis",
+    studentAnalysisSubtitle: "In-depth candidate intelligence, gender metrics, and full roster of all 36 candidates nationwide who achieved Grade A in every subject.",
+    kpiStraightA: "Straight A Achievers (7/7 A)",
+    kpiStraightASub: "100% Science track · 23 female, 13 male",
+    kpiTotalCandidates: "Total Passing Candidates",
+    kpiTotalCandidatesSub: "Official published passing cohort",
+    kpiGradeAAll: "Overall Grade A Candidates",
+    kpiGradeAAllSub: "National total achieving Grade A overall",
+    kpiPublicVsPrivate: "Straight A Public vs Private",
+    kpiPublicVsPrivateSub: "23 public (63.9%) · 13 private (36.1%)",
+    aCountBreakdownTitle: "Grade A Distribution (By Number of As Achieved)",
+    aCountBreakdownSub: "Breakdown of candidates by the number of Grade A subjects they earned (from 1 up to all 7)",
+    topStraightAProvinces: "Top Provinces for Straight A",
+    topStraightASchools: "Top High Schools for Straight A",
+    straightAExplorationTitle: "Straight A & Grade A Student Explorer",
+    straightAExplorationSub: "Browse official names (PDF crops), desk numbers, schools, and individual subject grades for top candidates",
+    filterByACount: "Grade A Count",
+    chip7As: "⭐ 7 As (Straight A - 36)",
+    chip6As: "6 As (183)",
+    chip5As: "5 As (301)",
+    chip4As: "4 As (378)",
+    chip3As: "3 As (374)",
+    chip2As: "2 As (385)",
+    chip1A: "1 A (365)",
+    chipAllA: "All Grade A (2,022)",
+    searchStudentPlaceholder: "Search desk #, school name, exam center, province…",
+    allTracks: "All Tracks",
+    allGenders: "All Genders",
+    genderFemale: "Female",
+    genderMale: "Male",
+    viewOfficialPdf: "View PDF Result",
+    noStudentsFound: "No candidates found matching your criteria.",
+    showingStudentsCount: (shown: number, total: number) => `Showing ${shown} of ${total} students`,
+    studentCardTableNum: "Desk #",
+    studentCardCenter: "Exam Center",
+    studentCardSchool: "High School",
+    studentCardProvince: "Province",
+    studentSubjectsBreakdown: "Subject Grades (7 Subjects)",
+    straightARibbon: "⭐ STRAIGHT A (7/7 A)",
   },
   km: {
     brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរកតាម Facebook", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
@@ -481,6 +583,48 @@ const copy = {
     passRateLabel: "អត្រាជាប់ (A–E)",
     gradeARateLabel: "អត្រានិទ្ទេស A",
     femaleRatioLabel: "សមាមាត្រនារី",
+    // Student Analysis & Straight A
+    tabStudents: "វិភាគសិស្ស & A គ្រប់មុខ",
+    straightABadge: "⭐ ៣៦ នាក់ A គ្រប់មុខ",
+    studentAnalysisTitle: "វិភាគទិន្នន័យបេក្ខជន & សិស្សឆ្នើមនិទ្ទេស A គ្រប់មុខ (៧/៧)",
+    studentAnalysisSubtitle: "ទិន្នន័យបេក្ខជនសរុប យេនឌ័រ អត្រាជាប់ និងបញ្ជីឈ្មោះសិស្សឆ្នើមពិសេសទាំង ៣៦ នាក់ទូទាំងប្រទេស ដែលទទួលបាននិទ្ទេស A គ្រប់មុខវិជ្ជាទាំង ៧",
+    kpiStraightA: "សិស្សឆ្នើម A គ្រប់មុខ (៧/៧ A)",
+    kpiStraightASub: "១០០% ថ្នាក់វិទ្យាសាស្ត្រ · ស្រី ២៣ នាក់, ប្រុស ១៣ នាក់",
+    kpiTotalCandidates: "បេក្ខជនជាប់សរុប",
+    kpiTotalCandidatesSub: "ចំនួនបេក្ខជនដែលបានប្រកាសថាជាប់ជាផ្លូវការ",
+    kpiGradeAAll: "និទ្ទេសរួម A ទូទាំងប្រទេស",
+    kpiGradeAAllSub: "បេក្ខជនទទួលបាននិទ្ទេសរួម A ក្នុងការប្រឡងបាក់ឌុប",
+    kpiPublicVsPrivate: "A គ្រប់មុខ (សាលារដ្ឋ vs ឯកជន)",
+    kpiPublicVsPrivateSub: "រដ្ឋ ២៣ នាក់ (៦៣.៩%) · ឯកជន ១៣ នាក់ (៣៦.១%)",
+    aCountBreakdownTitle: "ការបែងចែកតាមចំនួននិទ្ទេស A ទទួលបាន",
+    aCountBreakdownSub: "ចំនួនសិស្សដែលទទួលបាននិទ្ទេស A ចំនួន ៧មុខ, ៦មុខ, ៥មុខ រហូតដល់ ១មុខ",
+    topStraightAProvinces: "រាជធានី-ខេត្ត មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
+    topStraightASchools: "អាគតដ្ឋាន មានសិស្ស A គ្រប់មុខច្រើនបំផុត",
+    straightAExplorationTitle: "បញ្ជីឈ្មោះសិស្សឆ្នើម A គ្រប់មុខ & បេក្ខជននិទ្ទេស A",
+    straightAExplorationSub: "ស្វែងរកឈ្មោះផ្លូវការ (កាត់ចេញពី PDF) លេខតុ អាគតដ្ឋាន និងនិទ្ទេសមុខវិជ្ជាទាំង ៧ របស់បេក្ខជនឆ្នើម",
+    filterByACount: "ចំនួននិទ្ទេស A",
+    chip7As: "⭐ A គ្រប់មុខ ៧ មុខ (៣៦ នាក់)",
+    chip6As: "A ៦ មុខ (១៨៣ នាក់)",
+    chip5As: "A ៥ មុខ (៣០១ នាក់)",
+    chip4As: "A ៤ មុខ (៣៧៨ នាក់)",
+    chip3As: "A ៣ មុខ (៣៧៤ នាក់)",
+    chip2As: "A ២ មុខ (៣៨៥ នាក់)",
+    chip1A: "A ១ មុខ (៣៦៥ នាក់)",
+    chipAllA: "និទ្ទេសរួម A ទាំងអស់ (២,០២២ នាក់)",
+    searchStudentPlaceholder: "ស្វែងរកលេខតុ ឈ្មោះអាគតដ្ឋាន មណ្ឌលប្រឡង រាជធានី-ខេត្ត…",
+    allTracks: "គ្រប់ថ្នាក់",
+    allGenders: "គ្រប់ភេទ",
+    genderFemale: "ស្រី",
+    genderMale: "ប្រុស",
+    viewOfficialPdf: "មើលតារាងផ្លូវការ (PDF)",
+    noStudentsFound: "រកមិនឃើញបេក្ខជនដែលត្រូវនឹងលក្ខខណ្ឌចម្រាញ់ទេ។",
+    showingStudentsCount: (shown: number, total: number) => `បង្ហាញ ${shown} នៃ ${total} បេក្ខជន`,
+    studentCardTableNum: "លេខតុ",
+    studentCardCenter: "មណ្ឌលប្រឡង",
+    studentCardSchool: "អាគតដ្ឋាន",
+    studentCardProvince: "រាជធានី/ខេត្ត",
+    studentSubjectsBreakdown: "និទ្ទេសតាមមុខវិជ្ជាទាំង ៧",
+    straightARibbon: "⭐ និទ្ទេស A គ្រប់មុខ (៧/៧ A)",
   },
 } as const;
 
@@ -496,6 +640,7 @@ function initialLanguage(): Language {
 
 function initialTab(): TabMode {
   if (typeof window === "undefined") return "overview";
+  if (window.location.hash.includes("students")) return "students";
   if (window.location.hash.includes("subjects")) return "subjects";
   if (window.location.hash.includes("schools")) return "schools";
   return "overview";
@@ -547,6 +692,40 @@ function OfficialSchoolImage({
             setImageFailed(true);
           }
         }}
+      />
+    </span>
+  );
+}
+
+function OfficialStudentNameImage({
+  cropUrl,
+  tableNumber,
+  nameFallback,
+  height = 32,
+}: {
+  cropUrl: string;
+  tableNumber: number | string;
+  nameFallback?: string;
+  height?: number;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (imageFailed || !cropUrl) {
+    return (
+      <span className="official-name-text-fallback" title={nameFallback || `Desk #${tableNumber}`}>
+        {nameFallback || `#${tableNumber}`}
+      </span>
+    );
+  }
+
+  return (
+    <span className="official-student-name-crop">
+      <img
+        src={apiUrl(cropUrl)}
+        alt={nameFallback || `Student #${tableNumber}`}
+        style={{ height: `${height}px`, maxHeight: `${height}px` }}
+        onError={() => setImageFailed(true)}
+        loading="lazy"
       />
     </span>
   );
@@ -714,6 +893,20 @@ export default function InsightsPage() {
   const [subjectSort, setSubjectSort] = useState<"gradeA" | "gradeAPercent" | "candidates" | "passRate" | "name">("gradeA");
   const [subjectDisplayLimit, setSubjectDisplayLimit] = useState(25);
 
+  // Student Analysis & Straight A state
+  const [studentStats, setStudentStats] = useState<StudentStats | null>(null);
+  const [students, setStudents] = useState<ArchiveStudentItem[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentACountFilter, setStudentACountFilter] = useState<number | "all">(7);
+  const [studentProvince, setStudentProvince] = useState("all");
+  const [studentTrackFilter, setStudentTrackFilter] = useState<"all" | "science" | "social-science">("all");
+  const [studentGenderFilter, setStudentGenderFilter] = useState<"all" | "female" | "male">("all");
+  const [studentSchoolTypeFilter, setStudentSchoolTypeFilter] = useState<"all" | "public" | "private">("all");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentViewMode, setStudentViewMode] = useState<"cards" | "table">("cards");
+  const [studentDisplayLimit, setStudentDisplayLimit] = useState(36);
+
   const t = copy[language];
 
   useEffect(() => {
@@ -729,7 +922,9 @@ export default function InsightsPage() {
 
   useEffect(() => {
     const handleHash = () => {
-      if (window.location.hash.includes("subjects")) {
+      if (window.location.hash.includes("students")) {
+        setActiveTab("students");
+      } else if (window.location.hash.includes("subjects")) {
         setActiveTab("subjects");
       } else if (window.location.hash.includes("schools")) {
         setActiveTab("schools");
@@ -820,6 +1015,53 @@ export default function InsightsPage() {
       .catch(() => setSubjectDetail(null))
       .finally(() => setLoadingSubjectDetail(false));
   }, [selectedYear, selectedTrack, selectedSubject]);
+
+  useEffect(() => {
+    if (!selectedYear) return;
+    fetch(apiUrl(`/api/archive/${selectedYear}/students/stats`))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setStudentStats(data.stats || data);
+      })
+      .catch(() => {});
+  }, [selectedYear]);
+
+  useEffect(() => {
+    if (!selectedYear) return;
+    setLoadingStudents(true);
+    const params = new URLSearchParams();
+    if (studentACountFilter !== "all") {
+      params.set("aCount", String(studentACountFilter));
+    } else {
+      params.set("aCount", "all");
+    }
+    if (studentProvince !== "all") params.set("province", studentProvince);
+    if (studentTrackFilter !== "all") params.set("track", studentTrackFilter);
+    if (studentGenderFilter !== "all") params.set("gender", studentGenderFilter);
+    if (studentSchoolTypeFilter !== "all") params.set("schoolType", studentSchoolTypeFilter);
+    if (studentSearch.trim()) params.set("search", studentSearch.trim());
+    params.set("limit", String(studentDisplayLimit));
+
+    fetch(apiUrl(`/api/archive/${selectedYear}/students?${params.toString()}`))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.students)) {
+          setStudents(data.students);
+          setTotalStudents(data.total || data.students.length);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingStudents(false));
+  }, [
+    selectedYear,
+    studentACountFilter,
+    studentProvince,
+    studentTrackFilter,
+    studentGenderFilter,
+    studentSchoolTypeFilter,
+    studentSearch,
+    studentDisplayLimit,
+  ]);
 
   const selected = summaries.find((item) => item.year === selectedYear) || summaries.at(-1);
   const metricLabel =
@@ -1190,6 +1432,21 @@ export default function InsightsPage() {
           <BookOpen size={15} />
           <span>{t.tabSubjects}</span>
           <span className="tab-pill-badge">{t.newBadge}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "students"}
+          className={`tab-pill-btn ${activeTab === "students" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("students");
+            window.location.hash = "#insights/students";
+          }}
+        >
+          <Award size={15} />
+          <span>{t.tabStudents}</span>
+          <span className="tab-pill-badge gold-pill-badge">{t.straightABadge}</span>
         </button>
       </div>
 
@@ -3075,6 +3332,758 @@ export default function InsightsPage() {
                       </div>
                     </article>
                   </>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* TAB 4: STUDENT ANALYSIS & STRAIGHT A (A គ្រប់មុខ) */}
+          {activeTab === "students" && (
+            <div className="tab-pane">
+              {/* Hero Banner */}
+              <section className="student-hero-banner shell">
+                <div className="student-hero-content">
+                  <div className="student-hero-badge">
+                    <Award size={18} />
+                    <span>{selected.year} · {t.tabStudents}</span>
+                  </div>
+                  <h2>{t.studentAnalysisTitle}</h2>
+                  <p>{t.studentAnalysisSubtitle}</p>
+                </div>
+              </section>
+
+              {/* Student KPI Cards */}
+              <section className="insight-kpis shell" aria-label="Student Analysis KPIs">
+                {/* Straight A 36 Hero Card */}
+                <article
+                  className="insight-kpi-card student-hero-kpi-card"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.05) 100%)",
+                    border: "1px solid rgba(245, 158, 11, 0.35)",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    setStudentACountFilter(7);
+                    setStudentProvince("all");
+                    setStudentTrackFilter("all");
+                    setStudentGenderFilter("all");
+                    setStudentSchoolTypeFilter("all");
+                  }}
+                  title="Click to view all 36 straight A students"
+                >
+                  <div className="kpi-top">
+                    <span>{t.kpiStraightA}</span>
+                    <span className="kpi-icon-pill" style={{ background: "rgba(245, 158, 11, 0.2)", color: "#d97706" }}>
+                      <Trophy size={16} />
+                    </span>
+                  </div>
+                  <div className="kpi-value-row">
+                    <strong style={{ color: "#d97706" }}>
+                      {numberFormat.format(studentStats ? studentStats.straightACount : 36)}
+                    </strong>
+                    <span className="kpi-unit">{language === "km" ? "នាក់" : "students"}</span>
+                  </div>
+                  <div className="kpi-progress-track">
+                    <div
+                      className="kpi-progress-bar"
+                      style={{
+                        width: "100%",
+                        background: "linear-gradient(90deg, #f59e0b, #d97706)",
+                      }}
+                    />
+                  </div>
+                  <small className="kpi-subtext">
+                    {studentStats
+                      ? language === "km"
+                        ? `ស្រី ${studentStats.femaleStraightA} នាក់ (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ប្រុស ${studentStats.maleStraightA} នាក់ · វិទ្យាសាស្ត្រ ១០០%`
+                        : `${studentStats.femaleStraightA} female (${((studentStats.femaleStraightA / studentStats.straightACount) * 100).toFixed(1)}%), ${studentStats.maleStraightA} male · 100% Science`
+                      : t.kpiStraightASub}
+                  </small>
+                </article>
+
+                {/* Total Candidates Analyzed */}
+                <article className="insight-kpi-card">
+                  <div className="kpi-top">
+                    <span>{t.kpiTotalCandidates}</span>
+                    <span className="kpi-icon-pill">
+                      <Users size={16} />
+                    </span>
+                  </div>
+                  <div className="kpi-value-row">
+                    <strong>
+                      {numberFormat.format(studentStats ? studentStats.totalCandidates : selected.candidateCount)}
+                    </strong>
+                    <span className="kpi-unit">{language === "km" ? "នាក់" : "candidates"}</span>
+                  </div>
+                  <div className="kpi-progress-track">
+                    <div
+                      className="kpi-progress-bar"
+                      style={{
+                        width: `${studentStats ? studentStats.femalePercent : 55.2}%`,
+                        background: "#ec4899",
+                      }}
+                    />
+                  </div>
+                  <small className="kpi-subtext">
+                    {studentStats
+                      ? language === "km"
+                        ? `ស្រី ${numberFormat.format(studentStats.femaleTotal)} (${studentStats.femalePercent}%) · ប្រុស ${numberFormat.format(studentStats.maleTotal)} (${studentStats.malePercent}%)`
+                        : `${numberFormat.format(studentStats.femaleTotal)} female (${studentStats.femalePercent}%) · ${numberFormat.format(studentStats.maleTotal)} male (${studentStats.malePercent}%)`
+                      : t.kpiTotalCandidatesSub}
+                  </small>
+                </article>
+
+                {/* Overall Grade A Candidates */}
+                <article
+                  className="insight-kpi-card"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setStudentACountFilter("all");
+                    setStudentProvince("all");
+                    setStudentTrackFilter("all");
+                    setStudentGenderFilter("all");
+                    setStudentSchoolTypeFilter("all");
+                  }}
+                  title="Click to view all Grade A candidates"
+                >
+                  <div className="kpi-top">
+                    <span>{t.kpiGradeAAll}</span>
+                    <span className="kpi-icon-pill" style={{ background: "rgba(217, 119, 6, 0.15)", color: "#d97706" }}>
+                      <Award size={16} />
+                    </span>
+                  </div>
+                  <div className="kpi-value-row">
+                    <strong style={{ color: "#d97706" }}>
+                      {numberFormat.format(studentStats ? studentStats.gradeACount : 2022)}
+                    </strong>
+                    <span className="kpi-unit">{language === "km" ? "នាក់" : "candidates"}</span>
+                  </div>
+                  <div className="kpi-progress-track">
+                    <div
+                      className="kpi-progress-bar"
+                      style={{
+                        width: `${studentStats ? ((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(0) : 90.4}%`,
+                        background: "#06b6d4",
+                      }}
+                    />
+                  </div>
+                  <small className="kpi-subtext">
+                    {studentStats
+                      ? language === "km"
+                        ? `វិទ្យាសាស្ត្រ ${numberFormat.format(studentStats.scienceGradeA)} (${((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(1)}%) · សង្គម ${numberFormat.format(studentStats.socialGradeA)}`
+                        : `Science: ${numberFormat.format(studentStats.scienceGradeA)} (${((studentStats.scienceGradeA / studentStats.gradeACount) * 100).toFixed(1)}%) · Social: ${numberFormat.format(studentStats.socialGradeA)}`
+                      : t.kpiGradeAAllSub}
+                  </small>
+                </article>
+
+                {/* Public vs Private Straight A */}
+                <article className="insight-kpi-card">
+                  <div className="kpi-top">
+                    <span>{t.kpiPublicVsPrivate}</span>
+                    <span className="kpi-icon-pill" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
+                      <Building2 size={16} />
+                    </span>
+                  </div>
+                  <div className="kpi-value-row">
+                    <strong>
+                      {studentStats?.publicVsPrivateStraightA?.public ?? 22} <span style={{ fontSize: "16px", color: "var(--muted)", fontWeight: 500 }}>vs</span> {studentStats?.publicVsPrivateStraightA?.private ?? 14}
+                    </strong>
+                    <span className="kpi-unit">{language === "km" ? "រដ្ឋ / ឯកជន" : "Pub / Priv"}</span>
+                  </div>
+                  <div className="kpi-progress-track" style={{ display: "flex", gap: "2px" }}>
+                    <div
+                      style={{
+                        width: `${studentStats?.publicVsPrivateStraightA ? (studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100 : 61.1}%`,
+                        height: "100%",
+                        background: "#3b82f6",
+                        borderRadius: "3px 0 0 3px",
+                      }}
+                      title="Public"
+                    />
+                    <div
+                      style={{
+                        width: `${studentStats?.publicVsPrivateStraightA ? (studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100 : 38.9}%`,
+                        height: "100%",
+                        background: "#10b981",
+                        borderRadius: "0 3px 3px 0",
+                      }}
+                      title="Private"
+                    />
+                  </div>
+                  <small className="kpi-subtext">
+                    {studentStats && studentStats.publicVsPrivateStraightA
+                      ? language === "km"
+                        ? `រដ្ឋ ${studentStats.publicVsPrivateStraightA.public} នាក់ (${((studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100).toFixed(1)}%) · ឯកជន ${studentStats.publicVsPrivateStraightA.private} នាក់ (${((studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100).toFixed(1)}%)`
+                        : `Public: ${studentStats.publicVsPrivateStraightA.public} (${((studentStats.publicVsPrivateStraightA.public / (studentStats.straightACount || 36)) * 100).toFixed(1)}%) · Private: ${studentStats.publicVsPrivateStraightA.private} (${((studentStats.publicVsPrivateStraightA.private / (studentStats.straightACount || 36)) * 100).toFixed(1)}%)`
+                      : t.kpiPublicVsPrivateSub}
+                  </small>
+                </article>
+              </section>
+
+              {/* A-Count Distribution Chips */}
+              <section className="shell" style={{ marginTop: "24px" }}>
+                <div className="student-acount-box">
+                  <div className="student-acount-header">
+                    <div>
+                      <h3>{t.aCountBreakdownTitle}</h3>
+                      <p>{t.aCountBreakdownSub}</p>
+                    </div>
+                    <span className="student-filter-indicator">
+                      {studentACountFilter === 7 ? (
+                        <span className="gold-text-badge">⭐ {language === "km" ? "កំពុងជ្រើសរើស A គ្រប់មុខ (៧/៧)" : "Viewing Straight A (7/7)"}</span>
+                      ) : studentACountFilter === "all" ? (
+                        <span>{language === "km" ? "និទ្ទេស A ទាំងអស់" : "All Grade A"}</span>
+                      ) : (
+                        <span>{studentACountFilter} {language === "km" ? "មុខ A" : "As"}</span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="acount-chips-row">
+                    <button
+                      type="button"
+                      className={`acount-chip-btn straight-a-chip ${studentACountFilter === 7 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(7)}
+                    >
+                      <Trophy size={14} />
+                      <span className="chip-label">{t.chip7As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 6 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(6)}
+                    >
+                      <span className="chip-label">{t.chip6As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 5 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(5)}
+                    >
+                      <span className="chip-label">{t.chip5As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 4 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(4)}
+                    >
+                      <span className="chip-label">{t.chip4As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 3 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(3)}
+                    >
+                      <span className="chip-label">{t.chip3As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 2 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(2)}
+                    >
+                      <span className="chip-label">{t.chip2As}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn ${studentACountFilter === 1 ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter(1)}
+                    >
+                      <span className="chip-label">{t.chip1A}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`acount-chip-btn all-a-chip ${studentACountFilter === "all" ? "active" : ""}`}
+                      onClick={() => setStudentACountFilter("all")}
+                    >
+                      <span className="chip-label">{t.chipAllA}</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Straight A Deep-Dive Widgets (Top Provinces & Top Schools) */}
+              {studentStats && Array.isArray(studentStats.topStraightAProvinces) && Array.isArray(studentStats.topStraightASchools) && (
+                <section className="student-insights-widgets shell" style={{ marginTop: "24px" }}>
+                  <div className="student-widgets-grid">
+                    {/* Top Provinces for Straight A */}
+                    <article className="insight-card student-widget-card">
+                      <div className="dashboard-card-head">
+                        <div>
+                          <span>{selected.year} · {language === "km" ? "សិស្ស A គ្រប់មុខ" : "Straight A Achievers"}</span>
+                          <h2>{t.topStraightAProvinces}</h2>
+                        </div>
+                        <MapPin size={18} />
+                      </div>
+                      <div className="dashboard-ranking">
+                        {studentStats.topStraightAProvinces.map((prov, index) => {
+                          const maxCount = studentStats.topStraightAProvinces[0]?.count || 1;
+                          const provDisplay = language === "km" ? prov.name : provinceEnglish[prov.id] || prov.name;
+                          return (
+                            <div
+                              key={prov.id}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                setStudentACountFilter(7);
+                                setStudentProvince(prov.id);
+                              }}
+                              title={`Filter Straight A in ${provDisplay}`}
+                            >
+                              <b>{String(index + 1).padStart(2, "0")}</b>
+                              <span>
+                                {provDisplay}
+                                <i style={{ width: `${(prov.count / maxCount) * 100}%`, background: "linear-gradient(90deg, #f59e0b, #d97706)" }} />
+                              </span>
+                              <strong>
+                                {prov.count} <small>{language === "km" ? "នាក់" : "students"}</small>
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </article>
+
+                    {/* Top Schools for Straight A */}
+                    <article className="insight-card student-widget-card">
+                      <div className="dashboard-card-head">
+                        <div>
+                          <span>{selected.year} · {language === "km" ? "សិស្ស A គ្រប់មុខ" : "Straight A Achievers"}</span>
+                          <h2>{t.topStraightASchools}</h2>
+                        </div>
+                        <School size={18} />
+                      </div>
+                      <div className="dashboard-ranking">
+                        {studentStats.topStraightASchools.map((sch, index) => {
+                          const maxCount = studentStats.topStraightASchools[0]?.count || 1;
+                          return (
+                            <div
+                              key={`${sch.name}-${index}`}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                setStudentACountFilter(7);
+                                setStudentSearch(sch.name);
+                              }}
+                              title={`Filter Straight A at ${sch.name}`}
+                            >
+                              <b>{String(index + 1).padStart(2, "0")}</b>
+                              <span>
+                                {sch.name}
+                                <span className={`table-type-pill pill-${sch.schoolType}`} style={{ marginLeft: "6px", fontSize: "10px", padding: "1px 5px" }}>
+                                  {sch.schoolType === "private" ? t.typePrivateShort : t.typePublicShort}
+                                </span>
+                                <i style={{ width: `${(sch.count / maxCount) * 100}%`, background: "linear-gradient(90deg, #3b82f6, #6366f1)" }} />
+                              </span>
+                              <strong>
+                                {sch.count} <small>{language === "km" ? "នាក់" : "students"}</small>
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  </div>
+                </section>
+              )}
+
+              {/* Student Roster Header & Filter Controls */}
+              <section className="school-analysis-section shell" style={{ marginTop: "32px" }}>
+                <div className="all-schools-header">
+                  <div>
+                    <div className="section-eyebrow">
+                      <Sparkles size={14} />
+                      <span>{language === "km" ? "បញ្ជីរាយនាមសិស្ស" : "Candidate Roster"}</span>
+                    </div>
+                    <h2>{t.straightAExplorationTitle}</h2>
+                    <p>{t.straightAExplorationSub}</p>
+                  </div>
+
+                  {/* View Mode Toggle */}
+                  <div className="insights-view-toggle">
+                    <span className="toggle-label">{t.viewMode}:</span>
+                    <button
+                      type="button"
+                      className={`toggle-btn ${studentViewMode === "cards" ? "active" : ""}`}
+                      onClick={() => setStudentViewMode("cards")}
+                      title={t.viewCards}
+                    >
+                      <LayoutGrid size={15} />
+                      <span>{t.viewCards}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-btn ${studentViewMode === "table" ? "active" : ""}`}
+                      onClick={() => setStudentViewMode("table")}
+                      title={t.viewTable}
+                    >
+                      <TableIcon size={15} />
+                      <span>{t.viewTable}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Toolbar */}
+                <div className="school-filters-toolbar" style={{ flexWrap: "wrap" }}>
+                  {/* Search */}
+                  <div className="school-search-box" style={{ minWidth: "260px", flex: "1 1 260px" }}>
+                    <Search size={16} />
+                    <input
+                      type="text"
+                      placeholder={t.searchStudentPlaceholder}
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                    />
+                    {studentSearch && (
+                      <button
+                        type="button"
+                        className="clear-search-btn"
+                        onClick={() => setStudentSearch("")}
+                        aria-label="Clear search"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Province Filter */}
+                  <div className="school-filter-select">
+                    <MapPin size={15} />
+                    <select
+                      value={studentProvince}
+                      onChange={(e) => setStudentProvince(e.target.value)}
+                      aria-label={t.studentCardProvince}
+                    >
+                      <option value="all">{t.allProvinces}</option>
+                      {selected.provinces.map((prov) => (
+                        <option key={prov.id} value={prov.id}>
+                          {language === "km" ? prov.name : provinceEnglish[prov.id] || prov.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Track Filter */}
+                  <div className="school-filter-select">
+                    <select
+                      value={studentTrackFilter}
+                      onChange={(e) => setStudentTrackFilter(e.target.value as any)}
+                      aria-label={t.chooseTrack}
+                    >
+                      <option value="all">{t.allTracks}</option>
+                      <option value="science">{t.scienceTrack}</option>
+                      <option value="social-science">{t.socialTrack}</option>
+                    </select>
+                  </div>
+
+                  {/* Gender Filter */}
+                  <div className="school-filter-select">
+                    <Users size={15} />
+                    <select
+                      value={studentGenderFilter}
+                      onChange={(e) => setStudentGenderFilter(e.target.value as any)}
+                      aria-label="Gender"
+                    >
+                      <option value="all">{t.allGenders}</option>
+                      <option value="female">{t.genderFemale}</option>
+                      <option value="male">{t.genderMale}</option>
+                    </select>
+                  </div>
+
+                  {/* School Type Filter */}
+                  <div className="school-type-toggle-group">
+                    <button
+                      type="button"
+                      className={`type-toggle-pill ${studentSchoolTypeFilter === "all" ? "active" : ""}`}
+                      onClick={() => setStudentSchoolTypeFilter("all")}
+                    >
+                      {t.typeAll}
+                    </button>
+                    <button
+                      type="button"
+                      className={`type-toggle-pill ${studentSchoolTypeFilter === "public" ? "active" : ""}`}
+                      onClick={() => setStudentSchoolTypeFilter("public")}
+                    >
+                      {t.typePublic}
+                    </button>
+                    <button
+                      type="button"
+                      className={`type-toggle-pill ${studentSchoolTypeFilter === "private" ? "active" : ""}`}
+                      onClick={() => setStudentSchoolTypeFilter("private")}
+                    >
+                      {t.typePrivate}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Showing Count */}
+                <div className="school-count-bar">
+                  <span>{t.showingStudentsCount(students.length, totalStudents)}</span>
+                  {studentACountFilter === 7 && (
+                    <span className="straight-a-filter-note">
+                      ⭐ <strong>{language === "km" ? "និទ្ទេស A គ្រប់មុខ (៧ មុខ)" : "Straight A (7/7 Subjects)"}</strong>: 100% {language === "km" ? "វិទ្យាសាស្ត្រ" : "Science"} · {language === "km" ? "ស្រី ២៣ នាក់ (៦៣.៩%) · ប្រុស ១៣ នាក់" : "23 Female (63.9%), 13 Male"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Loading / Empty / Content */}
+                {loadingStudents ? (
+                  <div className="archive-state">{t.loading}</div>
+                ) : students.length === 0 ? (
+                  <div className="no-schools-empty">
+                    <GraduationCap size={48} />
+                    <p>{t.noStudentsFound}</p>
+                  </div>
+                ) : studentViewMode === "cards" ? (
+                  /* Cards Grid View */
+                  <div className="student-cards-grid">
+                    {students.map((student, idx) => {
+                      const isStraightA = student.aCount === 7;
+                      return (
+                        <article
+                          key={student.id}
+                          className={`student-card ${isStraightA ? "straight-a-student-card" : ""}`}
+                        >
+                          {/* Card Ribbon / Header */}
+                          <div className="student-card-top">
+                            <div className="student-rank-badge">
+                              <b>#{String(idx + 1).padStart(2, "0")}</b>
+                              {isStraightA && (
+                                <span className="straight-a-tag">
+                                  ⭐ {language === "km" ? "A គ្រប់មុខ" : "Straight A"}
+                                </span>
+                              )}
+                            </div>
+                            <div className="student-table-pill">
+                              <span>{t.studentCardTableNum}</span>
+                              <strong>{student.tableNumber}</strong>
+                            </div>
+                          </div>
+
+                          {/* Official Cropped Name */}
+                          <div className="student-name-box">
+                            <OfficialStudentNameImage
+                              cropUrl={student.nameImage}
+                              tableNumber={student.tableNumber}
+                              nameFallback={student.name}
+                              height={34}
+                            />
+                          </div>
+
+                          {/* School Info */}
+                          <div className="student-school-row">
+                            <School size={14} />
+                            <div className="student-school-text">
+                              <span className="school-name-highlight">
+                                {student.schoolBaseName || student.school}
+                              </span>
+                              {student.schoolBranch && (
+                                <span className="school-branch-text">
+                                  ({student.schoolBranch})
+                                </span>
+                              )}
+                              <span className={`table-type-pill pill-${student.schoolType}`}>
+                                {student.schoolType === "private" ? t.typePrivateShort : t.typePublicShort}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Location & Exam Center */}
+                          <div className="student-meta-row">
+                            <span className="student-meta-item">
+                              <MapPin size={12} />
+                              {language === "km" ? student.province : provinceEnglish[student.provinceId] || student.province}
+                            </span>
+                            <span className="student-meta-item">
+                              <Building2 size={12} />
+                              {student.examCenter}
+                            </span>
+                          </div>
+
+                          {/* Gender & Track Tags */}
+                          <div className="student-tags-row">
+                            <span className={`student-gender-tag ${student.gender === "ស" ? "gender-female" : "gender-male"}`}>
+                              {student.gender === "ស" ? t.genderFemale : t.genderMale}
+                            </span>
+                            <span className="student-track-tag">
+                              {student.track === "science" ? t.scienceTrack : t.socialTrack}
+                            </span>
+                            <span className="student-acount-badge">
+                              {student.aCount} {language === "km" ? "មុខ A" : "As"}
+                            </span>
+                          </div>
+
+                          {/* 7 Subject Grades Grid */}
+                          <div className="student-subjects-container">
+                            <span className="student-subjects-label">{t.studentSubjectsBreakdown}</span>
+                            <div className="student-subject-badges">
+                              {student.subjects.map((sub) => {
+                                const isA = sub.grade === "A";
+                                return (
+                                  <div
+                                    key={sub.key}
+                                    className={`student-sub-badge ${isA ? "sub-grade-a" : `sub-grade-${sub.grade.toLowerCase()}`}`}
+                                    title={`${sub.nameKm}: Grade ${sub.grade}`}
+                                  >
+                                    <span className="sub-name">{sub.nameKm}</span>
+                                    <span className="sub-grade">{sub.grade}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Card Footer / Actions */}
+                          <div className="student-card-actions">
+                            <a
+                              href={`#archive?year=${selected.year}&tableNumber=${student.tableNumber}`}
+                              className="student-action-btn primary-action"
+                              title="Open official result"
+                            >
+                              <ExternalLink size={13} />
+                              <span>{language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View Full Result"}</span>
+                            </a>
+                            {student.documentId && (
+                              <a
+                                href={apiUrl(`/api/archive/${selected.year}/documents/${student.documentId}/pdf`)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="student-action-btn secondary-action"
+                                title="Open official PDF page"
+                              >
+                                <FileText size={13} />
+                                <span>PDF (p.{student.pageNumber})</span>
+                              </a>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Compact Table View */
+                  <div className="school-table-container">
+                    <table className="school-table student-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: "45px" }}>{t.colRank}</th>
+                          <th style={{ width: "160px" }}>{language === "km" ? "ឈ្មោះផ្លូវការ (PDF)" : "Official Name"}</th>
+                          <th style={{ width: "80px" }}>{t.studentCardTableNum}</th>
+                          <th style={{ width: "65px" }}>{language === "km" ? "ភេទ" : "Gender"}</th>
+                          <th>{t.colSchool}</th>
+                          <th>{t.colProvince}</th>
+                          <th>{t.colTrack}</th>
+                          <th style={{ width: "70px", textAlign: "center" }}>{language === "km" ? "ចំនួន A" : "A Count"}</th>
+                          <th style={{ minWidth: "220px" }}>{t.studentSubjectsBreakdown}</th>
+                          <th style={{ width: "100px", textAlign: "center" }}>{language === "km" ? "សកម្មភាព" : "Action"}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {students.map((student, idx) => {
+                          const isStraightA = student.aCount === 7;
+                          return (
+                            <tr key={student.id} className={isStraightA ? "straight-a-row" : ""}>
+                              <td>
+                                <span className={`table-rank-pill ${idx < 3 ? `top-${idx + 1}` : ""}`}>
+                                  {idx + 1}
+                                </span>
+                              </td>
+                              <td>
+                                <OfficialStudentNameImage
+                                  cropUrl={student.nameImage}
+                                  tableNumber={student.tableNumber}
+                                  nameFallback={student.name}
+                                  height={26}
+                                />
+                              </td>
+                              <td>
+                                <b>#{student.tableNumber}</b>
+                              </td>
+                              <td>
+                                <span className={`student-gender-tag small-tag ${student.gender === "ស" ? "gender-female" : "gender-male"}`}>
+                                  {student.gender === "ស" ? t.genderFemale : t.genderMale}
+                                </span>
+                              </td>
+                              <td>
+                                <div className="student-table-school">
+                                  <strong>{student.schoolBaseName || student.school}</strong>
+                                  {student.schoolBranch && <small>({student.schoolBranch})</small>}
+                                  <span className={`table-type-pill pill-${student.schoolType}`} style={{ marginLeft: "4px" }}>
+                                    {student.schoolType === "private" ? t.typePrivateShort : t.typePublicShort}
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                <span>{language === "km" ? student.province : provinceEnglish[student.provinceId] || student.province}</span>
+                              </td>
+                              <td>
+                                <span className="student-table-track">
+                                  {student.track === "science" ? t.scienceTrackShort : t.socialTrackShort}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <span className={`table-acount-pill ${isStraightA ? "straight-a-pill" : ""}`}>
+                                  {student.aCount} / 7
+                                </span>
+                              </td>
+                              <td>
+                                <div className="table-subjects-mini-row">
+                                  {student.subjects.map((sub) => (
+                                    <span
+                                      key={sub.key}
+                                      className={`mini-sub-grade ${sub.grade === "A" ? "grade-a" : `grade-${sub.grade.toLowerCase()}`}`}
+                                      title={`${sub.nameKm}: ${sub.grade}`}
+                                    >
+                                      {sub.grade}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <div className="table-actions-cell">
+                                  <a
+                                    href={`#archive?year=${selected.year}&tableNumber=${student.tableNumber}`}
+                                    className="table-action-link"
+                                    title="View result"
+                                  >
+                                    <ExternalLink size={13} />
+                                  </a>
+                                  {student.documentId && (
+                                    <a
+                                      href={apiUrl(`/api/archive/${selected.year}/documents/${student.documentId}/pdf`)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="table-action-link pdf-btn"
+                                      title="Open PDF"
+                                    >
+                                      <FileText size={13} />
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Show More / Show All Pagination Button */}
+                {totalStudents > students.length && (
+                  <div className="school-load-more" style={{ marginTop: "24px" }}>
+                    <button
+                      type="button"
+                      className="school-more-button"
+                      onClick={() => setStudentDisplayLimit((prev) => prev + 36)}
+                    >
+                      {t.showMore}
+                    </button>
+                    <button
+                      type="button"
+                      className="school-all-button"
+                      onClick={() => setStudentDisplayLimit(totalStudents)}
+                    >
+                      {t.showAll} ({totalStudents})
+                    </button>
+                  </div>
                 )}
               </section>
             </div>

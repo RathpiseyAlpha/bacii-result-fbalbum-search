@@ -2948,12 +2948,13 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px 6px 14px;
+  padding: 6px 14px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease;
+  line-height: 1;
 }
 
 :root[data-theme="dark"] .tab-year-selector-wrap,
@@ -2972,10 +2973,31 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 }
 
 .tab-year-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
   white-space: nowrap;
+  line-height: 1.2;
+}
+
+.tab-year-icon,
+.tab-year-label svg {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--muted);
+}
+
+:root[data-language="km"] .tab-year-icon,
+:root[data-language="km"] .tab-year-label svg {
+  transform: translateY(0.5px);
+}
+
+.tab-year-label-text {
+  display: inline-block;
 }
 
 .tab-year-dropdown {
@@ -2986,8 +3008,9 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   font-weight: 700;
   cursor: pointer;
   outline: none;
-  padding: 2px 4px 2px 0;
+  padding: 1px 4px 1px 0;
   font-family: inherit;
+  line-height: 1.2;
 }
 
 .tab-year-dropdown option {

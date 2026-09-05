@@ -751,8 +751,8 @@ function YearSelector({
   return (
     <div className={`tab-year-selector-wrap ${className}`}>
       <span className="tab-year-label">
-        <Calendar size={13} />
-        {label}:
+        <Calendar size={14} className="tab-year-icon" />
+        <span className="tab-year-label-text">{label}:</span>
       </span>
       <select
         value={selectedYear}
@@ -1579,7 +1579,10 @@ export default function InsightsPage() {
                     label={t.year}
                   />
                   <div className="tab-metric-selector-wrap">
-                    <span className="tab-year-label">{t.metric}:</span>
+                    <span className="tab-year-label">
+                      <SlidersHorizontal size={13} className="tab-year-icon" />
+                      <span className="tab-year-label-text">{t.metric}:</span>
+                    </span>
                     <select
                       value={metric}
                       onChange={(event) => setMetric(event.target.value as Metric)}

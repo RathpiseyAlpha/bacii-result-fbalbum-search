@@ -271,8 +271,8 @@ export const KHMER_FONT_DECODING_RULES: Array<[string, string]> = [
   ["ǒǎែប៊លធី", "សាលាប៊ែលធី"],
   ["ǒǎអនƎរƺតិយូ េអស េអ", "សាលាអន្តរជាតិ យូ អេស អេ"],
   ["ǒǎអនƎរƺតិ យូ េអស េអ", "សាលាអន្តរជាតិ យូ អេស អេ"],
-  ["ǒǎអនƎរƺតិេវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសឡាញន៍"],
-  ["ǒǎអនƎរƺតិ េវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសឡាញន៍"],
+  ["ǒǎអនƎរƺតិេវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសលែនដ៏"],
+  ["ǒǎអនƎរƺតិ េវសƐែលនដ៏", "សាលាអន្តរជាតិ វេសលែនដ៏"],
   ["ǒǎេរȢនទួនǓƛ", "សាលារៀនទួនហ្វា"],
   ["ǒǎេរȢន ទួនǓƛ", "សាលារៀនទួនហ្វា"],
   ["ǒǎេវេសƐនអនƎរƺតិ", "សាលាវេស្តើនអន្តរជាតិ"],
@@ -367,8 +367,11 @@ export const KHMER_FONT_DECODING_RULES: Array<[string, string]> = [
   ["សុវណƍ", "សុវណ្ណ"],
   ["ែប៊លធី", "ប៊ែលធី"],
   ["ប៊លធី", "ប៊ែលធី"],
-  ["េវសƐែលនដ៏", "វេសឡាញន៍"],
-  ["េវ៉សǔញន៍", "វេសឡាញន៍"],
+  ["េវសƐែលនដ៏", "វេសលែនដ៏"],
+  ["េវសƐែលន", "វេសលែន"],
+  ["េវ៉សƐǔញន៍", "វ៉េសឡាញន៍"],
+  ["េវ៉សǔញន៍", "វ៉េសឡាញន៍"],
+  ["េវ៉សǔញ", "វ៉េសឡាញ"],
   ["វឌƌនៈ", "វឌ្ឍនៈ"],
   ["វិƺƅ", "វិទ្យា"],
   ["អងƀឌួង", "អង្គឌួង"],
@@ -857,13 +860,55 @@ export function resolveSchoolBranch(
     };
   }
 
-  // 8. Westline International School (វិ.សាលាអន្តរជាតិ វេសឡាញន៍)
+  // 8. The Westline School (វិ.វ៉េសឡាញន៍)
   if (
-    raw.includes("េវសƐែលន") ||
+    raw.includes("វ៉េសឡាញ") ||
     raw.includes("វេសឡាញ") ||
+    raw.includes("េវ៉សǔញ") ||
+    raw.includes("េវ៉សƐǔញ") ||
     raw.toLowerCase().includes("westline")
   ) {
-    const baseName = "វិ.សាលាអន្តរជាតិ វេសឡាញន៍";
+    const baseName = "វិ.វ៉េសឡាញន៍";
+    let branch: string | undefined;
+    if (raw.includes("ចǙរអំេǺ") || raw.includes("ច្បារអំពៅ")) {
+      branch = "សាខាច្បារអំពៅ";
+    } else if (raw.includes("ទួលទំពូង")) {
+      branch = "សាខាទួលទំពូង";
+    } else if (raw.includes("ចំƳរដូង") || raw.includes("ចំការដូង")) {
+      branch = "សាខាចំការដូង";
+    } else if (raw.includes("ទួលǒƛ") || raw.includes("ទួលស្វាយព្រៃ")) {
+      branch = "សាខាទួលស្វាយព្រៃ";
+    } else if (raw.includes("សនƑរម៉ុក") || raw.includes("សន្ធរម៉ុក")) {
+      branch = "សាខាសន្ធរម៉ុក";
+    } else if (raw.includes("ផǜរថƗី") || raw.includes("ផ្សារថ្មី")) {
+      branch = "សាខាផ្សារថ្មី";
+    } else if (raw.includes("ែƙពកេលȢប") || raw.includes("ព្រែកលៀប")) {
+      branch = "សាខាព្រែកលៀប";
+    } else if (raw.includes("ភƒំេពញថƗី") || raw.includes("ភ្នំពេញថ្មី")) {
+      branch = "សាខាភ្នំពេញថ្មី";
+    } else if (raw.includes("ចំƳរសំេǍង") || raw.includes("ចំការសំរោង")) {
+      branch = "សាខាចំការសំរោង";
+    } else {
+      const paren = raw.match(/\(([^)]+)\)?$/);
+      if (paren) {
+        branch = cleanLimonBranch(paren[1]);
+      }
+    }
+    return {
+      baseName,
+      branch,
+      groupKey: `${baseName}:::${branch || ""}`,
+    };
+  }
+
+  // 8b. Westland International School (វិ.សាលាអន្តរជាតិ វេសលែនដ៏)
+  if (
+    raw.includes("វេសលែន") ||
+    raw.includes("វេសឡែន") ||
+    raw.includes("េវសƐែលន") ||
+    raw.toLowerCase().includes("westland")
+  ) {
+    const baseName = "វិ.សាលាអន្តរជាតិ វេសលែនដ៏";
     return {
       baseName,
       branch: undefined,

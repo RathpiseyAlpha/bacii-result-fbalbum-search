@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import cambodia from "@svg-maps/cambodia";
 import phnomPenhSvg from "./data/phnomPenhSvg.json";
 import {
@@ -982,33 +982,63 @@ export default function InsightsPage() {
     return () => window.removeEventListener("hashchange", handleHash);
   }, []);
 
+  const loadedSchoolsYear = useRef<string>("");
+  const loadedDistrictsYear = useRef<string>("");
+  const loadedSubjectsYear = useRef<string>("");
+  const loadedStatsYear = useRef<string>("");
+
   useEffect(() => {
     fetch(apiUrl("/api/archive/years"))
       .then(async (response) => {
         if (!response.ok) throw new Error();
         return response.json();
       })
-      .then(async (data: { years: string[] }) =>
-        Promise.all(
-          data.years.map(async (year) => {
-            const response = await fetch(apiUrl(`/api/archive/${year}/summary`));
-            if (!response.ok) throw new Error();
-            return response.json() as Promise<Summary>;
-          })
-        )
-      )
-      .then((items) => {
-        const ordered = items.sort((left, right) => left.year.localeCompare(right.year));
-        setSummaries(ordered);
-        setSelectedYear(ordered.at(-1)?.year || "");
+      .then(async (data: { years: string[] }) => {
+        const sortedYears = (data.years || []).slice().sort((a, b) => a.localeCompare(b));
+        const latestYear = sortedYears.at(-1) || "";
+        setSelectedYear((prev) => prev || latestYear);
+
+        // Fetch latest year's summary first for immediate KPI render
+        if (latestYear) {
+          try {
+            const latestRes = await fetch(apiUrl(`/api/archive/${latestYear}/summary`));
+            if (latestRes.ok) {
+              const latestSummary = (await latestRes.json()) as Summary;
+              setSummaries([latestSummary]);
+              setLoading(false);
+            }
+          } catch {
+            // will fall back in outer catch
+          }
+        }
+
+        // Fetch remaining summaries in background non-blockingly
+        const otherYears = sortedYears.filter((y) => y !== latestYear);
+        if (otherYears.length > 0) {
+          const others = await Promise.all(
+            otherYears.map(async (year) => {
+              const res = await fetch(apiUrl(`/api/archive/${year}/summary`));
+              return res.ok ? ((await res.json()) as Summary) : null;
+            })
+          );
+          setSummaries((prev) => {
+            const map = new Map<string, Summary>();
+            for (const s of prev) map.set(s.year, s);
+            for (const s of others) if (s) map.set(s.year, s);
+            return [...map.values()].sort((a, b) => a.year.localeCompare(b.year));
+          });
+        }
       })
       .catch(() => setError(t.unavailable))
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch High Schools for selected year
+  // Fetch High Schools for selected year (needed in "overview" and "schools" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "overview" && activeTab !== "schools") return;
+    if (loadedSchoolsYear.current === selectedYear && schools.length > 0) return;
+
     setLoadingSchools(true);
     setSchoolDisplayLimit(20);
     fetch(apiUrl(`/api/archive/${selectedYear}/schools`))
@@ -1016,40 +1046,57 @@ export default function InsightsPage() {
         if (!res.ok) throw new Error();
         return res.json() as Promise<{ schools: SchoolAnalysis[] }>;
       })
-      .then((data) => setSchools(data.schools || []))
+      .then((data) => {
+        setSchools(data.schools || []);
+        loadedSchoolsYear.current = selectedYear;
+      })
       .catch(() => setSchools([]))
       .finally(() => setLoadingSchools(false));
-  }, [selectedYear]);
+  }, [selectedYear, activeTab]);
 
-  // Fetch Phnom Penh district stats for selected year
+  // Fetch Phnom Penh district stats for selected year (only needed in "schools" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "schools") return;
+    if (loadedDistrictsYear.current === selectedYear && districts.length > 0) return;
+
     setLoadingDistricts(true);
     fetch(apiUrl(`/api/archive/${selectedYear}/districts/phnom-penh`))
       .then(async (res) => {
         if (!res.ok) throw new Error();
         return res.json() as Promise<{ districts: PhnomPenhDistrictStats[] }>;
       })
-      .then((data) => setDistricts(data.districts || []))
+      .then((data) => {
+        setDistricts(data.districts || []);
+        loadedDistrictsYear.current = selectedYear;
+      })
       .catch(() => setDistricts([]))
       .finally(() => setLoadingDistricts(false));
-  }, [selectedYear]);
+  }, [selectedYear, activeTab]);
 
-  // Fetch Subject Overviews for selected year
+  // Fetch Subject Overviews for selected year (only needed in "subjects" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "subjects") return;
+    if (loadedSubjectsYear.current === selectedYear && subjectOverviews.length > 0) return;
+
     fetch(apiUrl(`/api/archive/${selectedYear}/subjects/overview`))
       .then(async (res) => {
         if (!res.ok) throw new Error();
         return res.json() as Promise<{ overview: SubjectOverviewItem[] }>;
       })
-      .then((data) => setSubjectOverviews(data.overview || []))
+      .then((data) => {
+        setSubjectOverviews(data.overview || []);
+        loadedSubjectsYear.current = selectedYear;
+      })
       .catch(() => setSubjectOverviews([]));
-  }, [selectedYear]);
+  }, [selectedYear, activeTab]);
 
-  // Fetch Subject Detail when year, track, or subject changes
+  // Fetch Subject Detail when year, track, or subject changes (only needed in "subjects" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "subjects") return;
+
     setLoadingSubjectDetail(true);
     setSubjectDisplayLimit(20);
     fetch(apiUrl(`/api/archive/${selectedYear}/subjects/detail?track=${selectedTrack}&subject=${selectedSubject}`))
@@ -1060,20 +1107,30 @@ export default function InsightsPage() {
       .then((data) => setSubjectDetail(data))
       .catch(() => setSubjectDetail(null))
       .finally(() => setLoadingSubjectDetail(false));
-  }, [selectedYear, selectedTrack, selectedSubject]);
+  }, [selectedYear, selectedTrack, selectedSubject, activeTab]);
 
+  // Fetch Student Stats (needed in "students" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "students") return;
+    if (loadedStatsYear.current === selectedYear && studentStats) return;
+
     fetch(apiUrl(`/api/archive/${selectedYear}/students/stats`))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setStudentStats(data.stats || data);
+        if (data) {
+          setStudentStats(data.stats || data);
+          loadedStatsYear.current = selectedYear;
+        }
       })
       .catch(() => {});
-  }, [selectedYear]);
+  }, [selectedYear, activeTab]);
 
+  // Fetch Students candidate list (needed in "students" tab)
   useEffect(() => {
     if (!selectedYear) return;
+    if (activeTab !== "students") return;
+
     setLoadingStudents(true);
     const params = new URLSearchParams();
     if (studentACountFilter !== "all") {
@@ -1107,6 +1164,7 @@ export default function InsightsPage() {
     studentSchoolTypeFilter,
     studentSearch,
     studentDisplayLimit,
+    activeTab,
   ]);
 
   const selected = summaries.find((item) => item.year === selectedYear) || summaries.at(-1);

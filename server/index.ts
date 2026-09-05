@@ -9,7 +9,7 @@ import { databaseStats } from "./database.ts";
 import {
   getArchiveCenters, getArchivePdf, getArchiveSchools, getArchiveStudentStats, getArchiveStudents,
   getArchiveSubjectDetail, getArchiveSubjectOverview, getArchiveSummary, getPhnomPenhDistrictStats,
-  listArchiveYears, searchArchive,
+  listArchiveYears, searchArchive, warmupArchiveCache,
 } from "./archive.ts";
 import { getArchiveNameImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
@@ -424,4 +424,7 @@ app.use((error: unknown, _request: express.Request, response: express.Response, 
   response.status(500).json({ error: error instanceof Error ? error.message : "Unexpected server error." });
 });
 
-app.listen(port, () => console.log(`BacII Result Search Engine running at http://localhost:${port}`));
+app.listen(port, () => {
+  console.log(`BacII Result Search Engine running at http://localhost:${port}`);
+  warmupArchiveCache();
+});

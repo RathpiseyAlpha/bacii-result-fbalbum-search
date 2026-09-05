@@ -37,9 +37,8 @@ type CenterLabelsFile = {
 };
 
 const TRACK_SQL = `CASE
-  WHEN p.text_raw LIKE '%សីល-ពល%' OR p.text_raw LIKE '%ែផនដី%' THEN 'social-science'
-  WHEN p.text_raw LIKE '%គីមី%' OR p.text_raw LIKE '%ជីវ%' THEN 'science'
-  ELSE 'unknown'
+  WHEN s.track_raw LIKE '%សង%' OR s.track_raw LIKE '%សង្គម%' THEN 'social-science'
+  ELSE 'science'
 END`;
 
 function centerFromPageText(value: unknown) {
@@ -74,12 +73,28 @@ function archiveDirectory(year: string) {
   return candidates.find((directory) => existsSync(resolve(directory, `bacii-${validYear}.sqlite`)));
 }
 
+function ensureArchiveIndexes(validYear: string) {
+  try {
+    const directory = archiveDirectory(validYear);
+    if (!directory) return;
+    const dbFile = resolve(directory, `bacii-${validYear}.sqlite`);
+    const rwDb = new Database(dbFile);
+    rwDb.pragma("journal_mode = WAL");
+    rwDb.prepare("CREATE INDEX IF NOT EXISTS idx_students_grade ON students(grade_raw)").run();
+    rwDb.prepare("CREATE INDEX IF NOT EXISTS idx_students_doc ON students(document_id)").run();
+    rwDb.close();
+  } catch {
+    // Ignore if file is read-only or temporarily locked
+  }
+}
+
 function archiveDatabase(year: string) {
   const validYear = assertYear(year);
   const cached = databases.get(validYear);
   if (cached) return cached;
   const directory = archiveDirectory(validYear);
   if (!directory) throw new Error(`Archive ${validYear} is not available.`);
+  ensureArchiveIndexes(validYear);
   const database = new Database(resolve(directory, `bacii-${validYear}.sqlite`), {
     readonly: true,
     fileMustExist: true,
@@ -153,7 +168,7 @@ export function getArchiveSummary(year: string) {
   `).all() as GradeRow[];
   const tracks = db.prepare(`
     SELECT ${TRACK_SQL} AS track, COUNT(*) AS count
-    FROM students s JOIN pages p ON p.id = s.page_id
+    FROM students s
     GROUP BY track ORDER BY count DESC
   `).all() as TrackRow[];
   const provinces = db.prepare(`
@@ -172,7 +187,6 @@ export function getArchiveSummary(year: string) {
       d.pdf_url AS pdfUrl
     FROM documents d
     LEFT JOIN students s ON s.document_id = d.id
-    LEFT JOIN pages p ON p.id = s.page_id
     GROUP BY d.id ORDER BY candidateCount DESC
   `).all() as ProvinceRow[];
   const centerSets = new Map<number, Set<string>>();
@@ -188,7 +202,7 @@ export function getArchiveSummary(year: string) {
 
   const gradesByTrack = db.prepare(`
     SELECT ${TRACK_SQL} AS track, s.grade_raw AS grade, COUNT(*) AS count
-    FROM students s JOIN pages p ON p.id = s.page_id
+    FROM students s
     WHERE s.grade_raw IN ('A', 'B', 'C', 'D', 'E')
     GROUP BY track, grade
   `).all() as Array<{ track: string; grade: string; count: number }>;
@@ -1887,7 +1901,6 @@ export function getArchiveSchools(year: string, options: GetSchoolsOptions = {})
         SUM(CASE WHEN s.grade_raw = 'E' THEN 1 ELSE 0 END) AS gradeE
       FROM students s
       JOIN documents d ON d.id = s.document_id
-      JOIN pages p ON p.id = s.page_id
       WHERE TRIM(COALESCE(s.school_raw, '')) != ''
       GROUP BY s.school_raw, s.province, d.slug
       ORDER BY candidateCount DESC
@@ -2321,8 +2334,8 @@ export function getArchiveSubjectOverview(year: string): SubjectOverviewItem[] {
   const tracks: Array<"science" | "social-science"> = ["science", "social-science"];
   for (const track of tracks) {
     const trackWhere = track === "science"
-      ? "(p.text_raw LIKE '%គីមី%' OR p.text_raw LIKE '%ជីវ%')"
-      : "(p.text_raw LIKE '%សីល-ពល%' OR p.text_raw LIKE '%ែផនដី%')";
+      ? "(s.track_raw NOT LIKE '%សង%' AND s.track_raw NOT LIKE '%សង្គម%')"
+      : "(s.track_raw LIKE '%សង%' OR s.track_raw LIKE '%សង្គម%')";
 
     // Build single query for all 7 subjects in this track
     const selectClauses: string[] = ["COUNT(*) as total"];
@@ -2335,7 +2348,6 @@ export function getArchiveSubjectOverview(year: string): SubjectOverviewItem[] {
     const row = db.prepare(`
       SELECT ${selectClauses.join(", ")}
       FROM students s
-      JOIN pages p ON p.id = s.page_id
       WHERE ${trackWhere}
     `).get() as Record<string, number>;
 
@@ -2412,8 +2424,8 @@ export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailO
   if (!baseDetail) {
     const db = archiveDatabase(year);
     const trackWhere = track === "science"
-      ? "(p.text_raw LIKE '%គីមី%' OR p.text_raw LIKE '%ជីវ%')"
-      : "(p.text_raw LIKE '%សីល-ពល%' OR p.text_raw LIKE '%ែផនដី%')";
+      ? "(s.track_raw NOT LIKE '%សង%' AND s.track_raw NOT LIKE '%សង្គម%')"
+      : "(s.track_raw LIKE '%សង%' OR s.track_raw LIKE '%សង្គម%')";
 
     // 1. Overview items
     const allOverviews = getArchiveSubjectOverview(year);
@@ -2437,7 +2449,6 @@ export function getArchiveSubjectDetail(year: string, options: GetSubjectDetailO
         SUM(CASE WHEN s.${col} = 'E' THEN 1 ELSE 0 END) AS gradeE,
         SUM(CASE WHEN s.${col} = 'F' THEN 1 ELSE 0 END) AS gradeF
       FROM students s
-      JOIN pages p ON p.id = s.page_id
       JOIN documents d ON d.id = s.document_id
       WHERE ${trackWhere}
       GROUP BY s.school_raw, s.province, d.slug
@@ -2717,7 +2728,7 @@ export function getArchiveStudentStats(year: string): StudentStats {
       SUM(CASE WHEN grade_raw = 'A' AND gender_raw LIKE '%ស%' THEN 1 ELSE 0 END) AS femaleGradeA,
       SUM(CASE WHEN grade_raw = 'A' AND ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceGradeA,
       SUM(CASE WHEN grade_raw = 'A' AND ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialGradeA
-    FROM students s JOIN pages p ON p.id = s.page_id
+    FROM students s
   `).get() as {
     total: number;
     femaleTotal: number;
@@ -2754,7 +2765,7 @@ export function getArchiveStudentStats(year: string): StudentStats {
       SUM(CASE WHEN ${TRACK_SQL} = 'science' THEN 1 ELSE 0 END) AS scienceCount,
       SUM(CASE WHEN ${TRACK_SQL} = 'social-science' THEN 1 ELSE 0 END) AS socialCount,
       COUNT(*) AS totalCount
-    FROM students s JOIN pages p ON p.id = s.page_id
+    FROM students s
     WHERE s.grade_raw = 'A'
     GROUP BY aCount
     ORDER BY aCount DESC
@@ -2790,7 +2801,6 @@ export function getArchiveStudentStats(year: string): StudentStats {
       s.id, s.province, d.slug, s.school_raw AS schoolRaw, s.gender_raw AS genderRaw
     FROM students s
     JOIN documents d ON d.id = s.document_id
-    JOIN pages p ON p.id = s.page_id
     WHERE s.subject_1 = 'A' AND s.subject_2 = 'A' AND s.subject_3 = 'A'
       AND s.subject_4 = 'A' AND s.subject_5 = 'A' AND s.subject_6 = 'A'
       AND s.subject_7 = 'A'
@@ -2896,7 +2906,6 @@ export function getArchiveGradeAStudents(year: string): ArchiveStudentItem[] {
        CASE WHEN s.subject_7 = 'A' THEN 1 ELSE 0 END) AS aCount
     FROM students s
     JOIN documents d ON d.id = s.document_id
-    JOIN pages p ON p.id = s.page_id
     WHERE s.grade_raw = 'A'
     ORDER BY aCount DESC, s.province, s.table_number
   `).all() as Array<{
@@ -3027,4 +3036,26 @@ export function getArchiveStudents(year: string, options: GetStudentsOptions = {
     total,
   };
 }
+
+export function warmupArchiveCache(targetYear?: string) {
+  const yearsToWarm = targetYear ? [targetYear] : listArchiveYears().slice(-1);
+  setImmediate(() => {
+    for (const y of yearsToWarm) {
+      try {
+        console.log(`[archive] Pre-warming cache for ${y}...`);
+        const t0 = Date.now();
+        ensureArchiveIndexes(y);
+        getArchiveSummary(y);
+        getArchiveSchools(y);
+        getArchiveStudentStats(y);
+        getArchiveSubjectOverview(y);
+        getPhnomPenhDistrictStats(y);
+        console.log(`[archive] Cache for ${y} warmed in ${Date.now() - t0}ms.`);
+      } catch (err) {
+        console.warn(`[archive] Cache warmup warning for ${y}:`, err);
+      }
+    }
+  });
+}
+
 

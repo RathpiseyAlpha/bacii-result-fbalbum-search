@@ -44,7 +44,7 @@ type Grade = "A" | "B" | "C" | "D" | "E";
 type SubjectGrade = "A" | "B" | "C" | "D" | "E" | "F";
 type Metric = "candidates" | "A" | "B" | "C" | "D" | "E" | "centers" | "schools" | "pages";
 type GradeTotals = Record<Grade, number>;
-type TabMode = "overview" | "schools" | "subjects" | "students";
+type TabMode = "overview" | "schools" | "heatmap" | "subjects" | "students";
 
 type StudentSubjectGrade = {
   key: string;
@@ -331,6 +331,7 @@ const copy = {
     intro: "Explore grade patterns, compare provinces, and follow national result trends as each new archive year is added.",
     tabOverview: "National Overview",
     tabSchools: "High Schools",
+    tabHeatmap: "Geo-Heatmap",
     tabSubjects: "Subject Analysis",
     capitalMapTitle: "Phnom Penh Capital & Nationwide Geo-Heatmap",
     capitalMapSubtitle: "Interactive geographic distribution of high schools across Phnom Penh's 14 modern Khans and all 25 provinces.",
@@ -482,6 +483,7 @@ const copy = {
     intro: "មើលទម្រង់និទ្ទេស ប្រៀបធៀបរាជធានី ខេត្ត និងតាមដាននិន្នាការទូទាំងប្រទេស នៅពេលបន្ថែមទិន្នន័យឆ្នាំថ្មី។",
     tabOverview: "ទិដ្ឋភាពទូទៅទូទាំងប្រទេស",
     tabSchools: "វិភាគតាមអាគតដ្ឋាន",
+    tabHeatmap: "ផែនទីកម្ដៅ",
     tabSubjects: "វិភាគតាមមុខវិជ្ជា",
     capitalMapTitle: "ផែនទីទីតាំង និងកម្តៅទិន្នន័យ (រាជធានីភ្នំពេញ / ទូទាំងប្រទេស)",
     capitalMapSubtitle: "ការបែងចែកភូមិសាស្ត្រនៃអាគតដ្ឋានទូទាំង ១៤ ខណ្ឌ នៃរាជធានីភ្នំពេញ និង ២៥ រាជធានី-ខេត្ត",
@@ -643,6 +645,7 @@ function initialTab(): TabMode {
   if (typeof window === "undefined") return "overview";
   if (window.location.hash.includes("students")) return "students";
   if (window.location.hash.includes("subjects")) return "subjects";
+  if (window.location.hash.includes("heatmap") || window.location.hash.includes("map")) return "heatmap";
   if (window.location.hash.includes("schools")) return "schools";
   return "overview";
 }
@@ -972,6 +975,8 @@ export default function InsightsPage() {
         setActiveTab("students");
       } else if (window.location.hash.includes("subjects")) {
         setActiveTab("subjects");
+      } else if (window.location.hash.includes("heatmap") || window.location.hash.includes("map")) {
+        setActiveTab("heatmap");
       } else if (window.location.hash.includes("schools")) {
         setActiveTab("schools");
       } else if (window.location.hash.startsWith("#insights")) {
@@ -1033,10 +1038,10 @@ export default function InsightsPage() {
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch High Schools for selected year (needed in "overview" and "schools" tab)
+  // Fetch High Schools for selected year (needed in "overview", "schools", and "heatmap" tabs)
   useEffect(() => {
     if (!selectedYear) return;
-    if (activeTab !== "overview" && activeTab !== "schools") return;
+    if (activeTab !== "overview" && activeTab !== "schools" && activeTab !== "heatmap") return;
     if (loadedSchoolsYear.current === selectedYear && schools.length > 0) return;
 
     setLoadingSchools(true);
@@ -1054,10 +1059,10 @@ export default function InsightsPage() {
       .finally(() => setLoadingSchools(false));
   }, [selectedYear, activeTab]);
 
-  // Fetch Phnom Penh district stats for selected year (only needed in "schools" tab)
+  // Fetch Phnom Penh district stats for selected year (needed in "schools" and "heatmap" tabs)
   useEffect(() => {
     if (!selectedYear) return;
-    if (activeTab !== "schools") return;
+    if (activeTab !== "schools" && activeTab !== "heatmap") return;
     if (loadedDistrictsYear.current === selectedYear && districts.length > 0) return;
 
     setLoadingDistricts(true);
@@ -1504,6 +1509,20 @@ export default function InsightsPage() {
         <button
           type="button"
           role="tab"
+          aria-selected={activeTab === "heatmap"}
+          className={`tab-pill-btn ${activeTab === "heatmap" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("heatmap");
+            window.location.hash = "#insights/heatmap";
+          }}
+        >
+          <MapPin size={15} />
+          <span>{t.tabHeatmap}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
           aria-selected={activeTab === "subjects"}
           className={`tab-pill-btn ${activeTab === "subjects" ? "active" : ""}`}
           onClick={() => {
@@ -1748,335 +1767,6 @@ export default function InsightsPage() {
                       onSelectYear={setSelectedYear}
                       label={t.year}
                     />
-                  </div>
-                </div>
-
-                {/* Capital Geo-Heatmap Explorer */}
-                <div className="capital-heatmap-container">
-                  <div className="heatmap-header">
-                    <div className="heatmap-header-left">
-                      <MapPin size={22} className="heatmap-map-icon" />
-                      <div>
-                        <h3>{t.capitalMapTitle}</h3>
-                        <p>{t.capitalMapSubtitle}</p>
-                      </div>
-                    </div>
-
-                    <div className="heatmap-controls-row">
-                      {/* Switcher: Phnom Penh (14 Khans) vs Provinces */}
-                      <div className="heatmap-view-switcher" role="group">
-                        <button
-                          type="button"
-                          className={`seg-btn ${mapViewMode === "phnom-penh" ? "active" : ""}`}
-                          onClick={() => setMapViewMode("phnom-penh")}
-                        >
-                          <Building2 size={13} />
-                          <span>{t.viewPhnomPenh}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={`seg-btn ${mapViewMode === "provinces" ? "active" : ""}`}
-                          onClick={() => setMapViewMode("provinces")}
-                        >
-                          <Compass size={13} />
-                          <span>{t.viewProvinces}</span>
-                        </button>
-                      </div>
-
-                      {/* Heatmap Metric Selector */}
-                      <div className="heatmap-metric-selector">
-                        <span className="metric-label">{t.heatmapMetric}:</span>
-                        <button
-                          type="button"
-                          className={`heat-pill-btn ${heatMetric === "gradeA" ? "active" : ""}`}
-                          onClick={() => setHeatMetric("gradeA")}
-                        >
-                          🏆 {t.heatGradeA}
-                        </button>
-                        <button
-                          type="button"
-                          className={`heat-pill-btn ${heatMetric === "candidates" ? "active" : ""}`}
-                          onClick={() => setHeatMetric("candidates")}
-                        >
-                          👥 {t.heatCandidates}
-                        </button>
-                        <button
-                          type="button"
-                          className={`heat-pill-btn ${heatMetric === "scienceRatio" ? "active" : ""}`}
-                          onClick={() => setHeatMetric("scienceRatio")}
-                        >
-                          🔬 {t.heatScienceRatio}
-                        </button>
-                        <button
-                          type="button"
-                          className={`heat-pill-btn ${heatMetric === "schools" ? "active" : ""}`}
-                          onClick={() => setHeatMetric("schools")}
-                        >
-                          🏫 {t.heatSchools}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="heatmap-content-grid">
-                    <div className="heatmap-svg-wrap">
-                      {mapViewMode === "phnom-penh" ? (
-                        <svg
-                          viewBox={phnomPenhSvg.viewBox}
-                          className="phnom-penh-svg-map"
-                          role="img"
-                          aria-label="Phnom Penh Khans Map"
-                        >
-                          {phnomPenhSvg.locations.map((loc) => {
-                            const val = khanValues.map.get(loc.id) || 0;
-                            const isSelected = selectedKhan === loc.id;
-                            const isHovered = hoveredKhan === loc.id;
-                            const fill = getDistrictHeatFill(val, khanValues.min, khanValues.max, heatMetric, isSelected, isHovered);
-
-                            return (
-                              <g
-                                key={loc.id}
-                                className={`khan-group ${isSelected ? "selected" : ""}`}
-                                onClick={() => setSelectedKhan(selectedKhan === loc.id ? null : loc.id)}
-                                onMouseEnter={() => setHoveredKhan(loc.id)}
-                                onMouseLeave={() => setHoveredKhan(null)}
-                              >
-                                <path
-                                  id={`khan-path-${loc.id}`}
-                                  d={loc.path}
-                                  className={`khan-polygon ${isSelected ? "selected" : ""}`}
-                                  style={{ fill }}
-                                >
-                                  <title>{`${language === "km" ? loc.nameKm : loc.nameEn}: ${numberFormat.format(val)}`}</title>
-                                </path>
-                                <text
-                                  x={loc.center[0]}
-                                  y={loc.center[1] - 4}
-                                  textAnchor="middle"
-                                  className="khan-label"
-                                >
-                                  {language === "km" ? loc.nameKm : loc.nameEn}
-                                </text>
-                                <text
-                                  x={loc.center[0]}
-                                  y={loc.center[1] + 9}
-                                  textAnchor="middle"
-                                  className="khan-val-sub"
-                                >
-                                  {formatMetricSubValue(val, heatMetric)}
-                                </text>
-                              </g>
-                            );
-                          })}
-                        </svg>
-                      ) : (
-                        <svg
-                          viewBox={cambodia.viewBox}
-                          className="cambodia-svg-map"
-                          role="img"
-                          aria-label="Cambodia Provinces Map"
-                        >
-                          {cambodia.locations.map((loc: any) => {
-                            const val = provValues.map.get(loc.id) || 0;
-                            const isSelected = schoolProvince === loc.id;
-                            const isHovered = hoveredKhan === loc.id;
-                            const fill = getDistrictHeatFill(val, provValues.min, provValues.max, heatMetric, isSelected, isHovered);
-
-                            return (
-                              <path
-                                key={loc.id}
-                                id={loc.id}
-                                d={loc.path}
-                                className={`province-path ${isSelected ? "selected" : ""}`}
-                                style={{ fill }}
-                                onClick={() => {
-                                  setSchoolProvince(schoolProvince === loc.id ? "all" : loc.id);
-                                  if (loc.id !== "phnom-penh") setSchoolKhan("all");
-                                }}
-                                onMouseEnter={() => setHoveredKhan(loc.id)}
-                                onMouseLeave={() => setHoveredKhan(null)}
-                              >
-                                <title>
-                                  {`${loc.name}: ${numberFormat.format(val)} (${heatMetric})`}
-                                </title>
-                              </path>
-                            );
-                          })}
-                        </svg>
-                      )}
-                      <div className="map-legend">
-                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.min : provValues.min)}</span>
-                        <i />
-                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.max : provValues.max)}</span>
-                      </div>
-                    </div>
-
-                    {/* Sidebar Pane for active Khan or Province */}
-                    <div className="heatmap-sidebar-pane">
-                      {mapViewMode === "phnom-penh" ? (
-                        <div className="khan-info-card">
-                          <div className="khan-info-head">
-                            <div className="khan-info-head-text">
-                              <h4>{language === "km" ? activeKhanStats?.nameKm || "ខណ្ឌ" : activeKhanStats?.nameEn || "Khan"}</h4>
-                              <span>{language === "km" ? activeKhanStats?.nameEn : activeKhanStats?.nameKm}</span>
-                            </div>
-                            <span className="khan-badge">
-                              {activeKhanStats?.schoolsCount || 0} {t.schools}
-                            </span>
-                          </div>
-
-                          <div className="khan-kpi-grid">
-                            <div className="khan-kpi-item">
-                              <span>{t.candidates}</span>
-                              <strong>{numberFormat.format(activeKhanStats?.candidateCount || 0)}</strong>
-                              <small>♀ {activeKhanStats?.femalePercent?.toFixed(1) || 0}% {t.femalePercent}</small>
-                            </div>
-                            <div className="khan-kpi-item">
-                              <span>{t.colGradeA}</span>
-                              <strong style={{ color: "#d97706" }}>{numberFormat.format(activeKhanStats?.gradeA || 0)}</strong>
-                              <small>{activeKhanStats?.gradeAPercent?.toFixed(1) || 0}% {t.gradeARateLabel}</small>
-                              {activeKhanStats && activeKhanStats.gradeA > 0 && (
-                                <div className="khan-grade-a-sub">
-                                  <span className="sc-sub">⚛ {numberFormat.format(activeKhanStats.gradeAScience || 0)}</span>
-                                  <span className="divider">·</span>
-                                  <span className="so-sub">📖 {numberFormat.format(activeKhanStats.gradeASocial || 0)}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Science vs Social Track Bar for District */}
-                          {activeKhanStats && (activeKhanStats.scienceCount > 0 || activeKhanStats.socialCount > 0) && (
-                            <SchoolTrackSplitBar
-                              science={activeKhanStats.scienceCount}
-                              social={activeKhanStats.socialCount}
-                              language={language}
-                            />
-                          )}
-
-                          {/* Top High Schools in this Khan */}
-                          {activeKhanStats?.topSchools && activeKhanStats.topSchools.length > 0 && (
-                            <div className="khan-top-schools-box">
-                              <span className="box-title">{t.gradeAChampions}</span>
-                              <div className="khan-top-schools-list">
-                                {activeKhanStats.topSchools.map((sch, i) => (
-                                  <div key={i} className="khan-top-school-row">
-                                    <div className="khan-school-left">
-                                      <OfficialSchoolImage
-                                        year={selected.year}
-                                        studentId={sch.sampleStudentId}
-                                        fallback={sch.name}
-                                      />
-                                      {sch.branch && (
-                                        <span className="school-branch-badge" style={{ fontSize: 10, padding: "1px 5px" }}>
-                                          {sch.branch}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                                      <span className="khan-school-a-badge">
-                                        {sch.gradeA} A
-                                      </span>
-                                      {sch.gradeA > 0 && (sch.gradeAScience !== undefined || sch.gradeASocial !== undefined) && (
-                                        <span style={{ fontSize: 9.5, color: "var(--muted)", fontWeight: 600 }}>
-                                          {sch.gradeAScience || 0} Sci · {sch.gradeASocial || 0} Soc
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          <button
-                            type="button"
-                            className={`khan-filter-btn ${schoolKhan === activeKhanId ? "active" : ""}`}
-                            onClick={() => {
-                              if (schoolKhan === activeKhanId) {
-                                setSchoolKhan("all");
-                              } else {
-                                setSchoolKhan(activeKhanId);
-                                setSchoolProvince("phnom-penh");
-                              }
-                            }}
-                          >
-                            {schoolKhan === activeKhanId ? (
-                              <>✓ {t.clearKhanFilter}</>
-                            ) : (
-                              <>🔍 {t.filterByKhan} ({language === "km" ? activeKhanStats?.nameKm : activeKhanStats?.nameEn})</>
-                            )}
-                          </button>
-                        </div>
-                      ) : (
-                        (() => {
-                          const selectedProvItem = schoolProvince !== "all" ? selected.provinces.find((p) => p.id === schoolProvince) : null;
-                          return (
-                            <div className="khan-info-card">
-                              <div className="khan-info-head">
-                                <div className="khan-info-head-text">
-                                  <h4>{selectedProvItem ? (language === "km" ? selectedProvItem.name : provinceEnglish[selectedProvItem.id] || selectedProvItem.name) : t.viewProvinces}</h4>
-                                  <span>{selectedProvItem ? `${numberFormat.format(selectedProvItem.candidateCount)} ${t.candidates}` : `${selected.provinceCount} ${t.provinces}`}</span>
-                                </div>
-                                {selectedProvItem && (
-                                  <span className="khan-badge">
-                                    {selectedProvItem.schoolCount} {t.schools}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="khan-kpi-grid">
-                                <div className="khan-kpi-item">
-                                  <span>{t.candidates}</span>
-                                  <strong>{numberFormat.format(selectedProvItem ? selectedProvItem.candidateCount : selected.candidateCount)}</strong>
-                                  <small>{selectedProvItem ? `${selectedProvItem.centerCount} ${t.centers}` : `${selected.centerCount} ${t.centers}`}</small>
-                                </div>
-                                <div className="khan-kpi-item">
-                                  <span>{t.colGradeA}</span>
-                                  <strong style={{ color: "#d97706" }}>
-                                    {numberFormat.format(selectedProvItem ? (selectedProvItem.gradeA || selectedProvItem.grades.A) : (selected.grades.find(g => g.grade === 'A')?.count || 2022))}
-                                  </strong>
-                                  {selectedProvItem && selectedProvItem.gradeA > 0 && (
-                                    <div className="khan-grade-a-sub">
-                                      <span className="sc-sub">⚛ {numberFormat.format(selectedProvItem.gradeAScience || 0)}</span>
-                                      <span className="divider">·</span>
-                                      <span className="so-sub">📖 {numberFormat.format(selectedProvItem.gradeASocial || 0)}</span>
-                                    </div>
-                                  )}
-                                  {!selectedProvItem && (
-                                    <small>{selected.candidateCount > 0 ? (((selected.grades.find(g => g.grade === 'A')?.count || 2022) / selected.candidateCount) * 100).toFixed(2) : 0}% {t.gradeARateLabel}</small>
-                                  )}
-                                </div>
-                              </div>
-
-                              {selectedProvItem && (selectedProvItem.scienceCount > 0 || selectedProvItem.socialScienceCount > 0) && (
-                                <SchoolTrackSplitBar
-                                  science={selectedProvItem.scienceCount}
-                                  social={selectedProvItem.socialScienceCount}
-                                  language={language}
-                                />
-                              )}
-
-                              <p style={{ fontSize: 12, color: "var(--muted)", margin: "8px 0" }}>
-                                {language === "km"
-                                  ? (selectedProvItem ? "ចុចលើខេត្តដទៃទៀត ឬប្ដូរទៅរាជធានីភ្នំពេញដើម្បីវិភាគលម្អិត" : "ចុចលើខេត្តណាមួយលើផែនទីដើម្បីចម្រាញ់យកអាគតដ្ឋានក្នុងខេត្តនោះ")
-                                  : (selectedProvItem ? "Click another province or switch to Phnom Penh for district analytics." : "Click any province on the map to filter schools to that province.")}
-                              </p>
-
-                              {schoolProvince !== "all" && (
-                                <button
-                                  type="button"
-                                  className="khan-filter-btn active"
-                                  onClick={() => setSchoolProvince("all")}
-                                >
-                                  ✓ {t.allProvinces}
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })()
-                      )}
-                    </div>
                   </div>
                 </div>
 
@@ -2826,7 +2516,361 @@ export default function InsightsPage() {
             </div>
           )}
 
-          {/* TAB 2: SUBJECT LEVEL ANALYSIS (វិភាគតាមមុខវិជ្ជា) */}
+          {/* TAB 3: CAPITAL & PROVINCIAL GEO-HEATMAP (ផែនទីកម្ដៅ) */}
+          {activeTab === "heatmap" && (
+            <div className="tab-pane">
+              <section className="school-analysis-section shell" aria-label={t.tabHeatmap}>
+                <div className="school-section-header">
+                  <div className="school-section-title-wrap">
+                    <span className="eyebrow"><Sparkles size={14} /> {t.tabHeatmap}</span>
+                    <h2>{t.capitalMapTitle}</h2>
+                    <p>{t.capitalMapSubtitle}</p>
+                  </div>
+                  <div className="tab-controls-right">
+                    <YearSelector
+                      selectedYear={selectedYear}
+                      summaries={summaries}
+                      onSelectYear={setSelectedYear}
+                      label={t.year}
+                    />
+                  </div>
+                </div>
+
+                {/* Capital Geo-Heatmap Explorer */}
+                <div className="capital-heatmap-container">
+                  <div className="heatmap-header">
+                    <div className="heatmap-header-left">
+                      <MapPin size={22} className="heatmap-map-icon" />
+                      <div>
+                        <h3>{t.capitalMapTitle}</h3>
+                        <p>{t.capitalMapSubtitle}</p>
+                      </div>
+                    </div>
+
+                    <div className="heatmap-controls-row">
+                      {/* Switcher: Phnom Penh (14 Khans) vs Provinces */}
+                      <div className="heatmap-view-switcher" role="group">
+                        <button
+                          type="button"
+                          className={`seg-btn ${mapViewMode === "phnom-penh" ? "active" : ""}`}
+                          onClick={() => setMapViewMode("phnom-penh")}
+                        >
+                          <Building2 size={13} />
+                          <span>{t.viewPhnomPenh}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`seg-btn ${mapViewMode === "provinces" ? "active" : ""}`}
+                          onClick={() => setMapViewMode("provinces")}
+                        >
+                          <Compass size={13} />
+                          <span>{t.viewProvinces}</span>
+                        </button>
+                      </div>
+
+                      {/* Heatmap Metric Selector */}
+                      <div className="heatmap-metric-selector">
+                        <span className="metric-label">{t.heatmapMetric}:</span>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "gradeA" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("gradeA")}
+                        >
+                          🏆 {t.heatGradeA}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "candidates" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("candidates")}
+                        >
+                          👥 {t.heatCandidates}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "scienceRatio" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("scienceRatio")}
+                        >
+                          🔬 {t.heatScienceRatio}
+                        </button>
+                        <button
+                          type="button"
+                          className={`heat-pill-btn ${heatMetric === "schools" ? "active" : ""}`}
+                          onClick={() => setHeatMetric("schools")}
+                        >
+                          🏫 {t.heatSchools}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="heatmap-content-grid">
+                    <div className="heatmap-svg-wrap">
+                      {mapViewMode === "phnom-penh" ? (
+                        <svg
+                          viewBox={phnomPenhSvg.viewBox}
+                          className="phnom-penh-svg-map"
+                          role="img"
+                          aria-label="Phnom Penh Khans Map"
+                        >
+                          {phnomPenhSvg.locations.map((loc) => {
+                            const val = khanValues.map.get(loc.id) || 0;
+                            const isSelected = selectedKhan === loc.id;
+                            const isHovered = hoveredKhan === loc.id;
+                            const fill = getDistrictHeatFill(val, khanValues.min, khanValues.max, heatMetric, isSelected, isHovered);
+
+                            return (
+                              <g
+                                key={loc.id}
+                                className={`khan-group ${isSelected ? "selected" : ""}`}
+                                onClick={() => setSelectedKhan(selectedKhan === loc.id ? null : loc.id)}
+                                onMouseEnter={() => setHoveredKhan(loc.id)}
+                                onMouseLeave={() => setHoveredKhan(null)}
+                              >
+                                <path
+                                  id={`khan-path-${loc.id}`}
+                                  d={loc.path}
+                                  className={`khan-polygon ${isSelected ? "selected" : ""}`}
+                                  style={{ fill }}
+                                >
+                                  <title>{`${language === "km" ? loc.nameKm : loc.nameEn}: ${numberFormat.format(val)}`}</title>
+                                </path>
+                                <text
+                                  x={loc.center[0]}
+                                  y={loc.center[1] - 4}
+                                  textAnchor="middle"
+                                  className="khan-label"
+                                >
+                                  {language === "km" ? loc.nameKm : loc.nameEn}
+                                </text>
+                                <text
+                                  x={loc.center[0]}
+                                  y={loc.center[1] + 9}
+                                  textAnchor="middle"
+                                  className="khan-val-sub"
+                                >
+                                  {formatMetricSubValue(val, heatMetric)}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox={cambodia.viewBox}
+                          className="cambodia-svg-map"
+                          role="img"
+                          aria-label="Cambodia Provinces Map"
+                        >
+                          {cambodia.locations.map((loc: any) => {
+                            const val = provValues.map.get(loc.id) || 0;
+                            const isSelected = schoolProvince === loc.id;
+                            const isHovered = hoveredKhan === loc.id;
+                            const fill = getDistrictHeatFill(val, provValues.min, provValues.max, heatMetric, isSelected, isHovered);
+
+                            return (
+                              <path
+                                key={loc.id}
+                                id={loc.id}
+                                d={loc.path}
+                                className={`province-path ${isSelected ? "selected" : ""}`}
+                                style={{ fill }}
+                                onClick={() => {
+                                  setSchoolProvince(schoolProvince === loc.id ? "all" : loc.id);
+                                  if (loc.id !== "phnom-penh") setSchoolKhan("all");
+                                }}
+                                onMouseEnter={() => setHoveredKhan(loc.id)}
+                                onMouseLeave={() => setHoveredKhan(null)}
+                              >
+                                <title>
+                                  {`${loc.name}: ${numberFormat.format(val)} (${heatMetric})`}
+                                </title>
+                              </path>
+                            );
+                          })}
+                        </svg>
+                      )}
+                      <div className="map-legend">
+                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.min : provValues.min)}</span>
+                        <i />
+                        <span>{numberFormat.format(mapViewMode === "phnom-penh" ? khanValues.max : provValues.max)}</span>
+                      </div>
+                    </div>
+
+                    {/* Sidebar Pane for active Khan or Province */}
+                    <div className="heatmap-sidebar-pane">
+                      {mapViewMode === "phnom-penh" ? (
+                        <div className="khan-info-card">
+                          <div className="khan-info-head">
+                            <div className="khan-info-head-text">
+                              <h4>{language === "km" ? activeKhanStats?.nameKm || "ខណ្ឌ" : activeKhanStats?.nameEn || "Khan"}</h4>
+                              <span>{language === "km" ? activeKhanStats?.nameEn : activeKhanStats?.nameKm}</span>
+                            </div>
+                            <span className="khan-badge">
+                              {activeKhanStats?.schoolsCount || 0} {t.schools}
+                            </span>
+                          </div>
+
+                          <div className="khan-kpi-grid">
+                            <div className="khan-kpi-item">
+                              <span>{t.candidates}</span>
+                              <strong>{numberFormat.format(activeKhanStats?.candidateCount || 0)}</strong>
+                              <small>♀ {activeKhanStats?.femalePercent?.toFixed(1) || 0}% {t.femalePercent}</small>
+                            </div>
+                            <div className="khan-kpi-item">
+                              <span>{t.colGradeA}</span>
+                              <strong style={{ color: "#d97706" }}>{numberFormat.format(activeKhanStats?.gradeA || 0)}</strong>
+                              <small>{activeKhanStats?.gradeAPercent?.toFixed(1) || 0}% {t.gradeARateLabel}</small>
+                              {activeKhanStats && activeKhanStats.gradeA > 0 && (
+                                <div className="khan-grade-a-sub">
+                                  <span className="sc-sub">⚛ {numberFormat.format(activeKhanStats.gradeAScience || 0)}</span>
+                                  <span className="divider">·</span>
+                                  <span className="so-sub">📖 {numberFormat.format(activeKhanStats.gradeASocial || 0)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Science vs Social Track Bar for District */}
+                          {activeKhanStats && (activeKhanStats.scienceCount > 0 || activeKhanStats.socialCount > 0) && (
+                            <SchoolTrackSplitBar
+                              science={activeKhanStats.scienceCount}
+                              social={activeKhanStats.socialCount}
+                              language={language}
+                            />
+                          )}
+
+                          {/* Top High Schools in this Khan */}
+                          {activeKhanStats?.topSchools && activeKhanStats.topSchools.length > 0 && (
+                            <div className="khan-top-schools-box">
+                              <span className="box-title">{t.gradeAChampions}</span>
+                              <div className="khan-top-schools-list">
+                                {activeKhanStats.topSchools.map((sch, i) => (
+                                  <div key={i} className="khan-top-school-row">
+                                    <div className="khan-school-left">
+                                      <OfficialSchoolImage
+                                        year={selected.year}
+                                        studentId={sch.sampleStudentId}
+                                        fallback={sch.name}
+                                      />
+                                      {sch.branch && (
+                                        <span className="school-branch-badge" style={{ fontSize: 10, padding: "1px 5px" }}>
+                                          {sch.branch}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                                      <span className="khan-school-a-badge">
+                                        {sch.gradeA} A
+                                      </span>
+                                      {sch.gradeA > 0 && (sch.gradeAScience !== undefined || sch.gradeASocial !== undefined) && (
+                                        <span style={{ fontSize: 9.5, color: "var(--muted)", fontWeight: 600 }}>
+                                          {sch.gradeAScience || 0} Sci · {sch.gradeASocial || 0} Soc
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            className={`khan-filter-btn ${schoolKhan === activeKhanId ? "active" : ""}`}
+                            onClick={() => {
+                              if (schoolKhan === activeKhanId) {
+                                setSchoolKhan("all");
+                              } else {
+                                setSchoolKhan(activeKhanId);
+                                setSchoolProvince("phnom-penh");
+                                setActiveTab("schools");
+                                window.location.hash = "#insights/schools";
+                              }
+                            }}
+                          >
+                            {schoolKhan === activeKhanId ? (
+                              <>✓ {t.clearKhanFilter}</>
+                            ) : (
+                              <>🔍 {t.filterByKhan} ({language === "km" ? activeKhanStats?.nameKm : activeKhanStats?.nameEn})</>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        (() => {
+                          const selectedProvItem = schoolProvince !== "all" ? selected.provinces.find((p) => p.id === schoolProvince) : null;
+                          return (
+                            <div className="khan-info-card">
+                              <div className="khan-info-head">
+                                <div className="khan-info-head-text">
+                                  <h4>{selectedProvItem ? (language === "km" ? selectedProvItem.name : provinceEnglish[selectedProvItem.id] || selectedProvItem.name) : t.viewProvinces}</h4>
+                                  <span>{selectedProvItem ? `${numberFormat.format(selectedProvItem.candidateCount)} ${t.candidates}` : `${selected.provinceCount} ${t.provinces}`}</span>
+                                </div>
+                                {selectedProvItem && (
+                                  <span className="khan-badge">
+                                    {selectedProvItem.schoolCount} {t.schools}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="khan-kpi-grid">
+                                <div className="khan-kpi-item">
+                                  <span>{t.candidates}</span>
+                                  <strong>{numberFormat.format(selectedProvItem ? selectedProvItem.candidateCount : selected.candidateCount)}</strong>
+                                  <small>{selectedProvItem ? `${selectedProvItem.centerCount} ${t.centers}` : `${selected.centerCount} ${t.centers}`}</small>
+                                </div>
+                                <div className="khan-kpi-item">
+                                  <span>{t.colGradeA}</span>
+                                  <strong style={{ color: "#d97706" }}>
+                                    {numberFormat.format(selectedProvItem ? (selectedProvItem.gradeA || selectedProvItem.grades.A) : (selected.grades.find(g => g.grade === 'A')?.count || 2022))}
+                                  </strong>
+                                  {selectedProvItem && selectedProvItem.gradeA > 0 && (
+                                    <div className="khan-grade-a-sub">
+                                      <span className="sc-sub">⚛ {numberFormat.format(selectedProvItem.gradeAScience || 0)}</span>
+                                      <span className="divider">·</span>
+                                      <span className="so-sub">📖 {numberFormat.format(selectedProvItem.gradeASocial || 0)}</span>
+                                    </div>
+                                  )}
+                                  {!selectedProvItem && (
+                                    <small>{selected.candidateCount > 0 ? (((selected.grades.find(g => g.grade === 'A')?.count || 2022) / selected.candidateCount) * 100).toFixed(2) : 0}% {t.gradeARateLabel}</small>
+                                  )}
+                                </div>
+                              </div>
+
+                              {selectedProvItem && (selectedProvItem.scienceCount > 0 || selectedProvItem.socialScienceCount > 0) && (
+                                <SchoolTrackSplitBar
+                                  science={selectedProvItem.scienceCount}
+                                  social={selectedProvItem.socialScienceCount}
+                                  language={language}
+                                />
+                              )}
+
+                              <p style={{ fontSize: 12, color: "var(--muted)", margin: "8px 0" }}>
+                                {language === "km"
+                                  ? (selectedProvItem ? "ចុចលើខេត្តដទៃទៀត ឬប្ដូរទៅរាជធានីភ្នំពេញដើម្បីវិភាគលម្អិត" : "ចុចលើខេត្តណាមួយលើផែនទីដើម្បីចម្រាញ់យកអាគតដ្ឋានក្នុងខេត្តនោះ")
+                                  : (selectedProvItem ? "Click another province or switch to Phnom Penh for district analytics." : "Click any province on the map to filter schools to that province.")}
+                              </p>
+
+                              {schoolProvince !== "all" && (
+                                <button
+                                  type="button"
+                                  className="khan-filter-btn active"
+                                  onClick={() => setSchoolProvince("all")}
+                                >
+                                  ✓ {t.allProvinces}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* TAB 4: SUBJECT LEVEL ANALYSIS (វិភាគតាមមុខវិជ្ជា) */}
           {activeTab === "subjects" && (
             <div className="tab-pane subject-tab-pane">
               <section className="subject-section shell" aria-label={t.subjectAnalysisTitle}>

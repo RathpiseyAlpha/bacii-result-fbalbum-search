@@ -20,7 +20,15 @@ function Root() {
   }
   const [route, setRoute] = useState<Route>(currentRoute);
   useEffect(() => {
-    const updateRoute = () => setRoute(currentRoute());
+    const updateRoute = () => {
+      const nextRoute = currentRoute();
+      setRoute((prev) => {
+        if (prev !== nextRoute) {
+          window.scrollTo({ top: 0, left: 0 });
+        }
+        return nextRoute;
+      });
+    };
     window.addEventListener("hashchange", updateRoute);
     return () => window.removeEventListener("hashchange", updateRoute);
   }, []);

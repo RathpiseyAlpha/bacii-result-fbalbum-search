@@ -8,10 +8,18 @@ type MobileBottomNavProps = {
 export function MobileBottomNav({ currentRoute, language }: MobileBottomNavProps) {
   const isKm = language === "km";
 
+  const handleItemClick = (target: "scanner" | "archive" | "insights", e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (currentRoute === target) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <nav className="mobile-bottom-nav" aria-label={isKm ? "ការរុករកចម្បងលើទូរស័ព្ទ" : "Mobile primary navigation"}>
       <a
         href="#top"
+        onClick={(e) => handleItemClick("scanner", e)}
         className={`mobile-nav-item ${currentRoute === "scanner" ? "active" : ""}`}
         aria-current={currentRoute === "scanner" ? "page" : undefined}
       >
@@ -23,6 +31,7 @@ export function MobileBottomNav({ currentRoute, language }: MobileBottomNavProps
 
       <a
         href="#archive"
+        onClick={(e) => handleItemClick("archive", e)}
         className={`mobile-nav-item ${currentRoute === "archive" ? "active" : ""}`}
         aria-current={currentRoute === "archive" ? "page" : undefined}
       >
@@ -34,6 +43,7 @@ export function MobileBottomNav({ currentRoute, language }: MobileBottomNavProps
 
       <a
         href="#insights"
+        onClick={(e) => handleItemClick("insights", e)}
         className={`mobile-nav-item ${currentRoute === "insights" ? "active" : ""}`}
         aria-current={currentRoute === "insights" ? "page" : undefined}
       >

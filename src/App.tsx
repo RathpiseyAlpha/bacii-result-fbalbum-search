@@ -1027,37 +1027,41 @@ function App() {
         </section>
       )}
 
-      <section className="how-section" id="how-it-works">
-        <div className="shell">
-          <div className="section-intro">
-            <span className="section-kicker">{t("simple")}</span>
-            <h2>{t("threeSteps")}</h2>
-          </div>
-          <div className="steps-grid">
-            <article><span className="step-number">01</span><div className="step-icon"><Link2 /></div><h3>{t("pasteAlbum")}</h3><p>{t("pasteAlbumHelp")}</p></article>
-            <article><span className="step-number">02</span><div className="step-icon"><MousePointer2 /></div><h3>{t("choosePhotos")}</h3><p>{t("choosePhotosHelp")}</p></article>
-            <article><span className="step-number">03</span><div className="step-icon"><Download /></div><h3>{t("oneZip")}</h3><p>{t("oneZipHelp")}</p></article>
-          </div>
-        </div>
-      </section>
+      {searchTool === "facebook" && (
+        <>
+          <section className="how-section" id="how-it-works">
+            <div className="shell">
+              <div className="section-intro">
+                <span className="section-kicker">{t("simple")}</span>
+                <h2>{t("threeSteps")}</h2>
+              </div>
+              <div className="steps-grid">
+                <article><span className="step-number">01</span><div className="step-icon"><Link2 /></div><h3>{t("pasteAlbum")}</h3><p>{t("pasteAlbumHelp")}</p></article>
+                <article><span className="step-number">02</span><div className="step-icon"><MousePointer2 /></div><h3>{t("choosePhotos")}</h3><p>{t("choosePhotosHelp")}</p></article>
+                <article><span className="step-number">03</span><div className="step-icon"><Download /></div><h3>{t("oneZip")}</h3><p>{t("oneZipHelp")}</p></article>
+              </div>
+            </div>
+          </section>
 
-      <section className="details shell">
-        <div className="details-visual" aria-hidden="true">
-          <div className="stack-photo photo-one" />
-          <div className="stack-photo photo-two" />
-          <div className="stack-photo photo-three"><Archive size={38} /><b>album.zip</b><span>248 {t("samplePhotos")}</span></div>
-        </div>
-        <div className="details-copy">
-          <span className="section-kicker">{t("bigAlbums")}</span>
-          <h2>{t("noMarathon")}</h2>
-          <p>{t("details")}</p>
-          <ul>
-            <li><span><Zap size={17} /></span><div><strong>{t("hundreds")}</strong><small>{t("hundredsHelp")}</small></div></li>
-            <li><span><RefreshCw size={17} /></span><div><strong>{t("skipsFailures")}</strong><small>{t("skipsFailuresHelp")}</small></div></li>
-            <li><span><ShieldCheck size={17} /></span><div><strong>{t("noPassword")}</strong><small>{t("noPasswordHelp")}</small></div></li>
-          </ul>
-        </div>
-      </section>
+          <section className="details shell">
+            <div className="details-visual" aria-hidden="true">
+              <div className="stack-photo photo-one" />
+              <div className="stack-photo photo-two" />
+              <div className="stack-photo photo-three"><Archive size={38} /><b>album.zip</b><span>248 {t("samplePhotos")}</span></div>
+            </div>
+            <div className="details-copy">
+              <span className="section-kicker">{t("bigAlbums")}</span>
+              <h2>{t("noMarathon")}</h2>
+              <p>{t("details")}</p>
+              <ul>
+                <li><span><Zap size={17} /></span><div><strong>{t("hundreds")}</strong><small>{t("hundredsHelp")}</small></div></li>
+                <li><span><RefreshCw size={17} /></span><div><strong>{t("skipsFailures")}</strong><small>{t("skipsFailuresHelp")}</small></div></li>
+                <li><span><ShieldCheck size={17} /></span><div><strong>{t("noPassword")}</strong><small>{t("noPasswordHelp")}</small></div></li>
+              </ul>
+            </div>
+          </section>
+        </>
+      )}
 
       <footer>
         <div className="shell footer-inner">

@@ -4,6 +4,8 @@ import cambodia from "@svg-maps/cambodia";
 import phnomPenhSvg from "./data/phnomPenhSvg.json";
 import {
   Archive,
+  ArrowLeft,
+  ArrowRight,
   Atom,
   Award,
   BarChart3,
@@ -13,6 +15,7 @@ import {
   Calendar,
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Compass,
   Dna,
@@ -48,7 +51,7 @@ type Grade = "A" | "B" | "C" | "D" | "E";
 type SubjectGrade = "A" | "B" | "C" | "D" | "E" | "F";
 type Metric = "candidates" | "A" | "B" | "C" | "D" | "E" | "centers" | "schools" | "pages";
 type GradeTotals = Record<Grade, number>;
-type TabMode = "overview" | "schools" | "heatmap" | "subjects" | "students";
+type TabMode = "menu" | "overview" | "schools" | "heatmap" | "subjects" | "students";
 
 type StudentSubjectGrade = {
   key: string;
@@ -646,12 +649,13 @@ function initialLanguage(): Language {
 }
 
 function initialTab(): TabMode {
-  if (typeof window === "undefined") return "overview";
+  if (typeof window === "undefined") return "menu";
   if (window.location.hash.includes("students")) return "students";
   if (window.location.hash.includes("subjects")) return "subjects";
   if (window.location.hash.includes("heatmap") || window.location.hash.includes("map")) return "heatmap";
   if (window.location.hash.includes("schools")) return "schools";
-  return "overview";
+  if (window.location.hash.includes("overview")) return "overview";
+  return "menu";
 }
 
 function renderSubjectIcon(key: SubjectKey) {
@@ -1003,25 +1007,20 @@ export default function InsightsPage() {
         setActiveTab("heatmap");
       } else if (window.location.hash.includes("schools")) {
         setActiveTab("schools");
-      } else if (window.location.hash.startsWith("#insights")) {
+      } else if (window.location.hash.includes("overview")) {
         setActiveTab("overview");
+      } else if (window.location.hash === "#insights" || window.location.hash === "#insights/menu" || window.location.hash === "") {
+        setActiveTab("menu");
       }
     };
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
   }, []);
 
-  const switchTab = (tab: "overview" | "schools" | "heatmap" | "subjects" | "students", hash: string) => {
+  const switchTab = (tab: TabMode, hash: string) => {
     setActiveTab(tab);
     window.location.hash = hash;
-    const anchor = document.getElementById("insights-tab-anchor");
-    if (anchor) {
-      const navHeight = window.innerWidth <= 768 ? 60 : 86;
-      const targetY = anchor.getBoundingClientRect().top + window.scrollY - navHeight;
-      if (window.scrollY > targetY) {
-        window.scrollTo({ top: targetY, behavior: "smooth" });
-      }
-    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const loadedSchoolsYear = useRef<string>("");
@@ -1505,82 +1504,211 @@ export default function InsightsPage() {
         </div>
       </nav>
 
-      <header className="insights-hero shell">
-        <div className="insights-hero-text">
-          <span className="eyebrow"><TrendingUp size={14} /> {t.eyebrow}</span>
-          <h1>{t.title}</h1>
-          <p>{t.intro}</p>
-        </div>
-      </header>
+      {activeTab === "menu" ? (
+        <section className="search-hub-landing shell" id="top">
+          <div className="search-hub-intro">
+            <span className="eyebrow"><TrendingUp size={14} /> {t.eyebrow}</span>
+            <h1>{t.title}</h1>
+            <p>{t.intro}</p>
+            <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <label className="archive-year" style={{ margin: 0 }}>
+                <span>{language === "km" ? "ឆ្នាំលទ្ធផល" : "Year"}</span>
+                <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
+                  {summaries.map((item) => <option key={item.year} value={item.year}>{item.year}</option>)}
+                </select>
+              </label>
+            </div>
+          </div>
 
-      {/* Primary Insights Tabs (Frozen / Sticky Toolbar) */}
-      <div id="insights-tab-anchor" />
-      <div className="insights-tab-bar-sticky">
-        <div className="insights-tab-nav shell" role="tablist" aria-label="Insights tabs">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "overview"}
-            className={`tab-pill-btn ${activeTab === "overview" ? "active" : ""}`}
-            onClick={() => switchTab("overview", "#insights")}
-          >
-            <BarChart3 size={15} />
-            <span>{t.tabOverview}</span>
-          </button>
+          <div className="search-menu-cards-grid" style={{ maxWidth: 960, margin: "0 auto" }}>
+            <button type="button" className="search-menu-card" onClick={() => switchTab("overview", "#insights/overview")}>
+              <div className="search-menu-card-icon" style={{ background: "rgba(16, 185, 129, 0.12)", color: "var(--green)" }}>
+                <BarChart3 size={26} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{t.tabOverview}</h3>
+                  <span className="search-menu-badge">{language === "km" ? "ទូទាំងប្រទេស" : "National"}</span>
+                </div>
+                <p>{language === "km" ? "ស្ថិតិបេក្ខជនជាប់ទូទាំងប្រទេស អត្រាជាប់ ការបែងចែកនិទ្ទេស A ដល់ E និងស្ថិតិតាមភេទ។" : "National overview with candidate totals, passing rates, grade distribution, and gender breakdown."}</p>
+                <div className="search-menu-action-row" style={{ color: "var(--green)" }}>
+                  <span>{language === "km" ? "បើកមើលទិន្នន័យ" : "View overview"}</span>
+                  <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                </div>
+              </div>
+            </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "schools"}
-            className={`tab-pill-btn ${activeTab === "schools" ? "active" : ""}`}
-            onClick={() => switchTab("schools", "#insights/schools")}
-          >
-            <School size={15} />
-            <span>{t.tabSchools}</span>
-          </button>
+            <button type="button" className="search-menu-card" onClick={() => switchTab("schools", "#insights/schools")}>
+              <div className="search-menu-card-icon" style={{ background: "rgba(14, 165, 233, 0.12)", color: "#0284c7" }}>
+                <School size={26} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{t.tabSchools}</h3>
+                  <span className="search-menu-badge">{language === "km" ? "ចំណាត់ថ្នាក់សាលា" : "Rankings"}</span>
+                </div>
+                <p>{language === "km" ? "ចំណាត់ថ្នាក់វិទ្យាល័យរដ្ឋ និងឯកជន សាលាជើងឯកនិទ្ទេស A និងការប្រៀបធៀបរវាងសាលាពីរ។" : "Public & private high school rankings, Grade A champions, and head-to-head school comparisons."}</p>
+                <div className="search-menu-action-row" style={{ color: "#0284c7" }}>
+                  <span>{language === "km" ? "បើកវិភាគសាលា" : "Open schools"}</span>
+                  <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                </div>
+              </div>
+            </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "heatmap"}
-            className={`tab-pill-btn ${activeTab === "heatmap" ? "active" : ""}`}
-            onClick={() => switchTab("heatmap", "#insights/heatmap")}
-          >
-            <MapPin size={15} />
-            <span>{t.tabHeatmap}</span>
-          </button>
+            <button type="button" className="search-menu-card" onClick={() => switchTab("heatmap", "#insights/heatmap")}>
+              <div className="search-menu-card-icon" style={{ background: "rgba(245, 158, 11, 0.12)", color: "#d97706" }}>
+                <MapPin size={26} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{t.tabHeatmap}</h3>
+                  <span className="search-menu-badge">{language === "km" ? "ផែនទីអន្តរកម្ម" : "Heatmap"}</span>
+                </div>
+                <p>{language === "km" ? "ផែនទីអន្តរកម្មខណ្ឌទាំង ១៤ នៅរាជធានីភ្នំពេញ និងដង់ស៊ីតេបេក្ខជនតាមបណ្តាខេត្តទូទាំងប្រទេស។" : "Interactive district map of Phnom Penh khans and candidate densities across all 25 provinces."}</p>
+                <div className="search-menu-action-row" style={{ color: "#d97706" }}>
+                  <span>{language === "km" ? "បើកផែនទីកម្ដៅ" : "Open heatmap"}</span>
+                  <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                </div>
+              </div>
+            </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "subjects"}
-            className={`tab-pill-btn ${activeTab === "subjects" ? "active" : ""}`}
-            onClick={() => switchTab("subjects", "#insights/subjects")}
-          >
-            <BookOpen size={15} />
-            <span>{t.tabSubjects}</span>
-            <span className="tab-pill-badge">{t.newBadge}</span>
-          </button>
+            <button type="button" className="search-menu-card" onClick={() => switchTab("subjects", "#insights/subjects")}>
+              <div className="search-menu-card-icon" style={{ background: "rgba(139, 92, 246, 0.12)", color: "#7c3aed" }}>
+                <BookOpen size={26} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{t.tabSubjects}</h3>
+                  <span className="search-menu-badge">{t.newBadge}</span>
+                </div>
+                <p>{language === "km" ? "វិភាគនិទ្ទេស A តាមមុខវិជ្ជាប្រឡងក្នុងថ្នាក់វិទ្យាសាស្ត្រ និងសង្គម និងសាលាឆ្នើមតាមមុខវិជ្ជានីមួយៗ។" : "Subject-by-subject performance, Grade A counts, and top schools across each subject."}</p>
+                <div className="search-menu-action-row" style={{ color: "#7c3aed" }}>
+                  <span>{language === "km" ? "បើកវិភាគមុខវិជ្ជា" : "Open subjects"}</span>
+                  <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                </div>
+              </div>
+            </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "students"}
-            className={`tab-pill-btn ${activeTab === "students" ? "active" : ""}`}
-            onClick={() => switchTab("students", "#insights/students")}
-          >
-            <Award size={15} />
-            <span>{t.tabStudents}</span>
-            <span className="tab-pill-badge gold-pill-badge">
-              {studentStats?.straightACount != null && studentStats.straightACount > 0
-                ? language === "km"
-                  ? `⭐ ${studentStats.straightACount} A គ្រប់មុខ`
-                  : `⭐ ${studentStats.straightACount} Straight A`
-                : t.straightABadgeGeneric}
-            </span>
-          </button>
-        </div>
-      </div>
+            <button type="button" className="search-menu-card" onClick={() => switchTab("students", "#insights/students")}>
+              <div className="search-menu-card-icon" style={{ background: "rgba(234, 179, 8, 0.15)", color: "#ca8a04" }}>
+                <Award size={26} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{t.tabStudents}</h3>
+                  <span className="search-menu-badge gold-pill-badge">
+                    {studentStats?.straightACount != null && studentStats.straightACount > 0
+                      ? language === "km"
+                        ? `⭐ ${studentStats.straightACount} A គ្រប់មុខ`
+                        : `⭐ ${studentStats.straightACount} Straight A`
+                      : t.straightABadgeGeneric}
+                  </span>
+                </div>
+                <p>{language === "km" ? "បញ្ជីឈ្មោះសិស្សនិទ្ទេស A ទាំងអស់ទូទាំងប្រទេស ជាមួយមុខវិជ្ជាពិន្ទុពេញ និងតំណភ្ជាប់សន្លឹក PDF។" : "Searchable registry of Grade A candidates, subject breakdown, and official PDF result sheet links."}</p>
+                <div className="search-menu-action-row" style={{ color: "#ca8a04" }}>
+                  <span>{language === "km" ? "មើលបញ្ជីសិស្ស" : "View students"}</span>
+                  <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="tool-full-view shell" id="top">
+          <div className="tool-breadcrumb-bar">
+            <div className="breadcrumb-left-group">
+              <button
+                type="button"
+                className="breadcrumb-back-btn"
+                onClick={() => switchTab("menu", "#insights")}
+                title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយវិភាគ" : "Back to Insights Menu"}
+              >
+                <ArrowLeft size={16} />
+                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+              </button>
+
+              <div className="breadcrumb-path">
+                <button
+                  type="button"
+                  className="breadcrumb-root-link"
+                  onClick={() => switchTab("menu", "#insights")}
+                >
+                  <BarChart3 size={14} />
+                  <span>{language === "km" ? "ទិន្នន័យវិភាគ" : "Insights"}</span>
+                </button>
+                <span className="breadcrumb-separator"><ChevronRight size={14} /></span>
+                <span className="breadcrumb-current-label">
+                  {activeTab === "overview" ? t.tabOverview
+                    : activeTab === "schools" ? t.tabSchools
+                    : activeTab === "heatmap" ? t.tabHeatmap
+                    : activeTab === "subjects" ? t.tabSubjects
+                    : t.tabStudents}
+                </span>
+              </div>
+            </div>
+
+            <div className="breadcrumb-quick-switcher">
+              <select
+                value={selectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                className="breadcrumb-year-select"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  outline: "none",
+                }}
+              >
+                {summaries.map((item) => <option key={item.year} value={item.year}>{item.year}</option>)}
+              </select>
+
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${activeTab === "overview" ? "active" : ""}`}
+                onClick={() => switchTab("overview", "#insights/overview")}
+              >
+                <BarChart3 size={13} />
+                <span>{t.tabOverview}</span>
+              </button>
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${activeTab === "schools" ? "active" : ""}`}
+                onClick={() => switchTab("schools", "#insights/schools")}
+              >
+                <School size={13} />
+                <span>{t.tabSchools}</span>
+              </button>
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${activeTab === "heatmap" ? "active" : ""}`}
+                onClick={() => switchTab("heatmap", "#insights/heatmap")}
+              >
+                <MapPin size={13} />
+                <span>{t.tabHeatmap}</span>
+              </button>
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${activeTab === "subjects" ? "active" : ""}`}
+                onClick={() => switchTab("subjects", "#insights/subjects")}
+              >
+                <BookOpen size={13} />
+                <span>{t.tabSubjects}</span>
+              </button>
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${activeTab === "students" ? "active" : ""}`}
+                onClick={() => switchTab("students", "#insights/students")}
+              >
+                <Award size={13} />
+                <span>{t.tabStudents}</span>
+              </button>
+            </div>
+          </div>
 
       {loading ? (
         <div className="archive-state shell">{t.loading}</div>
@@ -4368,6 +4496,8 @@ export default function InsightsPage() {
 
           <footer className="insights-footer shell">{t.source}</footer>
         </>
+      )}
+      </section>
       )}
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav currentRoute="insights" language={language} />

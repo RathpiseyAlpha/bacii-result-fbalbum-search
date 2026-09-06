@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import cambodia from "@svg-maps/cambodia";
 import {
-  Archive, BarChart3, BookOpen, Check, ExternalLink, GraduationCap,
+  Archive, ArrowLeft, ArrowRight, BarChart3, BookOpen, Check, ChevronRight, ExternalLink, GraduationCap,
   Hash, Images, Languages, LoaderCircle, MapPin, Moon, School, Search, Share2, Sun, Users,
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
@@ -12,7 +12,7 @@ type Language = "en" | "km";
 type Track = "science" | "social-science";
 type Grade = "A" | "B" | "C" | "D" | "E";
 type GradeTotals = Record<Grade, number>;
-type ArchiveSection = "archive-map" | "archive-search" | "archive-insights" | "archive-province-grades";
+type ArchiveSection = "menu" | "archive-map" | "archive-search" | "archive-insights" | "archive-province-grades";
 
 type ProvinceSummary = {
   id: string; name: string; documentId: number; pageCount: number;
@@ -151,9 +151,49 @@ export default function ArchivePage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
-  const [activeSection, setActiveSection] = useState<ArchiveSection>("archive-map");
+  function getInitialArchiveSection(): ArchiveSection {
+    if (typeof window === "undefined") return "menu";
+    const hash = window.location.hash;
+    if (hash.includes("map")) return "archive-map";
+    if (hash.includes("archive-search") || hash.includes("archive/search")) return "archive-search";
+    if (hash.includes("insights")) return "archive-insights";
+    if (hash.includes("grades") || hash.includes("province-grades") || hash.includes("provinces")) return "archive-province-grades";
+    return "menu";
+  }
+
+  const [activeSection, setActiveSection] = useState<ArchiveSection>(getInitialArchiveSection);
+
+  const selectSection = (sec: ArchiveSection) => {
+    setActiveSection(sec);
+    if (sec === "archive-map") window.location.hash = "#archive/map";
+    else if (sec === "archive-search") window.location.hash = "#archive/search";
+    else if (sec === "archive-insights") window.location.hash = "#archive/insights";
+    else if (sec === "archive-province-grades") window.location.hash = "#archive/provinces";
+    else window.location.hash = "#archive";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const [shareFeedback, setShareFeedback] = useState<{ studentId: number; copied: boolean } | null>(null);
   const t = copy[language];
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash.includes("map")) {
+        setActiveSection("archive-map");
+      } else if (hash.includes("archive-search") || hash.includes("archive/search")) {
+        setActiveSection("archive-search");
+      } else if (hash.includes("insights")) {
+        setActiveSection("archive-insights");
+      } else if (hash.includes("grades") || hash.includes("province-grades") || hash.includes("provinces")) {
+        setActiveSection("archive-province-grades");
+      } else if (hash === "#archive" || hash === "#archive/menu" || hash === "") {
+        setActiveSection("menu");
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -264,20 +304,195 @@ export default function ArchivePage() {
         </div>
       </nav>
 
-      <header className="archive-hero shell">
-        <div><span className="eyebrow"><BookOpen size={14} /> {t.eyebrow}</span><h1>{t.title}</h1><p>{t.intro}</p></div>
-        <label className="archive-year"><span>{t.year}</span><select value={year} onChange={(event) => setYear(event.target.value)}>{years.map((item) => <option key={item}>{item}</option>)}</select></label>
-      </header>
+      {loading ? (
+        <div className="archive-state shell"><LoaderCircle className="spin" /> {t.loading}</div>
+      ) : error && !summary ? (
+        <div className="archive-state error-banner shell">{error}</div>
+      ) : summary && (
+        <>
+          {activeSection === "menu" ? (
+            <section className="search-hub-landing shell" id="top">
+              <div className="search-hub-intro">
+                <span className="eyebrow"><BookOpen size={14} /> {t.eyebrow}</span>
+                <h1>{t.title}</h1>
+                <p>{t.intro}</p>
+                <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <label className="archive-year" style={{ margin: 0 }}>
+                    <span>{t.year}</span>
+                    <select value={year} onChange={(event) => setYear(event.target.value)}>
+                      {years.map((item) => <option key={item}>{item}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </div>
 
-      {loading ? <div className="archive-state shell"><LoaderCircle className="spin" /> {t.loading}</div> : error && !summary ? <div className="archive-state error-banner shell">{error}</div> : summary && <>
-        <div className="archive-section-tabs shell" role="tablist" aria-label={t.sectionNav}>
-          <button type="button" role="tab" aria-selected={activeSection === "archive-map"} className={activeSection === "archive-map" ? "active" : ""} onClick={() => setActiveSection("archive-map")}><MapPin size={15} /><span>{t.sectionMap}</span></button>
-          <button type="button" role="tab" aria-selected={activeSection === "archive-search"} className={activeSection === "archive-search" ? "active" : ""} onClick={() => setActiveSection("archive-search")}><Search size={15} /><span>{t.sectionSearch}</span></button>
-          <button type="button" role="tab" aria-selected={activeSection === "archive-insights"} className={activeSection === "archive-insights" ? "active" : ""} onClick={() => setActiveSection("archive-insights")}><BarChart3 size={15} /><span>{t.sectionNational}</span></button>
-          <button type="button" role="tab" aria-selected={activeSection === "archive-province-grades"} className={activeSection === "archive-province-grades" ? "active" : ""} onClick={() => setActiveSection("archive-province-grades")}><GraduationCap size={15} /><span>{t.sectionProvinceGrades}</span></button>
-        </div>
+              <section className="archive-stats shell" aria-label="Archive summary" style={{ margin: "0 auto 32px", maxWidth: 960 }}>
+                <article><Users /><strong>{numberFormat.format(summary.candidateCount)}</strong><span>{t.candidates}</span></article>
+                <article><MapPin /><strong>{summary.provinceCount}</strong><span>{t.provinces}</span></article>
+                <article><GraduationCap /><strong>{numberFormat.format(summary.centerCount)}</strong><span>{t.centers}</span></article>
+                <article><BookOpen /><strong>{numberFormat.format(summary.pageCount)}</strong><span>{t.pages}</span></article>
+              </section>
 
-        {activeSection === "archive-map" && <div className="archive-tab-panel" role="tabpanel">
+              <div className="search-menu-cards-grid" style={{ maxWidth: 960, margin: "0 auto" }}>
+                <button type="button" className="search-menu-card" onClick={() => selectSection("archive-map")}>
+                  <div className="search-menu-card-icon" style={{ background: "rgba(14, 165, 233, 0.12)", color: "#0284c7" }}>
+                    <MapPin size={26} />
+                  </div>
+                  <div className="search-menu-card-body">
+                    <div className="search-menu-card-header">
+                      <h3>{t.sectionMap}</h3>
+                      <span className="search-menu-badge">{language === "km" ? "ផែនទីអន្តរកម្ម" : "Interactive Map"}</span>
+                    </div>
+                    <p>{language === "km" ? "មើលចំនួនបេក្ខជនជាប់ និងស្ថិតិតាមរាជធានី-ខេត្តទាំង ២៥ លើផែនទីប្រទេសកម្ពុជា។" : "Interactive map to inspect candidate pass counts and breakdown across all provinces."}</p>
+                    <div className="search-menu-action-row" style={{ color: "#0284c7" }}>
+                      <span>{language === "km" ? "បើកផែនទី" : "Open map"}</span>
+                      <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                    </div>
+                  </div>
+                </button>
+
+                <button type="button" className="search-menu-card" onClick={() => selectSection("archive-search")}>
+                  <div className="search-menu-card-icon" style={{ background: "rgba(16, 185, 129, 0.12)", color: "var(--green)" }}>
+                    <Search size={26} />
+                  </div>
+                  <div className="search-menu-card-body">
+                    <div className="search-menu-card-header">
+                      <h3>{t.sectionSearch}</h3>
+                      <span className="search-menu-badge">{language === "km" ? "ស្វែងរកសិស្ស" : "Student Search"}</span>
+                    </div>
+                    <p>{language === "km" ? "ស្វែងរកតាមលេខតុ ឈ្មោះ ថ្នាក់ និងរាជធានី-ខេត្ត រួមជាមួយការបើកមើលទំព័រ PDF ផ្លូវការ។" : "Filter by table number, student name, province, exam center, and view official PDF rows."}</p>
+                    <div className="search-menu-action-row">
+                      <span>{language === "km" ? "បើកការស្វែងរក" : "Open search"}</span>
+                      <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                    </div>
+                  </div>
+                </button>
+
+                <button type="button" className="search-menu-card" onClick={() => selectSection("archive-insights")}>
+                  <div className="search-menu-card-icon" style={{ background: "rgba(245, 158, 11, 0.12)", color: "#d97706" }}>
+                    <BarChart3 size={26} />
+                  </div>
+                  <div className="search-menu-card-body">
+                    <div className="search-menu-card-header">
+                      <h3>{t.sectionNational}</h3>
+                      <span className="search-menu-badge">{language === "km" ? "និទ្ទេសទូទាំងប្រទេស" : "National Insights"}</span>
+                    </div>
+                    <p>{language === "km" ? "ស្ថិតិបែងចែកនិទ្ទេស A–E និងការប្រៀបធៀបរវាងថ្នាក់វិទ្យាសាស្ត្រ និងវិទ្យាសាស្ត្រសង្គម។" : "National grade distribution (A to E) and comparison between Science and Social tracks."}</p>
+                    <div className="search-menu-action-row" style={{ color: "#d97706" }}>
+                      <span>{language === "km" ? "មើលទិន្នន័យ" : "View insights"}</span>
+                      <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                    </div>
+                  </div>
+                </button>
+
+                <button type="button" className="search-menu-card" onClick={() => selectSection("archive-province-grades")}>
+                  <div className="search-menu-card-icon" style={{ background: "rgba(139, 92, 246, 0.12)", color: "#7c3aed" }}>
+                    <GraduationCap size={26} />
+                  </div>
+                  <div className="search-menu-card-body">
+                    <div className="search-menu-card-header">
+                      <h3>{t.sectionProvinceGrades}</h3>
+                      <span className="search-menu-badge">{language === "km" ? "តារាងតាមខេត្ត" : "By Province"}</span>
+                    </div>
+                    <p>{language === "km" ? "ប្រៀបធៀបចំនួនសិស្សជាប់ និងការបែងចែកនិទ្ទេស A ដល់ E តាមរាជធានី-ខេត្តនីមួយៗ។" : "Detailed comparison table showing candidate counts and grade breakdown per province."}</p>
+                    <div className="search-menu-action-row" style={{ color: "#7c3aed" }}>
+                      <span>{language === "km" ? "មើលតារាង" : "View table"}</span>
+                      <div className="search-menu-arrow"><ArrowRight size={16} /></div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </section>
+          ) : (
+            <div className="tool-full-view shell" id="top">
+              <div className="tool-breadcrumb-bar">
+                <div className="breadcrumb-left-group">
+                  <button
+                    type="button"
+                    className="breadcrumb-back-btn"
+                    onClick={() => selectSection("menu")}
+                    title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយបណ្ណសារ" : "Back to Archive Menu"}
+                  >
+                    <ArrowLeft size={16} />
+                    <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+                  </button>
+
+                  <div className="breadcrumb-path">
+                    <button
+                      type="button"
+                      className="breadcrumb-root-link"
+                      onClick={() => selectSection("menu")}
+                    >
+                      <Archive size={14} />
+                      <span>{t.archive}</span>
+                    </button>
+                    <span className="breadcrumb-separator"><ChevronRight size={14} /></span>
+                    <span className="breadcrumb-current-label">
+                      {activeSection === "archive-map" ? t.sectionMap
+                        : activeSection === "archive-search" ? t.sectionSearch
+                        : activeSection === "archive-insights" ? t.sectionNational
+                        : t.sectionProvinceGrades}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="breadcrumb-quick-switcher">
+                  <select
+                    value={year}
+                    onChange={(event) => setYear(event.target.value)}
+                    className="breadcrumb-year-select"
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "var(--ink)",
+                      cursor: "pointer",
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      outline: "none",
+                    }}
+                  >
+                    {years.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+
+                  <button
+                    type="button"
+                    className={`breadcrumb-switch-pill ${activeSection === "archive-map" ? "active" : ""}`}
+                    onClick={() => selectSection("archive-map")}
+                  >
+                    <MapPin size={13} />
+                    <span>{t.sectionMap}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`breadcrumb-switch-pill ${activeSection === "archive-search" ? "active" : ""}`}
+                    onClick={() => selectSection("archive-search")}
+                  >
+                    <Search size={13} />
+                    <span>{t.sectionSearch}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`breadcrumb-switch-pill ${activeSection === "archive-insights" ? "active" : ""}`}
+                    onClick={() => selectSection("archive-insights")}
+                  >
+                    <BarChart3 size={13} />
+                    <span>{t.sectionNational}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`breadcrumb-switch-pill ${activeSection === "archive-province-grades" ? "active" : ""}`}
+                    onClick={() => selectSection("archive-province-grades")}
+                  >
+                    <GraduationCap size={13} />
+                    <span>{t.sectionProvinceGrades}</span>
+                  </button>
+                </div>
+              </div>
+
+              {activeSection === "archive-map" && (
+                <div className="archive-tab-panel" role="tabpanel">
         <section className="archive-stats shell" aria-label="Archive summary">
           <article><Users /><strong>{numberFormat.format(summary.candidateCount)}</strong><span>{t.candidates}</span></article>
           <article><MapPin /><strong>{summary.provinceCount}</strong><span>{t.provinces}</span></article>
@@ -329,7 +544,7 @@ export default function ArchivePage() {
             </div>
           </div>
         </section>
-        </div>}
+        </div>)}
 
         {activeSection === "archive-search" && (
           <section id="archive-search" className="archive-search archive-tab-panel shell" role="tabpanel">
@@ -364,9 +579,11 @@ export default function ArchivePage() {
             </div>
           </div>
         </section>}
+      </div>
+    )}
 
         <footer className="archive-footer shell"><p>{t.sourceNote}</p><a href="https://github.com/VictorCazanave/svg-maps/tree/master/packages/cambodia" target="_blank" rel="noreferrer">{t.mapCredit} · CC BY 4.0 <ExternalLink size={13} /></a></footer>
-      </>}
+      </>)}
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav currentRoute="archive" language={language} />
     </main>

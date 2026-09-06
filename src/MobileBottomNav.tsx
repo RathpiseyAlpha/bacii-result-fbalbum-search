@@ -12,6 +12,8 @@ export function MobileBottomNav({ currentRoute, language }: MobileBottomNavProps
     if (currentRoute === target) {
       if (target === "scanner") {
         window.location.hash = "#search";
+      } else {
+        window.location.hash = `#${target}`;
       }
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     }

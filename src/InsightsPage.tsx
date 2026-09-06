@@ -37,6 +37,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import MobileBottomNav from "./MobileBottomNav";
 
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -992,7 +993,7 @@ export default function InsightsPage() {
     window.location.hash = hash;
     const anchor = document.getElementById("insights-tab-anchor");
     if (anchor) {
-      const navHeight = window.innerWidth <= 520 ? 70 : 86;
+      const navHeight = window.innerWidth <= 768 ? 60 : 86;
       const targetY = anchor.getBoundingClientRect().top + window.scrollY - navHeight;
       if (window.scrollY > targetY) {
         window.scrollTo({ top: targetY, behavior: "smooth" });
@@ -1453,7 +1454,7 @@ export default function InsightsPage() {
       <nav className="nav site-header shell">
         <a className="brand" href="#insights">
           <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
-          <span>{t.brand}</span>
+          <span className="brand-text">{t.brand}</span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
@@ -4349,6 +4350,8 @@ export default function InsightsPage() {
           <footer className="insights-footer shell">{t.source}</footer>
         </>
       )}
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav currentRoute="insights" language={language} />
     </main>
   );
 }

@@ -29,6 +29,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import MobileBottomNav from "./MobileBottomNav";
 
 type Photo = {
   id: string;
@@ -582,7 +583,7 @@ function App() {
       <nav className="nav site-header shell">
         <a className="brand" href="#top" aria-label={t("home")}>
           <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
-          <span>{t("brandName")}</span>
+          <span className="brand-text">{t("brandName")}</span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
@@ -899,6 +900,8 @@ function App() {
           </div>
         </div>
       )}
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav currentRoute="scanner" language={language} />
     </main>
   );
 }

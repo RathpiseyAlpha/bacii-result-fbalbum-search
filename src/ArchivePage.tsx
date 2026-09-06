@@ -4,6 +4,7 @@ import {
   Archive, BarChart3, BookOpen, Check, ExternalLink, GraduationCap,
   Hash, Images, Languages, LoaderCircle, MapPin, Moon, School, Search, Share2, Sun, Users,
 } from "lucide-react";
+import MobileBottomNav from "./MobileBottomNav";
 
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -248,7 +249,7 @@ export default function ArchivePage() {
   return (
     <main className="archive-page">
       <nav className="nav site-header shell">
-        <a className="brand" href="#archive"><span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span><span>{t.brandName}</span></a>
+        <a className="brand" href="#archive"><span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span><span className="brand-text">{t.brandName}</span></a>
         <div className="site-header-right">
           <div className="primary-nav">
             <a href="#top" aria-label={t.facebookSearch}><Search size={18} /><span>{t.facebookSearch}</span></a>
@@ -402,6 +403,8 @@ export default function ArchivePage() {
 
         <footer className="archive-footer shell"><p>{t.sourceNote}</p><a href="https://github.com/VictorCazanave/svg-maps/tree/master/packages/cambodia" target="_blank" rel="noreferrer">{t.mapCredit} · CC BY 4.0 <ExternalLink size={13} /></a></footer>
       </>}
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav currentRoute="archive" language={language} />
     </main>
   );
 }

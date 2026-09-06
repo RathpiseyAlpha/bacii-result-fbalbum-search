@@ -31,7 +31,13 @@ export function StudentNameDisplay({
   const [isMasked, setIsMasked] = useState(initiallyMasked);
   const [imageFailed, setImageFailed] = useState(false);
 
-  const fullUrl = cropUrl ? (cropUrl.startsWith("http") ? cropUrl : apiUrl(cropUrl)) : "";
+  let fullUrl = cropUrl ? (cropUrl.startsWith("http") ? cropUrl : apiUrl(cropUrl)) : "";
+  if (fullUrl && fullUrl.includes("/name-image") && !fullUrl.includes("v=7")) {
+    fullUrl = fullUrl.replace(/v=\d+/, "v=7");
+    if (!fullUrl.includes("v=7")) {
+      fullUrl += (fullUrl.includes("?") ? "&" : "?") + "v=7";
+    }
+  }
   const isKm = language === "km";
 
   const toggleText = isMasked

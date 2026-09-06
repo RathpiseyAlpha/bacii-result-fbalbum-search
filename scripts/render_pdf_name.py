@@ -92,6 +92,22 @@ def main() -> None:
                 draw.line((0, y, image.width, y), fill="white")
             for x in vertical_rules:
                 draw.line((x, 0, x, image.height), fill="white")
+
+            # Center-align and tightly crop the name text so that masking the
+            # first half masks exactly half of the actual student name.
+            clean_gray = image.convert("L")
+            text_mask = clean_gray.point(lambda p: 255 if p < 240 else 0, mode="1")
+            bbox = text_mask.getbbox()
+            if bbox and bbox[2] > bbox[0] and bbox[3] > bbox[1]:
+                pad_x = round(args.scale * 3.0)  # ~12px padding
+                text_width = bbox[2] - bbox[0]
+                text_mid = (bbox[0] + bbox[2]) / 2.0
+                half_w = (text_width / 2.0) + pad_x
+                crop_x0 = max(0, int(round(text_mid - half_w)))
+                actual_left_pad = bbox[0] - crop_x0
+                crop_x1 = min(image.width, bbox[2] + actual_left_pad)
+                image = image.crop((crop_x0, 0, crop_x1, image.height))
+
             image.save(temporary, format="PNG", optimize=True)
         temporary.replace(args.output)
     finally:

@@ -153,7 +153,7 @@
 .student-card-head > div { min-width: 0; flex: 1; }
 .official-name { margin-top: 7px; display: grid; justify-items: start; gap: 5px; }
 .official-name small { color: var(--muted); font-size: 11px; font-weight: 700; }
-.official-name img { display: block; width: auto; max-width: min(100%, 420px); height: 48px; object-fit: contain; object-position: left center; border-radius: 4px; background: #fff; filter: contrast(1.08); }
+.official-name img { display: block; width: auto; max-width: min(100%, 420px); height: 48px; object-fit: contain; object-position: center; border-radius: 4px; background: #fff; filter: contrast(1.08); }
 .official-school { display: block; width: min(100%, 310px); min-height: 32px; overflow: hidden; border-radius: 4px; background: #fff; }
 .official-school img { display: block; width: auto; max-width: 100%; height: 32px; object-fit: contain; object-position: left center; filter: contrast(1.08); }
 .student-overall-grade { min-width: 72px; display: flex; align-items: baseline; justify-content: center; gap: 7px; }
@@ -3855,6 +3855,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 .student-name-box {
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 6px 10px;
   background: #ffffff;
   border: 1px solid var(--line);
@@ -4335,6 +4336,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 .student-privacy-wrapper {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   max-width: 100%;
 }
@@ -4347,6 +4349,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 6px;
 }
 
@@ -4354,23 +4357,25 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   overflow: hidden;
   border-radius: 4px;
 }
 
 .official-student-name-crop img {
   object-fit: contain;
+  object-position: center;
   filter: contrast(1.1);
   display: block;
 }
 
-/* Mask covers the first half (left 48%) */
+/* Mask covers the first half (left 50%) */
 .name-first-half-mask {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 48%;
+  width: 50%;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   background: linear-gradient(90deg, rgba(238, 242, 246, 0.97) 0%, rgba(238, 242, 246, 0.94) 85%, rgba(238, 242, 246, 0.4) 100%);

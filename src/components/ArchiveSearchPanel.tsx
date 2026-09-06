@@ -12,7 +12,7 @@ import { StudentNameDisplay } from "./StudentNameDisplay";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
-const NAME_IMAGE_VERSION = "6";
+const NAME_IMAGE_VERSION = "7";
 const SCHOOL_IMAGE_VERSION = "2";
 const numberFormat = new Intl.NumberFormat("en-US");
 

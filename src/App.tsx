@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Database,
   Download,
   ExternalLink,
   Eye,
@@ -30,6 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
+import ArchiveSearchPanel from "./components/ArchiveSearchPanel";
 
 type Photo = {
   id: string;
@@ -130,7 +132,7 @@ function preferredLanguage(): Language {
 
 const englishText = {
   brandName: "BacII Result Search Engine",
-  facebookSearch: "Facebook search", resultsArchive: "Results archive", insightsMenu: "Insights",
+  facebookSearch: "Search", resultsArchive: "Results archive", insightsMenu: "Insights",
   how: "How it works",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
   heroCopy: "Paste the URL of BacII result from a MOEYS public Facebook result album, detect its exam centers and tracks, then enter the table number.",
@@ -172,7 +174,7 @@ type TranslationKey = keyof typeof englishText;
 
 const khmerText: Record<TranslationKey, string> = {
   brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប",
-  facebookSearch: "ស្វែងរកតាម Facebook", resultsArchive: "បណ្ណសារលទ្ធផល", insightsMenu: "ទិន្នន័យវិភាគ",
+  facebookSearch: "ស្វែងរក", resultsArchive: "បណ្ណសារលទ្ធផល", insightsMenu: "ទិន្នន័យវិភាគ",
   how: "របៀបប្រើ",
   hero1: "ងាយស្រួលស្វែងរកលទ្ធផលបាក់ឌុប", hero2: "ដោយមិនចាំបាច់បើករូបហ្វេសប៊ុកម្ដងមួយៗ",
   heroCopy: "ដាក់តំណភ្ជាប់់អាល់ប៊ុមលទ្ធផលសាធារណៈរបស់ខេត្ត រាជធានី ណាមួយ បន្ទាប់មកជ្រើសរើសមណ្ឌលប្រឡង ថ្នាក់វិទ្យាសាស្រ្ត ឬ សង្គុម និងលេខតុ",
@@ -286,6 +288,12 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 function App() {
   const [theme, setTheme] = useState<Theme>(preferredTheme);
   const [language, setLanguage] = useState<Language>(preferredLanguage);
+  const [searchEngine, setSearchEngine] = useState<"archive" | "facebook">(() => {
+    if (typeof window !== "undefined" && (window.location.hash.includes("facebook") || window.location.hash.includes("album") || window.location.hash.includes("scanner"))) {
+      return "facebook";
+    }
+    return "archive";
+  });
   const [mode, setMode] = useState<"album" | "links">("album");
   const [albumUrl, setAlbumUrl] = useState("");
   const [manualLinks, setManualLinks] = useState("");
@@ -323,6 +331,18 @@ function App() {
     document.documentElement.dataset.language = language;
     try { window.localStorage.setItem("album-packer-language", language); } catch { /* Storage is optional. */ }
   }, [language]);
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash.includes("facebook") || window.location.hash.includes("album") || window.location.hash.includes("scanner")) {
+        setSearchEngine("facebook");
+      } else if (window.location.hash.includes("archive-search") || window.location.hash.includes("archive")) {
+        setSearchEngine("archive");
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -608,10 +628,44 @@ function App() {
         {language === "km"
           ? <h1>{t("hero1")}{t("hero2")}</h1>
           : <h1>{t("hero1")}<br /><em>{t("hero2")}</em></h1>}
-        <p className="hero-copy">{t("heroCopy")}</p>
-        <a className="hero-how-link" href="#how-it-works">{t("how")} <ChevronRight size={15} /></a>
+        <p className="hero-copy">
+          {searchEngine === "archive"
+            ? (language === "km"
+                ? "ស្វែងរកលទ្ធផលបាក់ឌុបផ្លូវការរបស់ក្រសួងអប់រំទូទាំង ២៥ រាជធានី-ខេត្ត ដោយគ្រាន់តែជ្រើសរើសឆ្នាំ និងបញ្ចូលលេខតុ។"
+                : "Search official MOEYS BacII published results across all 25 provinces by selecting year and entering table number.")
+            : t("heroCopy")}
+        </p>
 
-        <div className="workspace-card">
+        <div className="search-hub-mode-nav" role="tablist" aria-label={language === "km" ? "ជ្រើសរើសប្រភេទស្វែងរក" : "Select search mode"}>
+          <button
+            type="button"
+            className={`search-hub-tab-btn ${searchEngine === "archive" ? "active" : ""}`}
+            onClick={() => setSearchEngine("archive")}
+          >
+            <Database size={18} />
+            <span>{language === "km" ? "បណ្ណសារផ្លូវការ" : "Official Archive"}</span>
+            <span className="search-hub-tab-badge">{language === "km" ? "២០២៤–២០២៦" : "2024–2026"}</span>
+          </button>
+          <button
+            type="button"
+            className={`search-hub-tab-btn ${searchEngine === "facebook" ? "active" : ""}`}
+            onClick={() => setSearchEngine("facebook")}
+          >
+            <Link2 size={18} />
+            <span>{language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook Album"}</span>
+            <span className="search-hub-tab-badge">{language === "km" ? "ស្កេនរូបភាព" : "Scanner"}</span>
+          </button>
+        </div>
+
+        {searchEngine === "archive" ? (
+          <div className="workspace-card">
+            <ArchiveSearchPanel language={language} showHeader={false} />
+          </div>
+        ) : (
+          <>
+            <a className="hero-how-link" href="#how-it-works">{t("how")} <ChevronRight size={15} /></a>
+
+            <div className="workspace-card">
           <div className="mode-tabs" role="tablist">
             <button type="button" className={mode === "album" ? "active" : ""} onClick={() => { setMode("album"); reset(); }}>
               <Link2 size={17} /> {t("albumLink")}
@@ -652,21 +706,23 @@ function App() {
 
           {error && <div className="error-banner"><X size={17} /><span>{error}</span></div>}
 
-          {busy && discovery && (
-            <div className="job-panel">
-              <div className="job-heading">
-                <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
-                <div><strong>{discovery.phase}</strong><span>{t("largeAlbumWait")}</span></div>
-                <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
-                <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
-                  {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
-                  {cancellingScan ? t("cancelling") : t("cancel")}
-                </button>
+            {busy && discovery && (
+              <div className="job-panel">
+                <div className="job-heading">
+                  <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
+                  <div><strong>{discovery.phase}</strong><span>{t("largeAlbumWait")}</span></div>
+                  <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
+                  <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
+                    {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
+                    {cancellingScan ? t("cancelling") : t("cancel")}
+                  </button>
+                </div>
+                <ProgressBar current={discovery.current} total={discovery.total} />
               </div>
-              <ProgressBar current={discovery.current} total={discovery.total} />
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </>
+      )}
 
         <div className={`server-indicator ${serverState}`} role="status" aria-live="polite">
           <span className="server-state"><i aria-hidden="true" /><Activity size={15} /> {t("serverStatus")}: <strong>{serverStatusLabel}</strong></span>

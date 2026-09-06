@@ -5,6 +5,7 @@ import {
   Hash, Images, Languages, LoaderCircle, MapPin, Moon, School, Search, Share2, Sun, Users,
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
+import ArchiveSearchPanel from "./components/ArchiveSearchPanel";
 
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -87,7 +88,7 @@ const provinceEnglish: Record<string, string> = {
 
 const copy = {
   en: {
-    archive: "Results archive", brandName: "BacII Result Search Engine", facebookSearch: "Facebook search", insightsMenu: "Insights", eyebrow: "Cambodia BacII data archive",
+    archive: "Results archive", brandName: "BacII Result Search Engine", facebookSearch: "Search", insightsMenu: "Insights", eyebrow: "Cambodia BacII data archive",
     title: "Explore BacII results by year and province.", intro: "Search the official published result lists and compare passing-candidate data across Cambodia.",
     year: "Archive year", candidates: "Passing candidates", provinces: "provinces & capital", centers: "exam centers", pages: "official PDF pages",
     mapTitle: "Passing candidates by province", mapHelp: "Select a province on the map to view its complete result dashboard.", allCambodia: "All Cambodia",
@@ -106,7 +107,7 @@ const copy = {
     nameNote: "Each name is rendered directly from its official PDF row, avoiding the document's broken Khmer text encoding.", mapCredit: "Cambodia map data",
   },
   km: {
-    archive: "បណ្ណសារលទ្ធផល", brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebookSearch: "ស្វែងរកតាម Facebook", insightsMenu: "ទិន្នន័យវិភាគ", eyebrow: "បណ្ណសារទិន្នន័យបាក់ឌុបកម្ពុជា",
+    archive: "បណ្ណសារលទ្ធផល", brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebookSearch: "ស្វែងរក", insightsMenu: "ទិន្នន័យវិភាគ", eyebrow: "បណ្ណសារទិន្នន័យបាក់ឌុបកម្ពុជា",
     title: "ស្វែងរកលទ្ធផលបាក់ឌុបតាមឆ្នាំ និងរាជធានី ខេត្ត", intro: "ស្វែងរកក្នុងបញ្ជីលទ្ធផលផ្លូវការ និងមើលទិន្នន័យបេក្ខជនជាប់នៅទូទាំងប្រទេសកម្ពុជា។",
     year: "ឆ្នាំលទ្ធផល", candidates: "បេក្ខជនជាប់", provinces: "រាជធានី និងខេត្ត", centers: "មណ្ឌលប្រឡង", pages: "ទំព័រ PDF ផ្លូវការ",
     mapTitle: "បេក្ខជនជាប់តាមរាជធានី ខេត្ត", mapHelp: "ចុចលើរាជធានី ឬខេត្ត ដើម្បីមើលទិន្នន័យលទ្ធផលទាំងអស់។", allCambodia: "កម្ពុជាទាំងមូល",
@@ -330,48 +331,11 @@ export default function ArchivePage() {
         </section>
         </div>}
 
-        {activeSection === "archive-search" && <section id="archive-search" className="archive-search archive-tab-panel shell" role="tabpanel">
-          <div className="archive-section-head"><div><span className="section-kicker">{t.archive}</span><h2>{t.searchTitle}</h2><p>{t.searchHelp}</p></div></div>
-          <form onSubmit={submitSearch} className="archive-search-form">
-            <label><span>{t.province}</span><select value={province} onChange={(event) => { setProvince(event.target.value); setCenter(""); setResults(null); }}><option value="">{t.allProvinces}</option>{summary.provinces.slice().sort((a, b) => provinceLabel(a).localeCompare(provinceLabel(b))).map((item) => <option key={item.id} value={item.id}>{provinceLabel(item)}</option>)}</select></label>
-            <label><span>{t.center}</span><select value={center} onChange={(event) => { setCenter(event.target.value); setResults(null); }}><option value="">{t.allCenters}</option>{centers.map((item) => <option key={item.name} value={item.name}>{centerLabel(item)} ({numberFormat.format(item.count)})</option>)}</select></label>
-            <label><span>{t.track}</span><select value={track} onChange={(event) => { setTrack(event.target.value as "" | Track); setResults(null); }}><option value="">{t.allTracks}</option><option value="science">{t.science}</option><option value="social-science">{t.social}</option></select></label>
-            <label className="archive-table-field"><span>{t.table}</span><div><Hash size={18} /><input inputMode="numeric" pattern="[0-9]*" value={tableNumber} onChange={(event) => { setTableNumber(event.target.value.replace(/\D/g, "")); setResults(null); }} placeholder={t.tableExample} /></div></label>
-            <button className="archive-search-button" disabled={!tableNumber || searching}>{searching ? <LoaderCircle className="spin" /> : <Search />} {searching ? t.searching : t.search}</button>
-          </form>
-
-          <div className="archive-results" aria-live="polite">
-            {error && <div className="error-banner">{error}</div>}
-            {results === null ? <div className="archive-empty"><Hash /> <p>{t.begin}</p></div> : results.length === 0 ? <div className="archive-empty"><Search /><h3>{t.noResults}</h3><p>{t.noResultsHelp}</p></div> : <>
-              <div className="result-count"><strong>{results.length}</strong> {t.found}</div>
-              <div className="student-grid">{results.map((student) => (
-                <article className="student-card" key={student.id}>
-                  <div className="student-card-head">
-                    <div><span>#{student.tableNumber}</span><div className="official-name"><small>{t.officialName}</small><img src={apiUrl(`/api/archive/${year}/students/${student.id}/name-image?v=${NAME_IMAGE_VERSION}`)} alt="" loading="lazy" /></div></div>
-                    <div className="student-overall-grade"><small>{t.grade}</small><strong className={`grade-${student.grade.toLowerCase()}`}>{student.grade}</strong></div>
-                  </div>
-                  <div className="student-card-content">
-                    <dl>
-                      <div><dt>{t.province}</dt><dd>{language === "km" ? student.province : provinceEnglish[student.provinceId] || student.province}</dd></div>
-                      <div><dt>{t.center}</dt><dd>{student.examCenterLabel || student.examCenter}</dd></div>
-                      <div><dt>{t.track}</dt><dd>{student.track === "science" ? t.science : student.track === "social-science" ? t.social : "—"}</dd></div>
-                      <div><dt>{t.school}</dt><dd><OfficialSchool year={year} student={student} fallback={student.school} /></dd></div>
-                    </dl>
-                    <div className="student-subjects">
-                      <h4>{t.subjectGrades}</h4>
-                      <div>{student.subjects.map((subjectGrade, index) => subjectGrade && <div key={`${student.id}-${index}`}><span>{subjectLabel(student, index)}</span><strong className={`grade-${subjectGrade.toLowerCase()}`}>{subjectGrade}</strong></div>)}</div>
-                    </div>
-                  </div>
-                  <div className="student-card-actions">
-                    <a target="_blank" rel="noreferrer" href={studentPdfUrl(student)}><ExternalLink size={15} /> {t.officialPage} · {t.page} {student.pageNumber}</a>
-                    <button type="button" onClick={() => void shareStudent(student)}>{shareFeedback?.studentId === student.id ? <Check size={15} /> : <Share2 size={15} />} {shareFeedback?.studentId === student.id ? (shareFeedback.copied ? t.linkCopied : t.shared) : t.shareResult}</button>
-                  </div>
-                </article>
-              ))}</div>
-              <p className="archive-name-note">{t.nameNote}</p>
-            </>}
-          </div>
-        </section>}
+        {activeSection === "archive-search" && (
+          <section id="archive-search" className="archive-search archive-tab-panel shell" role="tabpanel">
+            <ArchiveSearchPanel language={language} initialYear={year} onYearChange={setYear} showHeader={true} />
+          </section>
+        )}
 
         {activeSection === "archive-insights" && <section id="archive-insights" className="archive-insights archive-tab-panel shell" role="tabpanel">
           <article><div className="insight-title"><BarChart3 /><div><span className="section-kicker">{t.insights}</span><h2>{t.gradeDistribution}</h2></div></div><div className="bar-chart">{summary.grades.filter((item) => item.grade !== "Unknown").map((item) => <div key={item.grade}><b>{item.grade}</b><span><i style={{ width: `${(item.count / maxGradeCount) * 100}%` }} /></span><strong>{numberFormat.format(item.count)}</strong></div>)}</div></article>

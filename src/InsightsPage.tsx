@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import StudentNameDisplay from "./components/StudentNameDisplay";
 import cambodia from "@svg-maps/cambodia";
 import phnomPenhSvg from "./data/phnomPenhSvg.json";
 import {
@@ -329,7 +330,7 @@ const SOCIAL_SUBJECTS: SubjectKey[] = [
 
 const copy = {
   en: {
-    brand: "BacII Result Search Engine", facebook: "Facebook search", archive: "Results archive", insights: "Insights",
+    brand: "BacII Result Search Engine", facebook: "Search", archive: "Results archive", insights: "Insights",
     eyebrow: "BacII intelligence dashboard", title: "See the story behind the results.",
     intro: "Explore grade patterns, compare provinces, and follow national result trends as each new archive year is added.",
     tabOverview: "National Overview",
@@ -481,7 +482,7 @@ const copy = {
     straightARibbon: "⭐ STRAIGHT A (7/7 A)",
   },
   km: {
-    brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរកតាម Facebook", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
+    brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរក", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
     eyebrow: "ផ្ទាំងវិភាគទិន្នន័យបាក់ឌុប", title: "ស្វែងយល់ពីទិន្នន័យនៅពីក្រោយលទ្ធផល",
     intro: "មើលទម្រង់និទ្ទេស ប្រៀបធៀបរាជធានី ខេត្ត និងតាមដាននិន្នាការទូទាំងប្រទេស នៅពេលបន្ថែមទិន្នន័យឆ្នាំថ្មី។",
     tabOverview: "ទិដ្ឋភាពទូទៅទូទាំងប្រទេស",
@@ -709,32 +710,25 @@ function OfficialStudentNameImage({
   tableNumber,
   nameFallback,
   height = 32,
+  language = "km",
+  compact = false,
 }: {
   cropUrl: string;
   tableNumber: number | string;
   nameFallback?: string;
   height?: number;
+  language?: Language;
+  compact?: boolean;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
-
-  if (imageFailed || !cropUrl) {
-    return (
-      <span className="official-name-text-fallback" title={nameFallback || `Desk #${tableNumber}`}>
-        {nameFallback || `#${tableNumber}`}
-      </span>
-    );
-  }
-
   return (
-    <span className="official-student-name-crop">
-      <img
-        src={apiUrl(cropUrl)}
-        alt={nameFallback || `Student #${tableNumber}`}
-        style={{ height: `${height}px`, maxHeight: `${height}px` }}
-        onError={() => setImageFailed(true)}
-        loading="lazy"
-      />
-    </span>
+    <StudentNameDisplay
+      cropUrl={cropUrl}
+      tableNumber={tableNumber}
+      nameFallback={nameFallback}
+      height={height}
+      language={language}
+      compact={compact}
+    />
   );
 }
 
@@ -4151,6 +4145,7 @@ export default function InsightsPage() {
                               tableNumber={student.tableNumber}
                               nameFallback={student.name}
                               height={34}
+                              language={language}
                             />
                           </div>
 
@@ -4276,6 +4271,8 @@ export default function InsightsPage() {
                                   tableNumber={student.tableNumber}
                                   nameFallback={student.name}
                                   height={26}
+                                  language={language}
+                                  compact={true}
                                 />
                               </td>
                               <td>

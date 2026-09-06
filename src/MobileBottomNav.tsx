@@ -10,7 +10,9 @@ export function MobileBottomNav({ currentRoute, language }: MobileBottomNavProps
 
   const handleItemClick = (target: "scanner" | "archive" | "insights", e: React.MouseEvent<HTMLAnchorElement>) => {
     if (currentRoute === target) {
-      e.preventDefault();
+      if (target === "scanner") {
+        window.location.hash = "#search";
+      }
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     }
   };

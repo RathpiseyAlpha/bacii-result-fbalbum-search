@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Archive,
-  BarChart3,
   ArrowDownToLine,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -288,12 +290,34 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 function App() {
   const [theme, setTheme] = useState<Theme>(preferredTheme);
   const [language, setLanguage] = useState<Language>(preferredLanguage);
-  const [searchEngine, setSearchEngine] = useState<"archive" | "facebook">(() => {
-    if (typeof window !== "undefined" && (window.location.hash.includes("facebook") || window.location.hash.includes("album") || window.location.hash.includes("scanner"))) {
+
+  type SearchTool = "menu" | "archive" | "facebook";
+  const getInitialSearchTool = (): SearchTool => {
+    if (typeof window === "undefined") return "menu";
+    const hash = window.location.hash;
+    if (hash.includes("facebook") || hash.includes("album") || hash.includes("scanner")) {
       return "facebook";
     }
-    return "archive";
-  });
+    if (hash.includes("archive-search") || hash.includes("search/archive")) {
+      return "archive";
+    }
+    return "menu";
+  };
+
+  const [searchTool, setSearchTool] = useState<SearchTool>(getInitialSearchTool);
+
+  const selectSearchTool = (tool: SearchTool) => {
+    setSearchTool(tool);
+    if (tool === "archive") {
+      window.location.hash = "#search/archive";
+    } else if (tool === "facebook") {
+      window.location.hash = "#search/facebook";
+    } else {
+      window.location.hash = "#search";
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const [mode, setMode] = useState<"album" | "links">("album");
   const [albumUrl, setAlbumUrl] = useState("");
   const [manualLinks, setManualLinks] = useState("");
@@ -334,10 +358,13 @@ function App() {
 
   useEffect(() => {
     const handleHash = () => {
-      if (window.location.hash.includes("facebook") || window.location.hash.includes("album") || window.location.hash.includes("scanner")) {
-        setSearchEngine("facebook");
-      } else if (window.location.hash.includes("archive-search") || window.location.hash.includes("archive")) {
-        setSearchEngine("archive");
+      const hash = window.location.hash;
+      if (hash.includes("facebook") || hash.includes("album") || hash.includes("scanner")) {
+        setSearchTool("facebook");
+      } else if (hash.includes("archive-search") || hash.includes("search/archive")) {
+        setSearchTool("archive");
+      } else if (hash === "#top" || hash === "#search" || hash === "" || hash === "#") {
+        setSearchTool("menu");
       }
     };
     window.addEventListener("hashchange", handleHash);
@@ -607,7 +634,18 @@ function App() {
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
-            <a className="active" href="#top" aria-current="page" aria-label={t("facebookSearch")}><Search size={18} /><span>{t("facebookSearch")}</span></a>
+            <a
+              className="active"
+              href="#search"
+              aria-current="page"
+              aria-label={t("facebookSearch")}
+              onClick={(e) => {
+                e.preventDefault();
+                selectSearchTool("menu");
+              }}
+            >
+              <Search size={18} /><span>{t("facebookSearch")}</span>
+            </a>
             <a href="#archive" aria-label={t("resultsArchive")}><Archive size={18} /><span>{t("resultsArchive")}</span></a>
             <a href="#insights" aria-label={t("insightsMenu")}><BarChart3 size={18} /><span>{t("insightsMenu")}</span></a>
           </div>
@@ -624,120 +662,210 @@ function App() {
         </div>
       </nav>
 
-      <section className="hero shell" id="top">
-        {language === "km"
-          ? <h1>{t("hero1")}{t("hero2")}</h1>
-          : <h1>{t("hero1")}<br /><em>{t("hero2")}</em></h1>}
-        <p className="hero-copy">
-          {searchEngine === "archive"
-            ? (language === "km"
-                ? "ស្វែងរកលទ្ធផលបាក់ឌុបផ្លូវការរបស់ក្រសួងអប់រំទូទាំង ២៥ រាជធានី-ខេត្ត ដោយគ្រាន់តែជ្រើសរើសឆ្នាំ និងបញ្ចូលលេខតុ។"
-                : "Search official MOEYS BacII published results across all 25 provinces by selecting year and entering table number.")
-            : t("heroCopy")}
-        </p>
-
-        <div className="search-hub-mode-nav" role="tablist" aria-label={language === "km" ? "ជ្រើសរើសប្រភេទស្វែងរក" : "Select search mode"}>
-          <button
-            type="button"
-            className={`search-hub-tab-btn ${searchEngine === "archive" ? "active" : ""}`}
-            onClick={() => setSearchEngine("archive")}
-          >
-            <Database size={18} />
-            <span>{language === "km" ? "បណ្ណសារផ្លូវការ" : "Official Archive"}</span>
-            <span className="search-hub-tab-badge">{language === "km" ? "២០២៤–២០២៦" : "2024–2026"}</span>
-          </button>
-          <button
-            type="button"
-            className={`search-hub-tab-btn ${searchEngine === "facebook" ? "active" : ""}`}
-            onClick={() => setSearchEngine("facebook")}
-          >
-            <Link2 size={18} />
-            <span>{language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook Album"}</span>
-            <span className="search-hub-tab-badge">{language === "km" ? "ស្កេនរូបភាព" : "Scanner"}</span>
-          </button>
-        </div>
-
-        {searchEngine === "archive" ? (
-          <div className="workspace-card">
-            <ArchiveSearchPanel language={language} showHeader={false} />
-          </div>
-        ) : (
-          <>
-            <a className="hero-how-link" href="#how-it-works">{t("how")} <ChevronRight size={15} /></a>
-
-            <div className="workspace-card">
-          <div className="mode-tabs" role="tablist">
-            <button type="button" className={mode === "album" ? "active" : ""} onClick={() => { setMode("album"); reset(); }}>
-              <Link2 size={17} /> {t("albumLink")}
-            </button>
-            <button type="button" className={mode === "links" ? "active" : ""} onClick={() => { setMode("links"); reset(); }}>
-              <Images size={17} /> {t("photoLinks")}
-            </button>
+      {searchTool === "menu" ? (
+        <section className="search-hub-landing shell" id="top">
+          <div className="search-hub-intro">
+            <span className="eyebrow">
+              <Search size={14} /> {language === "km" ? "មជ្ឈមណ្ឌលស្វែងរកលទ្ធផល" : "Search Hub"}
+            </span>
+            <h1>{language === "km" ? "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប" : "BacII Result Search Engine"}</h1>
+            <p>
+              {language === "km"
+                ? "សូមជ្រើសរើសមុខងារស្វែងរកដែលអ្នកចង់ប្រើ ដើម្បីចាប់ផ្ដើម៖"
+                : "Choose your search tool to explore results:"}
+            </p>
           </div>
 
-          {mode === "album" ? (
-            <div className="input-pane">
-              <label htmlFor="album-url">{t("provinceUrl")}</label>
-              <div className="url-row">
-                <div className="field-with-icon">
-                  <Link2 size={19} />
-                  <input id="album-url" type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)}
-                    placeholder={t("urlPlaceholder")} onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
-                  {albumUrl && <button type="button" className="clear-button" onClick={() => setAlbumUrl("")} aria-label={t("clearUrl")}><X size={16} /></button>}
-                </div>
-                <button className="primary-button" onClick={() => void scanAlbum()} disabled={busy}>
-                  {busy ? <LoaderCircle className="spin" size={19} /> : <ScanSearch size={19} />}
-                  {busy ? t("scanning") : t("scanAlbum")}
-                </button>
+          <div className="search-menu-cards-grid">
+            <button
+              type="button"
+              className="search-menu-card card-archive"
+              onClick={() => selectSearchTool("archive")}
+            >
+              <div className="search-menu-card-icon">
+                <Database size={28} />
               </div>
-              <p className="field-note"><ShieldCheck size={14} /> {t("publicNote")}</p>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{language === "km" ? "ស្វែងរកក្នុងបណ្ណសារផ្លូវការ" : "Official Archive Search"}</h3>
+                  <span className="search-menu-badge">{language === "km" ? "២០២៤–២០២៦" : "2024–2026"}</span>
+                </div>
+                <p>
+                  {language === "km"
+                    ? "ស្វែងរកតាមលេខតុ ឈ្មោះសិស្ស រាជធានី-ខេត្ត មណ្ឌលប្រឡង ថ្នាក់ និងមើលសន្លឹក PDF ផ្លូវការដោយផ្ទាល់។"
+                    : "Instant lookup by table number, student name, province, exam center, study track, and view official PDF result sheets."}
+                </p>
+                <div className="search-menu-action-row">
+                  <span>{language === "km" ? "បើកស្វែងរកបណ្ណសារ" : "Open archive search"}</span>
+                  <div className="search-menu-arrow">
+                    <ArrowRight size={16} />
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="search-menu-card card-facebook"
+              onClick={() => selectSearchTool("facebook")}
+            >
+              <div className="search-menu-card-icon">
+                <Images size={28} />
+              </div>
+              <div className="search-menu-card-body">
+                <div className="search-menu-card-header">
+                  <h3>{language === "km" ? "ស្វែងរកតាមអាល់ប៊ុម Facebook" : "Facebook Album Scanner"}</h3>
+                  <span className="search-menu-badge">{language === "km" ? "ស្កេនរូបភាព" : "Photos Scanner"}</span>
+                </div>
+                <p>
+                  {language === "km"
+                    ? "បិទភ្ជាប់តំណអាល់ប៊ុមរូបភាពសាធារណៈរបស់ខេត្ត ដើម្បីស្វែងរកមណ្ឌលប្រឡង ថ្នាក់ និងទាញយកឯកសារ ZIP។"
+                    : "Scan public Facebook result albums, detect exam centers and tracks from photos, and download organized ZIP packages."}
+                </p>
+                <div className="search-menu-action-row">
+                  <span>{language === "km" ? "បើកការស្កេនអាល់ប៊ុម" : "Open album scanner"}</span>
+                  <div className="search-menu-arrow">
+                    <ArrowRight size={16} />
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="tool-full-view shell" id="top">
+          <div className="tool-breadcrumb-bar">
+            <div className="breadcrumb-left-group">
+              <button
+                type="button"
+                className="breadcrumb-back-btn"
+                onClick={() => selectSearchTool("menu")}
+                title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយមជ្ឈមណ្ឌលស្វែងរក" : "Back to Search Hub Menu"}
+              >
+                <ArrowLeft size={16} />
+                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+              </button>
+
+              <div className="breadcrumb-path">
+                <button
+                  type="button"
+                  className="breadcrumb-root-link"
+                  onClick={() => selectSearchTool("menu")}
+                >
+                  <Search size={14} />
+                  <span>{language === "km" ? "ស្វែងរក" : "Search"}</span>
+                </button>
+                <span className="breadcrumb-separator">
+                  <ChevronRight size={14} />
+                </span>
+                <span className="breadcrumb-current-label">
+                  {searchTool === "archive"
+                    ? language === "km" ? "បណ្ណសារផ្លូវការ" : "Official Archive"
+                    : language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook Album"}
+                </span>
+              </div>
+            </div>
+
+            <div className="breadcrumb-quick-switcher">
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${searchTool === "archive" ? "active" : ""}`}
+                onClick={() => selectSearchTool("archive")}
+              >
+                <Database size={13} />
+                <span>{language === "km" ? "បណ្ណសារផ្លូវការ" : "Archive"}</span>
+              </button>
+              <button
+                type="button"
+                className={`breadcrumb-switch-pill ${searchTool === "facebook" ? "active" : ""}`}
+                onClick={() => selectSearchTool("facebook")}
+              >
+                <Images size={13} />
+                <span>{language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook"}</span>
+              </button>
+            </div>
+          </div>
+
+          {searchTool === "archive" ? (
+            <div className="workspace-card" style={{ marginTop: 0 }}>
+              <ArchiveSearchPanel language={language} showHeader={false} />
             </div>
           ) : (
-            <div className="input-pane manual-pane">
-              <div className="label-line">
-                <label htmlFor="photo-links">{t("imageLinks")}</label>
-                <span>{parsedLinks.length.toLocaleString()} {t("links")}</span>
-              </div>
-              <textarea id="photo-links" rows={6} value={manualLinks} onChange={(event) => setManualLinks(event.target.value)}
-                placeholder={"https://scontent-...fbcdn.net/...jpg\nhttps://scontent-...fbcdn.net/...jpg"} />
-              <p className="field-note"><EyeOff size={14} /> {t("fallback")}</p>
-            </div>
-          )}
-
-          {error && <div className="error-banner"><X size={17} /><span>{error}</span></div>}
-
-            {busy && discovery && (
-              <div className="job-panel">
-                <div className="job-heading">
-                  <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
-                  <div><strong>{discovery.phase}</strong><span>{t("largeAlbumWait")}</span></div>
-                  <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
-                  <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
-                    {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
-                    {cancellingScan ? t("cancelling") : t("cancel")}
+            <>
+              <div className="workspace-card" style={{ marginTop: 0 }}>
+                <div className="mode-tabs" role="tablist">
+                  <button type="button" className={mode === "album" ? "active" : ""} onClick={() => { setMode("album"); reset(); }}>
+                    <Link2 size={17} /> {t("albumLink")}
+                  </button>
+                  <button type="button" className={mode === "links" ? "active" : ""} onClick={() => { setMode("links"); reset(); }}>
+                    <Images size={17} /> {t("photoLinks")}
                   </button>
                 </div>
-                <ProgressBar current={discovery.current} total={discovery.total} />
+
+                {mode === "album" ? (
+                  <div className="input-pane">
+                    <label htmlFor="album-url">{t("provinceUrl")}</label>
+                    <div className="url-row">
+                      <div className="field-with-icon">
+                        <Link2 size={19} />
+                        <input id="album-url" type="url" value={albumUrl} onChange={(event) => setAlbumUrl(event.target.value)}
+                          placeholder={t("urlPlaceholder")} onKeyDown={(event) => event.key === "Enter" && !busy && void scanAlbum()} />
+                        {albumUrl && <button type="button" className="clear-button" onClick={() => setAlbumUrl("")} aria-label={t("clearUrl")}><X size={16} /></button>}
+                      </div>
+                      <button className="primary-button" onClick={() => void scanAlbum()} disabled={busy}>
+                        {busy ? <LoaderCircle className="spin" size={19} /> : <ScanSearch size={19} />}
+                        {busy ? t("scanning") : t("scanAlbum")}
+                      </button>
+                    </div>
+                    <p className="field-note"><ShieldCheck size={14} /> {t("publicNote")}</p>
+                  </div>
+                ) : (
+                  <div className="input-pane manual-pane">
+                    <div className="label-line">
+                      <label htmlFor="photo-links">{t("imageLinks")}</label>
+                      <span>{parsedLinks.length.toLocaleString()} {t("links")}</span>
+                    </div>
+                    <textarea id="photo-links" rows={6} value={manualLinks} onChange={(event) => setManualLinks(event.target.value)}
+                      placeholder={"https://scontent-...fbcdn.net/...jpg\nhttps://scontent-...fbcdn.net/...jpg"} />
+                    <p className="field-note"><EyeOff size={14} /> {t("fallback")}</p>
+                  </div>
+                )}
+
+                {error && <div className="error-banner"><X size={17} /><span>{error}</span></div>}
+
+                {busy && discovery && (
+                  <div className="job-panel">
+                    <div className="job-heading">
+                      <span className="job-icon"><LoaderCircle className="spin" size={20} /></span>
+                      <div><strong>{discovery.phase}</strong><span>{t("largeAlbumWait")}</span></div>
+                      <b>{discovery.total > 0 ? `${discovery.current}/${discovery.total}` : discovery.current || ""}</b>
+                      <button type="button" className="cancel-scan-button" onClick={() => void cancelScan()} disabled={cancellingScan}>
+                        {cancellingScan ? <LoaderCircle className="spin" size={14} /> : <X size={14} />}
+                        {cancellingScan ? t("cancelling") : t("cancel")}
+                      </button>
+                    </div>
+                    <ProgressBar current={discovery.current} total={discovery.total} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </>
+
+              <div className={`server-indicator ${serverState}`} role="status" aria-live="polite">
+                <span className="server-state"><i aria-hidden="true" /><Activity size={15} /> {t("serverStatus")}: <strong>{serverStatusLabel}</strong></span>
+                <span className="server-metrics">
+                  <span><b>{serverLoad?.currentRequests ?? "—"}</b> {t("activeRequests")}</span>
+                  {(serverLoad?.queuedRequests ?? 0) > 0 && <span><b>{serverLoad?.queuedRequests}</b> {t("queuedRequests")}</span>}
+                </span>
+              </div>
+
+              <div className="trust-row">
+                <span><Check size={16} /> {t("upTo")}</span>
+                <span><Check size={16} /> {t("quality")}</span>
+                <span><Check size={16} /> {t("autoZip")}</span>
+              </div>
+            </>
+          )}
+        </section>
       )}
-
-        <div className={`server-indicator ${serverState}`} role="status" aria-live="polite">
-          <span className="server-state"><i aria-hidden="true" /><Activity size={15} /> {t("serverStatus")}: <strong>{serverStatusLabel}</strong></span>
-          <span className="server-metrics">
-            <span><b>{serverLoad?.currentRequests ?? "—"}</b> {t("activeRequests")}</span>
-            {(serverLoad?.queuedRequests ?? 0) > 0 && <span><b>{serverLoad?.queuedRequests}</b> {t("queuedRequests")}</span>}
-          </span>
-        </div>
-
-        <div className="trust-row">
-          <span><Check size={16} /> {t("upTo")}</span>
-          <span><Check size={16} /> {t("quality")}</span>
-          <span><Check size={16} /> {t("autoZip")}</span>
-        </div>
-      </section>
 
       {(readyPhotos.length > 0 || mode === "links") && canBuild && (
         <section className="results shell" ref={resultsRef}>

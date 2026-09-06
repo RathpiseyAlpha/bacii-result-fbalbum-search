@@ -11,7 +11,7 @@ import {
   getArchiveSubjectDetail, getArchiveSubjectOverview, getArchiveSummary, getPhnomPenhDistrictStats,
   listArchiveYears, searchArchive, warmupArchiveCache,
 } from "./archive.ts";
-import { getArchiveNameImage } from "./archive-images.ts";
+import { getArchiveNameImage, getArchivePageImage } from "./archive-images.ts";
 import { getArchiveSchoolImage } from "./archive-school-images.ts";
 import {
   archiveImportJobs, cancelArchiveImport, publicArchiveImport, requireAdmin, startArchiveImport,
@@ -259,6 +259,155 @@ app.get("/api/archive/:year/documents/:documentId/pdf", (request, response) => {
     response.sendFile(file);
   } catch (error) {
     response.status(404).json({ error: error instanceof Error ? error.message : "PDF not found." });
+  }
+});
+
+app.get("/api/archive/:year/documents/:documentId/pages/:pageNumber/image", async (request, response) => {
+  try {
+    const documentId = Number(request.params.documentId);
+    const pageNumber = Number(request.params.pageNumber);
+    if (!Number.isSafeInteger(documentId) || !Number.isSafeInteger(pageNumber) || pageNumber < 1) {
+      return response.status(400).json({ error: "Invalid document or page number." });
+    }
+    const file = await getArchivePageImage(request.params.year, documentId, pageNumber);
+    if (!file) return response.status(404).json({ error: "Page not found." });
+    response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    response.setHeader("Content-Type", "image/jpeg");
+    response.sendFile(file);
+  } catch (error) {
+    response.status(500).json({ error: error instanceof Error ? error.message : "Could not render the official page." });
+  }
+});
+
+app.get("/api/archive/:year/documents/:documentId/view", (request, response) => {
+  try {
+    const documentId = Number(request.params.documentId);
+    const pageNumber = Math.max(1, Number(request.query.page || 1));
+    const year = request.params.year;
+    if (!Number.isSafeInteger(documentId)) return response.status(400).send("Invalid document.");
+    const file = getArchivePdf(year, documentId);
+    if (!file) return response.status(404).send("PDF not found.");
+
+    const imageUrl = `/api/archive/${year}/documents/${documentId}/pages/${pageNumber}/image`;
+    const prevPage = pageNumber > 1 ? pageNumber - 1 : null;
+    const nextPage = pageNumber + 1;
+    const downloadPdfUrl = `/api/archive/${year}/documents/${documentId}/pdf`;
+
+    const html = `<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BacII ${year} — Official Result Page ${pageNumber}</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111c2f;
+      --line: #2b3b55;
+      --ink: #eaf1ff;
+      --muted: #9fb0ca;
+      --primary: #2563eb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: rgba(11, 18, 32, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .page-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      height: 32px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      background: var(--card);
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+    .content-area {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px 12px;
+      overflow: auto;
+    }
+    .page-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span>BacII ${year} — ទំព័រ ${pageNumber} (Page ${pageNumber})</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      ${prevPage ? `<a class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${prevPage}">← មុន (Prev)</a>` : ""}
+      <span class="page-indicator">ទំព័រ ${pageNumber}</span>
+      <a class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${nextPage}">បន្ទាប់ (Next) →</a>
+      <a class="nav-btn" href="${downloadPdfUrl}" download style="margin-left:8px;font-size:11.5px;opacity:0.85;">ទាញយក PDF</a>
+    </div>
+  </header>
+  <main class="content-area">
+    <img src="${imageUrl}" alt="Official PDF Page ${pageNumber}" class="page-img" />
+  </main>
+</body>
+</html>`;
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
+    response.send(html);
+  } catch (error) {
+    response.status(500).send("Could not display the page viewer.");
   }
 });
 

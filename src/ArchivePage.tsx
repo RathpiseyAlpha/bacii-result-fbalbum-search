@@ -205,7 +205,7 @@ export default function ArchivePage() {
     return labels[index] || student.subjectHeaders[index] || `${t.subjectGrades} ${index + 1}`;
   }
   function studentPdfUrl(student: Student) {
-    return `${new URL(apiUrl(`/api/archive/${year}/documents/${student.documentId}/pdf`), window.location.origin)}#page=${student.pageNumber}`;
+    return `${new URL(apiUrl(`/api/archive/${year}/documents/${student.documentId}/view?page=${student.pageNumber}`), window.location.origin)}`;
   }
   async function shareStudent(student: Student) {
     const url = studentPdfUrl(student);
@@ -324,7 +324,7 @@ export default function ArchivePage() {
                   return <div key={grade} className={`grade-${grade.toLowerCase()}`}><b>{grade}</b><strong>{numberFormat.format(count)}</strong><small>{total ? ((count / total) * 100).toFixed(1) : "0.0"}%</small></div>;
                 })}</div>
               </div>
-              {selectedProvince && <a className="province-pdf-link" href={apiUrl(`/api/archive/${year}/documents/${selectedProvince.documentId}/pdf`)} target="_blank" rel="noreferrer"><ExternalLink size={15} /> {t.openProvincePdf}</a>}
+              {selectedProvince && <a className="province-pdf-link" href={apiUrl(`/api/archive/${year}/documents/${selectedProvince.documentId}/view?page=1`)} target="_blank" rel="noreferrer"><ExternalLink size={15} /> {t.openProvincePdf}</a>}
             </div>
           </div>
         </section>

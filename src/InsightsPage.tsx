@@ -4217,38 +4217,26 @@ export default function InsightsPage() {
                             </div>
                           </div>
 
-                          {/* Card Footer / Actions */}
+                          {/* Card Footer / Single Action */}
                           <div className="student-card-actions">
                             <a
-                              href={`#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`}
-                              className="student-action-btn primary-action"
-                              title={language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View Full Result"}
+                              href={
+                                student.documentId
+                                  ? apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/view?page=${student.pageNumber || 1}`)
+                                  : `#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`
+                              }
+                              target={student.documentId ? "_blank" : undefined}
+                              rel={student.documentId ? "noreferrer" : undefined}
+                              className="student-action-btn primary-action single-action"
+                              title={language === "km" ? `មើលលទ្ធផលផ្លូវការ${student.pageNumber ? ` (ទំព័រ ${student.pageNumber})` : ""}` : `View Official Result${student.pageNumber ? ` (p.${student.pageNumber})` : ""}`}
                             >
-                              <ExternalLink size={13} />
-                              <span>{language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View Full Result"}</span>
+                              <FileText size={14} />
+                              <span>
+                                {language === "km"
+                                  ? `មើលលទ្ធផលផ្លូវការ${student.pageNumber ? ` (ទំព័រ ${student.pageNumber})` : ""}`
+                                  : `View Official Result${student.pageNumber ? ` (p.${student.pageNumber})` : ""}`}
+                              </span>
                             </a>
-                            {student.documentId && (
-                              <a
-                                href={apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/pdf`)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="student-action-btn secondary-action"
-                                title={language === "km" ? `បើកទំព័រ PDF ផ្លូវការ (ទំព័រ ${student.pageNumber})` : `Open official PDF page (p.${student.pageNumber})`}
-                              >
-                                <FileText size={13} />
-                                <span>PDF (p.{student.pageNumber})</span>
-                              </a>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => void shareStudent(student)}
-                              className="student-action-btn share-action"
-                              title={shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លងតំណភ្ជាប់!" : "Link Copied!") : (language === "km" ? "បានចែករំលែក!" : "Shared!")) : (language === "km" ? "ចែករំលែកលទ្ធផល" : "Share Result")}
-                              aria-label={language === "km" ? "ចែករំលែកលទ្ធផល" : "Share Result"}
-                            >
-                              {shareFeedback?.studentId === student.id ? <Check size={13} className="text-success" /> : <Share2 size={13} />}
-                              <span>{shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លង" : "Copied") : (language === "km" ? "បានចែករំលែក" : "Shared")) : (language === "km" ? "ចែករំលែក" : "Share")}</span>
-                            </button>
                           </div>
                         </article>
                       );
@@ -4336,31 +4324,18 @@ export default function InsightsPage() {
                               <td style={{ textAlign: "center" }}>
                                 <div className="table-actions-cell">
                                   <a
-                                    href={`#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`}
-                                    className="table-action-link"
-                                    title={language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View result"}
+                                    href={
+                                      student.documentId
+                                        ? apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/view?page=${student.pageNumber || 1}`)
+                                        : `#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`
+                                    }
+                                    target={student.documentId ? "_blank" : undefined}
+                                    rel={student.documentId ? "noreferrer" : undefined}
+                                    className="table-action-link primary-link"
+                                    title={language === "km" ? `មើលលទ្ធផលផ្លូវការ${student.pageNumber ? ` (ទំព័រ ${student.pageNumber})` : ""}` : `View Official Result${student.pageNumber ? ` (p.${student.pageNumber})` : ""}`}
                                   >
-                                    <ExternalLink size={13} />
+                                    <FileText size={13} />
                                   </a>
-                                  {student.documentId && (
-                                    <a
-                                      href={apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/pdf`)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="table-action-link pdf-btn"
-                                      title={language === "km" ? `បើក PDF (ទំព័រ ${student.pageNumber})` : `Open PDF (p.${student.pageNumber})`}
-                                    >
-                                      <FileText size={13} />
-                                    </a>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => void shareStudent(student)}
-                                    className="table-action-link share-btn"
-                                    title={shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លងតំណភ្ជាប់!" : "Link Copied!") : (language === "km" ? "បានចែករំលែក!" : "Shared!")) : (language === "km" ? "ចែករំលែក" : "Share")}
-                                  >
-                                    {shareFeedback?.studentId === student.id ? <Check size={12} className="text-success" /> : <Share2 size={12} />}
-                                  </button>
                                 </div>
                               </td>
                             </tr>

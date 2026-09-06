@@ -2,10 +2,12 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { getArchiveNameLocator } from "./archive.ts";
+import { getArchiveNameLocator, getArchivePdf } from "./archive.ts";
 
 const cacheRoot = resolve(process.env.ARCHIVE_CROP_CACHE_ROOT || "data/archive-name-crops");
+const pageCacheRoot = resolve(process.env.ARCHIVE_PAGE_CACHE_ROOT || "data/archive-page-crops");
 const CACHE_VERSION = "name-cell-v6";
+const PAGE_CACHE_VERSION = "page-v1";
 const MAX_CONCURRENT = 2;
 const MAX_QUEUE = 100;
 let active = 0;
@@ -55,6 +57,44 @@ function renderName(pdf: string, page: number, tableNumber: string, output: stri
     child.once("error", reject);
     child.once("exit", (code) => code === 0 ? resolvePromise() : reject(new Error(stderr.trim() || "Could not render the official name.")));
   });
+}
+
+function renderPage(pdf: string, page: number, output: string) {
+  return new Promise<void>((resolvePromise, reject) => {
+    const child = spawn(pythonExecutable(), [
+      resolve("scripts", "render_pdf_page.py"),
+      "--pdf", pdf,
+      "--page", String(page),
+      "--output", output,
+    ], { cwd: process.cwd(), windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk: string) => { stderr = `${stderr}${chunk}`.slice(-4_000); });
+    child.once("error", reject);
+    child.once("exit", (code) => code === 0 ? resolvePromise() : reject(new Error(stderr.trim() || "Could not render the official page.")));
+  });
+}
+
+export async function getArchivePageImage(year: string, documentId: number, pageNumber: number) {
+  const pdf = getArchivePdf(year, documentId);
+  if (!pdf || !Number.isSafeInteger(pageNumber) || pageNumber < 1) return undefined;
+  const directory = join(pageCacheRoot, year, String(documentId));
+  const output = join(directory, `${PAGE_CACHE_VERSION}-${pageNumber}.jpg`);
+  if (existsSync(output)) return output;
+  const key = `page:${year}:${documentId}:${pageNumber}`;
+  const current = inflight.get(key);
+  if (current) return current;
+  const work = (async () => {
+    await acquire();
+    try {
+      if (existsSync(output)) return output;
+      await mkdir(directory, { recursive: true });
+      await renderPage(pdf, pageNumber, output);
+      return output;
+    } finally { release(); }
+  })();
+  inflight.set(key, work);
+  try { return await work; } finally { inflight.delete(key); }
 }
 
 export async function getArchiveNameImage(year: string, studentId: number) {

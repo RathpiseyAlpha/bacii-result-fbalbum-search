@@ -13,6 +13,7 @@ scratch/
 tmp/
 data/bacii-*/
 data/archive-name-crops/
+data/archive-page-crops/
 *.log
 *.tsbuildinfo
 .DS_Store

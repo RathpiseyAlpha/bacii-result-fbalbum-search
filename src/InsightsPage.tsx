@@ -10,6 +10,7 @@ import {
   Building2,
   Calculator,
   Calendar,
+  Check,
   ChevronDown,
   ChevronUp,
   Compass,
@@ -29,6 +30,7 @@ import {
   Scale,
   School,
   Search,
+  Share2,
   SlidersHorizontal,
   Sparkles,
   Sun,
@@ -946,6 +948,33 @@ export default function InsightsPage() {
   const [studentSearch, setStudentSearch] = useState("");
   const [studentViewMode, setStudentViewMode] = useState<"cards" | "table">("cards");
   const [studentDisplayLimit, setStudentDisplayLimit] = useState(36);
+  const [shareFeedback, setShareFeedback] = useState<{ studentId: number; copied: boolean } | null>(null);
+
+  const shareStudent = async (student: ArchiveStudentItem) => {
+    const targetYear = selectedYear || "2024";
+    const url = `${window.location.origin}${window.location.pathname}#archive?year=${targetYear}&tableNumber=${student.tableNumber}`;
+    const title = `${targetYear} BacII Result · #${student.tableNumber}`;
+    const text = `${student.name ? student.name + " · " : ""}${language === "km" ? student.province : provinceEnglish[student.provinceId] || student.province} · Grade ${student.grade}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+        setShareFeedback({ studentId: student.id, copied: false });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareFeedback({ studentId: student.id, copied: true });
+      }
+      window.setTimeout(() => setShareFeedback((curr) => curr?.studentId === student.id ? null : curr), 2000);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareFeedback({ studentId: student.id, copied: true });
+        window.setTimeout(() => setShareFeedback((curr) => curr?.studentId === student.id ? null : curr), 2000);
+      } catch {
+        // Fallback if clipboard fails
+      }
+    }
+  };
 
   const aCountCountMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -4191,25 +4220,35 @@ export default function InsightsPage() {
                           {/* Card Footer / Actions */}
                           <div className="student-card-actions">
                             <a
-                              href={`#archive?year=${selected.year}&tableNumber=${student.tableNumber}`}
+                              href={`#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`}
                               className="student-action-btn primary-action"
-                              title="Open official result"
+                              title={language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View Full Result"}
                             >
                               <ExternalLink size={13} />
                               <span>{language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View Full Result"}</span>
                             </a>
                             {student.documentId && (
                               <a
-                                href={apiUrl(`/api/archive/${selected.year}/documents/${student.documentId}/pdf`)}
+                                href={apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/pdf`)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="student-action-btn secondary-action"
-                                title="Open official PDF page"
+                                title={language === "km" ? `បើកទំព័រ PDF ផ្លូវការ (ទំព័រ ${student.pageNumber})` : `Open official PDF page (p.${student.pageNumber})`}
                               >
                                 <FileText size={13} />
                                 <span>PDF (p.{student.pageNumber})</span>
                               </a>
                             )}
+                            <button
+                              type="button"
+                              onClick={() => void shareStudent(student)}
+                              className="student-action-btn share-action"
+                              title={shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លងតំណភ្ជាប់!" : "Link Copied!") : (language === "km" ? "បានចែករំលែក!" : "Shared!")) : (language === "km" ? "ចែករំលែកលទ្ធផល" : "Share Result")}
+                              aria-label={language === "km" ? "ចែករំលែកលទ្ធផល" : "Share Result"}
+                            >
+                              {shareFeedback?.studentId === student.id ? <Check size={13} className="text-success" /> : <Share2 size={13} />}
+                              <span>{shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លង" : "Copied") : (language === "km" ? "បានចែករំលែក" : "Shared")) : (language === "km" ? "ចែករំលែក" : "Share")}</span>
+                            </button>
                           </div>
                         </article>
                       );
@@ -4297,23 +4336,31 @@ export default function InsightsPage() {
                               <td style={{ textAlign: "center" }}>
                                 <div className="table-actions-cell">
                                   <a
-                                    href={`#archive?year=${selected.year}&tableNumber=${student.tableNumber}`}
+                                    href={`#archive?year=${selected?.year || selectedYear}&tableNumber=${student.tableNumber}`}
                                     className="table-action-link"
-                                    title="View result"
+                                    title={language === "km" ? "មើលលទ្ធផលផ្លូវការ" : "View result"}
                                   >
                                     <ExternalLink size={13} />
                                   </a>
                                   {student.documentId && (
                                     <a
-                                      href={apiUrl(`/api/archive/${selected.year}/documents/${student.documentId}/pdf`)}
+                                      href={apiUrl(`/api/archive/${selected?.year || selectedYear}/documents/${student.documentId}/pdf`)}
                                       target="_blank"
                                       rel="noreferrer"
                                       className="table-action-link pdf-btn"
-                                      title="Open PDF"
+                                      title={language === "km" ? `បើក PDF (ទំព័រ ${student.pageNumber})` : `Open PDF (p.${student.pageNumber})`}
                                     >
                                       <FileText size={13} />
                                     </a>
                                   )}
+                                  <button
+                                    type="button"
+                                    onClick={() => void shareStudent(student)}
+                                    className="table-action-link share-btn"
+                                    title={shareFeedback?.studentId === student.id ? (shareFeedback.copied ? (language === "km" ? "បានចម្លងតំណភ្ជាប់!" : "Link Copied!") : (language === "km" ? "បានចែករំលែក!" : "Shared!")) : (language === "km" ? "ចែករំលែក" : "Share")}
+                                  >
+                                    {shareFeedback?.studentId === student.id ? <Check size={12} className="text-success" /> : <Share2 size={12} />}
+                                  </button>
                                 </div>
                               </td>
                             </tr>

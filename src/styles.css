@@ -12,6 +12,8 @@
   --line: #d9e2f1;
   --green: #2563eb;
   --green-dark: #1d4ed8;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
   --lime: #bfdbfe;
   --orange: #38bdf8;
   --grade-a: #d4a017;
@@ -1409,6 +1411,8 @@
   --line: #2b3b55;
   --green: #60a5fa;
   --green-dark: #93c5fd;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
   --lime: #bfdbfe;
   --orange: #38bdf8;
   --shadow: 0 24px 70px rgba(0, 0, 0, .35);
@@ -4032,48 +4036,130 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   color: #d97706;
 }
 
-/* Card Actions */
+/* Card Actions in Insights Page */
 .student-card-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
 }
 
 .student-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 6px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 11px;
   border-radius: 8px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
   transition: all 0.15s ease;
-  flex: 1;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  user-select: none;
 }
 
+.student-action-btn svg {
+  flex-shrink: 0;
+}
+
+/* Primary Action: View Official Result (Rich brand blue background with crisp white text) */
 .student-action-btn.primary-action {
-  background: var(--accent);
-  color: #fff;
+  background: #2563eb;
+  color: #ffffff !important;
+  border-color: #1d4ed8;
+  flex: 1;
+  min-width: 120px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22);
 }
 
 .student-action-btn.primary-action:hover {
-  background: var(--accent-hover, #4f46e5);
+  background: #1d4ed8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.32);
+  transform: translateY(-1px);
 }
 
+:root[data-theme="dark"] .student-action-btn.primary-action {
+  background: #1d4ed8;
+  color: #ffffff !important;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+}
+
+:root[data-theme="dark"] .student-action-btn.primary-action:hover {
+  background: #2563eb;
+  border-color: #60a5fa;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* Secondary Action: Official PDF Link */
 .student-action-btn.secondary-action {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+
+.student-action-btn.secondary-action svg {
+  color: #ef4444;
+}
+
+:root[data-theme="dark"] .student-action-btn.secondary-action svg {
+  color: #f87171;
+}
+
+.student-action-btn.secondary-action:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: rgba(239, 68, 68, 0.06);
+  transform: translateY(-1px);
+}
+
+:root[data-theme="dark"] .student-action-btn.secondary-action:hover {
+  color: #f87171;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Share Action Button */
+.student-action-btn.share-action {
   background: var(--card);
   color: var(--muted);
   border: 1px solid var(--line);
   flex: 0 0 auto;
 }
 
-.student-action-btn.secondary-action:hover {
-  color: var(--ink);
-  border-color: var(--ink);
+.student-action-btn.share-action svg {
+  color: var(--muted);
+}
+
+.student-action-btn.share-action:hover {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(37, 99, 235, 0.06);
+  transform: translateY(-1px);
+}
+
+:root[data-theme="dark"] .student-action-btn.share-action:hover {
+  background: rgba(96, 165, 250, 0.12);
+  color: #93c5fd;
+  border-color: #60a5fa;
+}
+
+.student-action-btn.share-action svg.text-success,
+.table-action-link svg.text-success {
+  color: #16a34a !important;
 }
 
 /* Student Table View */
@@ -4168,10 +4254,32 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   border-color: var(--accent);
 }
 
+.table-action-link.pdf-btn svg {
+  color: #ef4444;
+}
+
+:root[data-theme="dark"] .table-action-link.pdf-btn svg {
+  color: #f87171;
+}
+
 .table-action-link.pdf-btn:hover {
   background: #ef4444;
   color: #fff;
   border-color: #ef4444;
+}
+
+.table-action-link.pdf-btn:hover svg {
+  color: #fff;
+}
+
+.table-action-link.share-btn {
+  cursor: pointer;
+}
+
+.table-action-link.share-btn:hover {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
 }
 
 @media (max-width: 768px) {

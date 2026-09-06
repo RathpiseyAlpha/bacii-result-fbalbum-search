@@ -734,57 +734,40 @@ function App() {
         </section>
       ) : (
         <section className="tool-full-view shell" id="top">
-          <div className="tool-breadcrumb-bar">
-            <div className="breadcrumb-left-group">
+          <nav className="text-breadcrumb-nav" aria-label="Breadcrumb">
+            <div className="breadcrumb-trail">
               <button
                 type="button"
-                className="breadcrumb-back-btn"
+                className="breadcrumb-back-link"
                 onClick={() => selectSearchTool("menu")}
                 title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយមជ្ឈមណ្ឌលស្វែងរក" : "Back to Search Hub Menu"}
               >
-                <ArrowLeft size={16} />
-                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+                <ArrowLeft size={15} />
+                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
               </button>
 
-              <div className="breadcrumb-path">
-                <button
-                  type="button"
-                  className="breadcrumb-root-link"
-                  onClick={() => selectSearchTool("menu")}
-                >
-                  <Search size={14} />
-                  <span>{language === "km" ? "ស្វែងរក" : "Search"}</span>
-                </button>
-                <span className="breadcrumb-separator">
-                  <ChevronRight size={14} />
-                </span>
-                <span className="breadcrumb-current-label">
-                  {searchTool === "archive"
-                    ? language === "km" ? "បណ្ណសារផ្លូវការ" : "Official Archive"
-                    : language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook Album"}
-                </span>
-              </div>
-            </div>
+              <span className="breadcrumb-divider-slash">/</span>
 
-            <div className="breadcrumb-quick-switcher">
               <button
                 type="button"
-                className={`breadcrumb-switch-pill ${searchTool === "archive" ? "active" : ""}`}
-                onClick={() => selectSearchTool("archive")}
+                className="breadcrumb-item-link"
+                onClick={() => selectSearchTool("menu")}
               >
-                <Database size={13} />
-                <span>{language === "km" ? "បណ្ណសារផ្លូវការ" : "Archive"}</span>
+                <Search size={14} />
+                <span>{language === "km" ? "ស្វែងរក" : "Search"}</span>
               </button>
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${searchTool === "facebook" ? "active" : ""}`}
-                onClick={() => selectSearchTool("facebook")}
-              >
-                <Images size={13} />
-                <span>{language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook"}</span>
-              </button>
+
+              <span className="breadcrumb-arrow">
+                <ChevronRight size={14} />
+              </span>
+
+              <span className="breadcrumb-item-current">
+                {searchTool === "archive"
+                  ? language === "km" ? "បណ្ណសារផ្លូវការ" : "Official Archive"
+                  : language === "km" ? "អាល់ប៊ុម Facebook" : "Facebook Album"}
+              </span>
             </div>
-          </div>
+          </nav>
 
           {searchTool === "archive" ? (
             <div className="workspace-card" style={{ marginTop: 0 }}>

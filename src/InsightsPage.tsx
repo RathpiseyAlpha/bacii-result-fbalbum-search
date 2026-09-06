@@ -1510,14 +1510,6 @@ export default function InsightsPage() {
             <span className="eyebrow"><TrendingUp size={14} /> {t.eyebrow}</span>
             <h1>{t.title}</h1>
             <p>{t.intro}</p>
-            <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <label className="archive-year" style={{ margin: 0 }}>
-                <span>{language === "km" ? "ឆ្នាំលទ្ធផល" : "Year"}</span>
-                <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)}>
-                  {summaries.map((item) => <option key={item.year} value={item.year}>{item.year}</option>)}
-                </select>
-              </label>
-            </div>
           </div>
 
           <div className="search-menu-cards-grid" style={{ maxWidth: 960, margin: "0 auto" }}>
@@ -1615,100 +1607,58 @@ export default function InsightsPage() {
         </section>
       ) : (
         <section className="tool-full-view shell" id="top">
-          <div className="tool-breadcrumb-bar">
-            <div className="breadcrumb-left-group">
+          <nav className="text-breadcrumb-nav" aria-label="Breadcrumb">
+            <div className="breadcrumb-trail">
               <button
                 type="button"
-                className="breadcrumb-back-btn"
+                className="breadcrumb-back-link"
                 onClick={() => switchTab("menu", "#insights")}
                 title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយវិភាគ" : "Back to Insights Menu"}
               >
-                <ArrowLeft size={16} />
-                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+                <ArrowLeft size={15} />
+                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
               </button>
 
-              <div className="breadcrumb-path">
-                <button
-                  type="button"
-                  className="breadcrumb-root-link"
-                  onClick={() => switchTab("menu", "#insights")}
-                >
-                  <BarChart3 size={14} />
-                  <span>{language === "km" ? "ទិន្នន័យវិភាគ" : "Insights"}</span>
-                </button>
-                <span className="breadcrumb-separator"><ChevronRight size={14} /></span>
-                <span className="breadcrumb-current-label">
-                  {activeTab === "overview" ? t.tabOverview
-                    : activeTab === "schools" ? t.tabSchools
-                    : activeTab === "heatmap" ? t.tabHeatmap
-                    : activeTab === "subjects" ? t.tabSubjects
-                    : t.tabStudents}
-                </span>
-              </div>
+              <span className="breadcrumb-divider-slash">/</span>
+
+              <button
+                type="button"
+                className="breadcrumb-item-link"
+                onClick={() => switchTab("menu", "#insights")}
+              >
+                <BarChart3 size={14} />
+                <span>{language === "km" ? "ទិន្នន័យវិភាគ" : "Insights"}</span>
+              </button>
+
+              <span className="breadcrumb-arrow">
+                <ChevronRight size={14} />
+              </span>
+
+              <span className="breadcrumb-item-current">
+                {activeTab === "overview" ? t.tabOverview
+                  : activeTab === "schools" ? t.tabSchools
+                  : activeTab === "heatmap" ? t.tabHeatmap
+                  : activeTab === "subjects" ? t.tabSubjects
+                  : t.tabStudents}
+              </span>
             </div>
 
-            <div className="breadcrumb-quick-switcher">
+            <div className="breadcrumb-year-badge">
+              <Calendar size={13} />
+              <span>{language === "km" ? "ឆ្នាំ" : "Year"}:</span>
               <select
                 value={selectedYear}
                 onChange={(event) => setSelectedYear(event.target.value)}
-                className="breadcrumb-year-select"
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "var(--ink)",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                  outline: "none",
-                }}
+                aria-label={language === "km" ? "ឆ្នាំ" : "Year"}
               >
-                {summaries.map((item) => <option key={item.year} value={item.year}>{item.year}</option>)}
+                {summaries.map((item) => (
+                  <option key={item.year} value={item.year}>
+                    {item.year}
+                  </option>
+                ))}
               </select>
-
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${activeTab === "overview" ? "active" : ""}`}
-                onClick={() => switchTab("overview", "#insights/overview")}
-              >
-                <BarChart3 size={13} />
-                <span>{t.tabOverview}</span>
-              </button>
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${activeTab === "schools" ? "active" : ""}`}
-                onClick={() => switchTab("schools", "#insights/schools")}
-              >
-                <School size={13} />
-                <span>{t.tabSchools}</span>
-              </button>
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${activeTab === "heatmap" ? "active" : ""}`}
-                onClick={() => switchTab("heatmap", "#insights/heatmap")}
-              >
-                <MapPin size={13} />
-                <span>{t.tabHeatmap}</span>
-              </button>
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${activeTab === "subjects" ? "active" : ""}`}
-                onClick={() => switchTab("subjects", "#insights/subjects")}
-              >
-                <BookOpen size={13} />
-                <span>{t.tabSubjects}</span>
-              </button>
-              <button
-                type="button"
-                className={`breadcrumb-switch-pill ${activeTab === "students" ? "active" : ""}`}
-                onClick={() => switchTab("students", "#insights/students")}
-              >
-                <Award size={13} />
-                <span>{t.tabStudents}</span>
-              </button>
             </div>
-          </div>
+          </nav>
 
       {loading ? (
         <div className="archive-state shell">{t.loading}</div>

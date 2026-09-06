@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import cambodia from "@svg-maps/cambodia";
 import {
-  Archive, ArrowLeft, ArrowRight, BarChart3, BookOpen, Check, ChevronRight, ExternalLink, GraduationCap,
+  Archive, ArrowLeft, ArrowRight, BarChart3, BookOpen, Calendar, Check, ChevronRight, ExternalLink, GraduationCap,
   Hash, Images, Languages, LoaderCircle, MapPin, Moon, School, Search, Share2, Sun, Users,
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
@@ -316,14 +316,6 @@ export default function ArchivePage() {
                 <span className="eyebrow"><BookOpen size={14} /> {t.eyebrow}</span>
                 <h1>{t.title}</h1>
                 <p>{t.intro}</p>
-                <div style={{ marginTop: 18, display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <label className="archive-year" style={{ margin: 0 }}>
-                    <span>{t.year}</span>
-                    <select value={year} onChange={(event) => setYear(event.target.value)}>
-                      {years.map((item) => <option key={item}>{item}</option>)}
-                    </select>
-                  </label>
-                </div>
               </div>
 
               <section className="archive-stats shell" aria-label="Archive summary" style={{ margin: "0 auto 32px", maxWidth: 960 }}>
@@ -405,91 +397,57 @@ export default function ArchivePage() {
             </section>
           ) : (
             <div className="tool-full-view shell" id="top">
-              <div className="tool-breadcrumb-bar">
-                <div className="breadcrumb-left-group">
+              <nav className="text-breadcrumb-nav" aria-label="Breadcrumb">
+                <div className="breadcrumb-trail">
                   <button
                     type="button"
-                    className="breadcrumb-back-btn"
+                    className="breadcrumb-back-link"
                     onClick={() => selectSection("menu")}
                     title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយបណ្ណសារ" : "Back to Archive Menu"}
                   >
-                    <ArrowLeft size={16} />
-                    <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Menu"}</span>
+                    <ArrowLeft size={15} />
+                    <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
                   </button>
 
-                  <div className="breadcrumb-path">
-                    <button
-                      type="button"
-                      className="breadcrumb-root-link"
-                      onClick={() => selectSection("menu")}
-                    >
-                      <Archive size={14} />
-                      <span>{t.archive}</span>
-                    </button>
-                    <span className="breadcrumb-separator"><ChevronRight size={14} /></span>
-                    <span className="breadcrumb-current-label">
-                      {activeSection === "archive-map" ? t.sectionMap
-                        : activeSection === "archive-search" ? t.sectionSearch
-                        : activeSection === "archive-insights" ? t.sectionNational
-                        : t.sectionProvinceGrades}
-                    </span>
-                  </div>
+                  <span className="breadcrumb-divider-slash">/</span>
+
+                  <button
+                    type="button"
+                    className="breadcrumb-item-link"
+                    onClick={() => selectSection("menu")}
+                  >
+                    <Archive size={14} />
+                    <span>{t.archive}</span>
+                  </button>
+
+                  <span className="breadcrumb-arrow">
+                    <ChevronRight size={14} />
+                  </span>
+
+                  <span className="breadcrumb-item-current">
+                    {activeSection === "archive-map" ? t.sectionMap
+                      : activeSection === "archive-search" ? t.sectionSearch
+                      : activeSection === "archive-insights" ? t.sectionNational
+                      : t.sectionProvinceGrades}
+                  </span>
                 </div>
 
-                <div className="breadcrumb-quick-switcher">
+                <div className="breadcrumb-year-badge">
+                  <Calendar size={13} />
+                  <span>{t.year}:</span>
                   <select
                     value={year}
                     onChange={(event) => setYear(event.target.value)}
-                    className="breadcrumb-year-select"
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "var(--ink)",
-                      cursor: "pointer",
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                      outline: "none",
-                    }}
+                    aria-label={t.year}
                   >
-                    {years.map((item) => <option key={item} value={item}>{item}</option>)}
+                    {years.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
-
-                  <button
-                    type="button"
-                    className={`breadcrumb-switch-pill ${activeSection === "archive-map" ? "active" : ""}`}
-                    onClick={() => selectSection("archive-map")}
-                  >
-                    <MapPin size={13} />
-                    <span>{t.sectionMap}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`breadcrumb-switch-pill ${activeSection === "archive-search" ? "active" : ""}`}
-                    onClick={() => selectSection("archive-search")}
-                  >
-                    <Search size={13} />
-                    <span>{t.sectionSearch}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`breadcrumb-switch-pill ${activeSection === "archive-insights" ? "active" : ""}`}
-                    onClick={() => selectSection("archive-insights")}
-                  >
-                    <BarChart3 size={13} />
-                    <span>{t.sectionNational}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`breadcrumb-switch-pill ${activeSection === "archive-province-grades" ? "active" : ""}`}
-                    onClick={() => selectSection("archive-province-grades")}
-                  >
-                    <GraduationCap size={13} />
-                    <span>{t.sectionProvinceGrades}</span>
-                  </button>
                 </div>
-              </div>
+              </nav>
 
               {activeSection === "archive-map" && (
                 <div className="archive-tab-panel" role="tabpanel">

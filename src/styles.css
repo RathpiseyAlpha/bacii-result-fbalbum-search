@@ -4460,7 +4460,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   min-width: 0;
 }
 
-.breadcrumb-back-link {
+.breadcrumb-item-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4471,48 +4471,18 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   cursor: pointer;
   background: none;
   border: none;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
   transition: all 0.15s ease;
 }
 
-.breadcrumb-back-link:hover {
+.breadcrumb-item-link:hover {
   color: var(--ink);
   background: rgba(0, 0, 0, 0.05);
 }
 
-:root[data-theme="dark"] .breadcrumb-back-link:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: #fff;
-}
-
-.breadcrumb-divider-slash {
-  color: var(--muted);
-  opacity: 0.35;
-  font-size: 13px;
-  user-select: none;
-}
-
-.breadcrumb-item-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 13.5px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 2px 4px;
-  transition: color 0.15s ease;
-}
-
-.breadcrumb-item-link:hover {
-  color: var(--ink);
-}
-
 :root[data-theme="dark"] .breadcrumb-item-link:hover {
+  background: rgba(255, 255, 255, 0.07);
   color: #fff;
 }
 

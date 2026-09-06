@@ -401,18 +401,6 @@ export default function ArchivePage() {
                 <div className="breadcrumb-trail">
                   <button
                     type="button"
-                    className="breadcrumb-back-link"
-                    onClick={() => selectSection("menu")}
-                    title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយបណ្ណសារ" : "Back to Archive Menu"}
-                  >
-                    <ArrowLeft size={15} />
-                    <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
-                  </button>
-
-                  <span className="breadcrumb-divider-slash">/</span>
-
-                  <button
-                    type="button"
                     className="breadcrumb-item-link"
                     onClick={() => selectSection("menu")}
                   >

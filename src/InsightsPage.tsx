@@ -1611,18 +1611,6 @@ export default function InsightsPage() {
             <div className="breadcrumb-trail">
               <button
                 type="button"
-                className="breadcrumb-back-link"
-                onClick={() => switchTab("menu", "#insights")}
-                title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយវិភាគ" : "Back to Insights Menu"}
-              >
-                <ArrowLeft size={15} />
-                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
-              </button>
-
-              <span className="breadcrumb-divider-slash">/</span>
-
-              <button
-                type="button"
                 className="breadcrumb-item-link"
                 onClick={() => switchTab("menu", "#insights")}
               >

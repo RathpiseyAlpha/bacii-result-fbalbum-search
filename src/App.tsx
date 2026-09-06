@@ -738,18 +738,6 @@ function App() {
             <div className="breadcrumb-trail">
               <button
                 type="button"
-                className="breadcrumb-back-link"
-                onClick={() => selectSearchTool("menu")}
-                title={language === "km" ? "ត្រឡប់ទៅម៉ឺនុយមជ្ឈមណ្ឌលស្វែងរក" : "Back to Search Hub Menu"}
-              >
-                <ArrowLeft size={15} />
-                <span>{language === "km" ? "ត្រឡប់ទៅម៉ឺនុយ" : "Back to Menu"}</span>
-              </button>
-
-              <span className="breadcrumb-divider-slash">/</span>
-
-              <button
-                type="button"
                 className="breadcrumb-item-link"
                 onClick={() => selectSearchTool("menu")}
               >

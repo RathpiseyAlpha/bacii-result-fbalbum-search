@@ -7,7 +7,7 @@ import { getArchiveNameLocator, getArchivePdf } from "./archive.ts";
 const cacheRoot = resolve(process.env.ARCHIVE_CROP_CACHE_ROOT || "data/archive-name-crops");
 const pageCacheRoot = resolve(process.env.ARCHIVE_PAGE_CACHE_ROOT || "data/archive-page-crops");
 const CACHE_VERSION = "name-cell-v7";
-const PAGE_CACHE_VERSION = "page-v1";
+const PAGE_CACHE_VERSION = "page-v2";
 const MAX_CONCURRENT = 2;
 const MAX_QUEUE = 100;
 let active = 0;

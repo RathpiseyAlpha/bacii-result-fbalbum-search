@@ -313,7 +313,6 @@ export default function ArchivePage() {
           {activeSection === "menu" ? (
             <section className="search-hub-landing shell" id="top">
               <div className="search-hub-intro">
-                <span className="eyebrow"><BookOpen size={14} /> {t.eyebrow}</span>
                 <h1>{t.title}</h1>
                 <p>{t.intro}</p>
               </div>

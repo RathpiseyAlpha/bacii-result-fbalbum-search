@@ -1507,7 +1507,6 @@ export default function InsightsPage() {
       {activeTab === "menu" ? (
         <section className="search-hub-landing shell" id="top">
           <div className="search-hub-intro">
-            <span className="eyebrow"><TrendingUp size={14} /> {t.eyebrow}</span>
             <h1>{t.title}</h1>
             <p>{t.intro}</p>
           </div>
@@ -1659,7 +1658,6 @@ export default function InsightsPage() {
             <div className="tab-pane">
               <div className="tab-control-bar shell">
                 <div className="tab-title-group">
-                  <span className="eyebrow"><BarChart3 size={14} /> {t.nationalSnapshot}</span>
                   <h2>{t.tabOverview}</h2>
                 </div>
                 <div className="tab-controls-right">
@@ -1850,7 +1848,6 @@ export default function InsightsPage() {
               <section className="school-analysis-section shell" aria-label={t.schoolAnalysis}>
                 <div className="school-section-header">
                   <div className="school-section-title-wrap">
-                    <span className="eyebrow"><Sparkles size={14} /> {t.schoolAnalysis}</span>
                     <h2>{t.allSchoolsExplorer}</h2>
                     <p>{t.schoolAnalysisSubtitle}</p>
                   </div>
@@ -2616,7 +2613,6 @@ export default function InsightsPage() {
               <section className="school-analysis-section shell" aria-label={t.tabHeatmap}>
                 <div className="school-section-header">
                   <div className="school-section-title-wrap">
-                    <span className="eyebrow"><Sparkles size={14} /> {t.tabHeatmap}</span>
                     <h2>{t.capitalMapTitle}</h2>
                     <p>{t.capitalMapSubtitle}</p>
                   </div>
@@ -2970,7 +2966,6 @@ export default function InsightsPage() {
               <section className="subject-section shell" aria-label={t.subjectAnalysisTitle}>
                 <div className="subject-section-head">
                   <div>
-                    <span className="eyebrow"><Sparkles size={14} /> {t.subjectAnalysisTitle}</span>
                     <h2>{t.subjectAnalysisTitle}</h2>
                     <p>{t.subjectAnalysisSubtitle}</p>
                   </div>
@@ -3184,7 +3179,6 @@ export default function InsightsPage() {
                       <article className="insight-card subject-difficulty-card">
                         <div className="dashboard-card-head">
                           <div>
-                            <span className="eyebrow"><Flame size={14} /> {selected.year} · {selectedTrack === "science" ? t.scienceTrack : t.socialTrack}</span>
                             <h2>{t.subjectDifficultyTitle}</h2>
                             <p className="card-subtext">{t.subjectDifficultySubtitle}</p>
                           </div>
@@ -4018,10 +4012,6 @@ export default function InsightsPage() {
               <section className="school-analysis-section shell" style={{ marginTop: "32px" }}>
                 <div className="all-schools-header">
                   <div>
-                    <div className="section-eyebrow">
-                      <Sparkles size={14} />
-                      <span>{language === "km" ? "បញ្ជីរាយនាមសិស្ស" : "Candidate Roster"}</span>
-                    </div>
                     <h2>{t.straightAExplorationTitle}</h2>
                     <p>{t.straightAExplorationSub}</p>
                   </div>

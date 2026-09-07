@@ -665,9 +665,6 @@ function App() {
       {searchTool === "menu" ? (
         <section className="search-hub-landing shell" id="top">
           <div className="search-hub-intro">
-            <span className="eyebrow">
-              <Search size={14} /> {language === "km" ? "មជ្ឈមណ្ឌលស្វែងរកលទ្ធផល" : "Search Hub"}
-            </span>
             <h1>{language === "km" ? "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប" : "BacII Result Search Engine"}</h1>
             <p>
               {language === "km"

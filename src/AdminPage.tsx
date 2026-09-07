@@ -86,7 +86,6 @@ export default function AdminPage() {
     </header>
     <section className="admin-shell">
       <div className="admin-title">
-        <span className="eyebrow">ARCHIVE INGESTION</span>
         <h1>Publish a result year</h1>
         <p>Paste the official MOEYS Facebook or Telegram post containing all 25 province and capital PDF links. The server discovers, downloads, validates, indexes, and publishes the archive automatically.</p>
       </div>

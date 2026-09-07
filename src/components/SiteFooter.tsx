@@ -36,7 +36,7 @@ export default function SiteFooter({ language }: SiteFooterProps) {
               }}
             >
               <span className="footer-brand-mark">
-                <GraduationCap size={18} strokeWidth={2.2} />
+                <GraduationCap size={21} strokeWidth={2.2} />
               </span>
               <span className="footer-brand-text">
                 <span className="footer-brand-title">{isKm ? "បណ្ណសារលទ្ធផល" : "BacII Results Archive"}</span>

@@ -38,17 +38,20 @@ export default function SiteFooter({ language }: SiteFooterProps) {
               <span className="footer-brand-mark">
                 <GraduationCap size={18} strokeWidth={2.2} />
               </span>
-              <span>{isKm ? "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប" : "BacII Result Search Engine"}</span>
+              <span className="footer-brand-text">
+                <span className="footer-brand-title">{isKm ? "បណ្ណសារលទ្ធផល" : "BacII Results Archive"}</span>
+                <span className="footer-brand-subtitle">{isKm ? "ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ" : "National Examination Archive"}</span>
+              </span>
             </a>
             <p className="footer-tagline">
               {isKm
-                ? "ប្រព័ន្ធស្វែងរកលទ្ធផលប្រឡងបាក់ឌុប បណ្ណសារផ្លូវការ និងផ្ទាំងវិភាគទិន្នន័យអប់រំកម្ពុជា។"
-                : "Cambodia BacII national examination search engine, official archives, and comprehensive academic analytics."}
+                ? "បណ្ណសារលទ្ធផលផ្លូវការនៃការប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ (បាក់ឌុប) និងផ្ទាំងវិភាគទិន្នន័យអប់រំកម្ពុជា។"
+                : "Official Upper Secondary Education Diploma Examination archive and academic analytics."}
             </p>
             <p className="footer-copy">
               {isKm
-                ? "© 2026 ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប (BacII Result Search)។ រក្សាសិទ្ធិគ្រប់យ៉ាង។"
-                : "© 2026 BacII Result Search Engine. All rights reserved."}
+                ? "© 2026 បណ្ណសារលទ្ធផល ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ។ រក្សាសិទ្ធិគ្រប់យ៉ាង។"
+                : "© 2026 BacII Results Archive. All rights reserved."}
             </p>
           </div>
 

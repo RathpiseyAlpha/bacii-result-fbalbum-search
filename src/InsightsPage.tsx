@@ -334,7 +334,7 @@ const SOCIAL_SUBJECTS: SubjectKey[] = [
 
 const copy = {
   en: {
-    brand: "BacII Result Search Engine", facebook: "Search", archive: "Results archive", insights: "Insights",
+    brand: "BacII Results Archive", facebook: "Search", archive: "Results archive", insights: "Insights",
     eyebrow: "BacII intelligence dashboard", title: "See the story behind the results.",
     intro: "Explore grade patterns, compare provinces, and follow national result trends as each new archive year is added.",
     tabOverview: "National Overview",
@@ -486,7 +486,7 @@ const copy = {
     straightARibbon: "⭐ STRAIGHT A (7/7 A)",
   },
   km: {
-    brand: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebook: "ស្វែងរក", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
+    brand: "បណ្ណសារលទ្ធផល ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ", facebook: "ស្វែងរក", archive: "បណ្ណសារលទ្ធផល", insights: "ទិន្នន័យវិភាគ",
     eyebrow: "ផ្ទាំងវិភាគទិន្នន័យបាក់ឌុប", title: "ស្វែងយល់ពីទិន្នន័យនៅពីក្រោយលទ្ធផល",
     intro: "មើលទម្រង់និទ្ទេស ប្រៀបធៀបរាជធានី ខេត្ត និងតាមដាននិន្នាការទូទាំងប្រទេស នៅពេលបន្ថែមទិន្នន័យឆ្នាំថ្មី។",
     tabOverview: "ទិដ្ឋភាពទូទៅទូទាំងប្រទេស",
@@ -1477,7 +1477,10 @@ export default function InsightsPage() {
       <nav className="nav site-header shell">
         <a className="brand" href="#insights">
           <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
-          <span className="brand-text">{t.brand}</span>
+          <span className="brand-text">
+            <span className="brand-title">{language === "km" ? "បណ្ណសារលទ្ធផល" : "BacII Results"}</span>
+            <span className="brand-subtitle">{language === "km" ? "ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ" : "National Examination Archive"}</span>
+          </span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">

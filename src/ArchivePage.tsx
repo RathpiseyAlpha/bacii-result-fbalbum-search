@@ -89,7 +89,7 @@ const provinceEnglish: Record<string, string> = {
 
 const copy = {
   en: {
-    archive: "Results archive", brandName: "BacII Result Search Engine", facebookSearch: "Search", insightsMenu: "Insights", eyebrow: "Cambodia BacII data archive",
+    archive: "Results archive", brandName: "BacII Results Archive", facebookSearch: "Search", insightsMenu: "Insights", eyebrow: "Cambodia BacII data archive",
     title: "Explore BacII results by year and province.", intro: "Search the official published result lists and compare passing-candidate data across Cambodia.",
     year: "Archive year", candidates: "Passing candidates", provinces: "provinces & capital", centers: "exam centers", pages: "official PDF pages",
     mapTitle: "Passing candidates by province", mapHelp: "Select a province on the map to view its complete result dashboard.", allCambodia: "All Cambodia",
@@ -108,7 +108,7 @@ const copy = {
     nameNote: "Each name is rendered directly from its official PDF row, avoiding the document's broken Khmer text encoding.", mapCredit: "Cambodia map data",
   },
   km: {
-    archive: "បណ្ណសារលទ្ធផល", brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប", facebookSearch: "ស្វែងរក", insightsMenu: "ទិន្នន័យវិភាគ", eyebrow: "បណ្ណសារទិន្នន័យបាក់ឌុបកម្ពុជា",
+    archive: "បណ្ណសារលទ្ធផល", brandName: "បណ្ណសារលទ្ធផល ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ", facebookSearch: "ស្វែងរក", insightsMenu: "ទិន្នន័យវិភាគ", eyebrow: "បណ្ណសារទិន្នន័យបាក់ឌុបកម្ពុជា",
     title: "ស្វែងរកលទ្ធផលបាក់ឌុបតាមឆ្នាំ និងរាជធានី ខេត្ត", intro: "ស្វែងរកក្នុងបញ្ជីលទ្ធផលផ្លូវការ និងមើលទិន្នន័យបេក្ខជនជាប់នៅទូទាំងប្រទេសកម្ពុជា។",
     year: "ឆ្នាំលទ្ធផល", candidates: "បេក្ខជនជាប់", provinces: "រាជធានី និងខេត្ត", centers: "មណ្ឌលប្រឡង", pages: "ទំព័រ PDF ផ្លូវការ",
     mapTitle: "បេក្ខជនជាប់តាមរាជធានី ខេត្ត", mapHelp: "ចុចលើរាជធានី ឬខេត្ត ដើម្បីមើលទិន្នន័យលទ្ធផលទាំងអស់។", allCambodia: "កម្ពុជាទាំងមូល",
@@ -291,7 +291,13 @@ export default function ArchivePage() {
   return (
     <main className="archive-page">
       <nav className="nav site-header shell">
-        <a className="brand" href="#archive"><span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span><span className="brand-text">{t.brandName}</span></a>
+        <a className="brand" href="#archive">
+          <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
+          <span className="brand-text">
+            <span className="brand-title">{language === "km" ? "បណ្ណសារលទ្ធផល" : "BacII Results"}</span>
+            <span className="brand-subtitle">{language === "km" ? "ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ" : "National Examination Archive"}</span>
+          </span>
+        </a>
         <div className="site-header-right">
           <div className="primary-nav">
             <a href="#top" aria-label={t.facebookSearch}><Search size={18} /><span>{t.facebookSearch}</span></a>

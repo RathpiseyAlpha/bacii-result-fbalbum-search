@@ -1453,10 +1453,19 @@ a { color: inherit; text-decoration: none; }
 .nav { height: 86px; display: flex; align-items: center; justify-content: space-between; }
 .site-header { position: fixed; inset: 0 0 auto; z-index: 50; width: 100%; margin-inline: 0; padding-inline: max(20px, calc((100vw - 1160px) / 2)); border-bottom: 1px solid var(--line); background: var(--paper); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .site-header + .hero, .site-header + .archive-hero, .site-header + .insights-hero, .site-header + .search-hub-landing, .site-header + .tool-full-view { margin-top: 86px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; font-size: 20px; }
-:root[data-language="km"] .brand { font-size: 19px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; text-decoration: none; }
+.brand-text { display: inline-flex; flex-direction: column; line-height: 1.22; text-align: left; }
+.brand-title { font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -0.015em; white-space: nowrap; }
+.brand-subtitle { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; margin-top: 1px; }
+:root[data-language="km"] .brand-title { font-family: "Kantumruy Pro", sans-serif; font-size: 15px; font-weight: 700; line-height: 1.25; }
+:root[data-language="km"] .brand-subtitle { font-family: "Kantumruy Pro", sans-serif; font-size: 10.5px; font-weight: 500; line-height: 1.25; color: var(--muted); }
 .brand-mark { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 60%, #3b82f6 100%); box-shadow: 0 4px 14px rgba(37, 99, 235, .28); border: 1px solid rgba(255, 255, 255, .25); transform: rotate(-3deg); transition: transform .2s ease, box-shadow .2s ease; flex-shrink: 0; }
 .brand:hover .brand-mark { transform: rotate(0deg) scale(1.05); box-shadow: 0 6px 18px rgba(37, 99, 235, .38); }
+.footer-brand-text { display: inline-flex; flex-direction: column; line-height: 1.22; text-align: left; }
+.footer-brand-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.footer-brand-subtitle { font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+:root[data-language="km"] .footer-brand-title { font-family: "Kantumruy Pro", sans-serif; font-size: 14.5px; font-weight: 700; }
+:root[data-language="km"] .footer-brand-subtitle { font-family: "Kantumruy Pro", sans-serif; font-size: 10.5px; font-weight: 500; }
 .site-header-right { display: flex; align-items: center; gap: 16px; }
 .primary-nav { display: flex; align-items: center; align-self: stretch; gap: 8px; }
 .primary-nav a { position: relative; min-height: 46px; width: 180px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 15px; font-weight: 700; white-space: nowrap; border-radius: 12px; transition: all .2s ease; box-sizing: border-box; text-align: center; }

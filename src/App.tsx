@@ -134,7 +134,7 @@ function preferredLanguage(): Language {
 }
 
 const englishText = {
-  brandName: "BacII Result Search Engine",
+  brandName: "BacII Results Archive",
   facebookSearch: "Search", resultsArchive: "Results archive", insightsMenu: "Insights",
   how: "How it works",
   hero1: "Find the right result sheet.", hero2: "Without opening every photo.",
@@ -176,7 +176,7 @@ const englishText = {
 type TranslationKey = keyof typeof englishText;
 
 const khmerText: Record<TranslationKey, string> = {
-  brandName: "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប",
+  brandName: "បណ្ណសារលទ្ធផល ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ",
   facebookSearch: "ស្វែងរក", resultsArchive: "បណ្ណសារលទ្ធផល", insightsMenu: "ទិន្នន័យវិភាគ",
   how: "របៀបប្រើ",
   hero1: "ងាយស្រួលស្វែងរកលទ្ធផលបាក់ឌុប", hero2: "ដោយមិនចាំបាច់បើករូបហ្វេសប៊ុកម្ដងមួយៗ",
@@ -631,7 +631,10 @@ function App() {
       <nav className="nav site-header shell">
         <a className="brand" href="#top" aria-label={t("home")}>
           <span className="brand-mark"><GraduationCap size={24} strokeWidth={2.3} /></span>
-          <span className="brand-text">{t("brandName")}</span>
+          <span className="brand-text">
+            <span className="brand-title">{language === "km" ? "បណ្ណសារលទ្ធផល" : "BacII Results"}</span>
+            <span className="brand-subtitle">{language === "km" ? "ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ" : "National Examination Archive"}</span>
+          </span>
         </a>
         <div className="site-header-right">
           <div className="primary-nav">
@@ -666,7 +669,16 @@ function App() {
       {searchTool === "menu" ? (
         <section className="search-hub-landing shell" id="top">
           <div className="search-hub-intro">
-            <h1>{language === "km" ? "ប្រព័ន្ធស្វែងរកលទ្ធផលបាក់ឌុប" : "BacII Result Search Engine"}</h1>
+            <h1>
+              {language === "km" ? (
+                <>
+                  <span>បណ្ណសារលទ្ធផល</span>
+                  <span style={{ display: "block", fontSize: "0.85em", marginTop: "4px" }}>ប្រឡងសញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ</span>
+                </>
+              ) : (
+                "BacII Results Archive"
+              )}
+            </h1>
             <p>
               {language === "km"
                 ? "សូមជ្រើសរើសមុខងារស្វែងរកដែលអ្នកចង់ប្រើ ដើម្បីចាប់ផ្ដើម៖"

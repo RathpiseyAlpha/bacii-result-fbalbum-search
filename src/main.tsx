@@ -4,6 +4,7 @@ import App from "./App";
 import ArchivePage from "./ArchivePage";
 import InsightsPage from "./InsightsPage";
 import AdminPage from "./AdminPage";
+import { trackPageView } from "./utils/analytics";
 import "./styles.css";
 
 type Route = "scanner" | "archive" | "insights";
@@ -20,6 +21,7 @@ function Root() {
   }
   const [route, setRoute] = useState<Route>(currentRoute);
   useEffect(() => {
+    trackPageView();
     const updateRoute = () => {
       const nextRoute = currentRoute();
       setRoute((prev) => {
@@ -28,6 +30,7 @@ function Root() {
         }
         return nextRoute;
       });
+      trackPageView();
     };
     window.addEventListener("hashchange", updateRoute);
     return () => window.removeEventListener("hashchange", updateRoute);

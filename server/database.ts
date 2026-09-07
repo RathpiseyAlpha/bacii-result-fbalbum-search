@@ -7,7 +7,7 @@ import type { OcrPhotoResult, Photo } from "./types.ts";
 const databasePath = resolve(process.env.DATABASE_PATH || "data/album-packer.sqlite");
 mkdirSync(dirname(databasePath), { recursive: true });
 
-const database = new Database(databasePath);
+export const database = new Database(databasePath);
 database.pragma("journal_mode = WAL");
 database.pragma("synchronous = NORMAL");
 database.pragma("foreign_keys = ON");

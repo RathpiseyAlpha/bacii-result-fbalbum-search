@@ -16,6 +16,7 @@ import { getArchiveSchoolImage } from "./archive-school-images.ts";
 import {
   archiveImportJobs, cancelArchiveImport, publicArchiveImport, requireAdmin, startArchiveImport,
 } from "./admin-archive.ts";
+import { getVisitorAnalytics, recordVisit } from "./analytics.ts";
 import type { Photo } from "./types.ts";
 
 const app = express();
@@ -82,6 +83,33 @@ app.get("/api/server/status", (_request, response) => {
   response.json({ status, currentRequests, queuedRequests, updatedAt: Date.now() });
 });
 app.get("/api/database/stats", (_request, response) => response.json(databaseStats()));
+
+app.post("/api/analytics/track", (request, response) => {
+  try {
+    const rawIp = (request.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || request.socket.remoteAddress || "";
+    const userAgent = request.headers["user-agent"] || "";
+    recordVisit({
+      visitorId: request.body?.visitorId,
+      path: request.body?.path,
+      referrer: request.body?.referrer,
+      userAgent,
+      ip: rawIp,
+    });
+    response.status(204).end();
+  } catch {
+    response.status(204).end();
+  }
+});
+
+app.get("/api/admin/analytics/overview", requireAdmin, (request, response) => {
+  try {
+    const days = request.query.days ? Number(request.query.days) : 7;
+    response.setHeader("Cache-Control", "private, no-store");
+    response.json(getVisitorAnalytics(days));
+  } catch (error) {
+    response.status(500).json({ error: error instanceof Error ? error.message : "Failed to load visitor analytics." });
+  }
+});
 
 app.get("/api/admin/archive-imports", requireAdmin, (_request, response) => {
   response.setHeader("Cache-Control", "private, no-store");

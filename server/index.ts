@@ -266,10 +266,11 @@ app.get("/api/archive/:year/documents/:documentId/pages/:pageNumber/image", asyn
   try {
     const documentId = Number(request.params.documentId);
     const pageNumber = Number(request.params.pageNumber);
+    const hideDob = request.query.hide_dob === "1" || request.query.hide_dob === "true" || request.query.hideDob === "1";
     if (!Number.isSafeInteger(documentId) || !Number.isSafeInteger(pageNumber) || pageNumber < 1) {
       return response.status(400).json({ error: "Invalid document or page number." });
     }
-    const file = await getArchivePageImage(request.params.year, documentId, pageNumber);
+    const file = await getArchivePageImage(request.params.year, documentId, pageNumber, hideDob);
     if (!file) return response.status(404).json({ error: "Page not found." });
     response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     response.setHeader("Content-Type", "image/jpeg");
@@ -284,11 +285,16 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
     const documentId = Number(request.params.documentId);
     const pageNumber = Math.max(1, Number(request.query.page || 1));
     const year = request.params.year;
+    // Default to hiding DoB for privacy unless explicitly asked to show with hide_dob=0
+    const hideDob = request.query.hide_dob !== "0" && request.query.hide_dob !== "false";
+
     if (!Number.isSafeInteger(documentId)) return response.status(400).send("Invalid document.");
     const file = getArchivePdf(year, documentId);
     if (!file) return response.status(404).send("PDF not found.");
 
-    const imageUrl = `/api/archive/${year}/documents/${documentId}/pages/${pageNumber}/image`;
+    const imageUrlNoDob = `/api/archive/${year}/documents/${documentId}/pages/${pageNumber}/image?hide_dob=1`;
+    const imageUrlFull = `/api/archive/${year}/documents/${documentId}/pages/${pageNumber}/image`;
+    const imageUrl = hideDob ? imageUrlNoDob : imageUrlFull;
     const prevPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber + 1;
     const downloadPdfUrl = `/api/archive/${year}/documents/${documentId}/pdf`;
@@ -303,10 +309,13 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
     :root {
       --bg: #0b1220;
       --card: #111c2f;
+      --card-hover: #17243c;
       --line: #2b3b55;
       --ink: #eaf1ff;
       --muted: #9fb0ca;
       --primary: #2563eb;
+      --green: #10b981;
+      --green-dark: #059669;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -337,10 +346,17 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
       font-size: 14px;
       font-weight: 700;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
     .nav-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
       height: 32px;
       padding: 0 12px;
       border-radius: 8px;
@@ -352,9 +368,10 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
+      user-select: none;
     }
     .nav-btn:hover {
-      background: var(--primary);
+      background: var(--card-hover);
       border-color: var(--primary);
       color: #fff;
     }
@@ -370,6 +387,30 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
       border-radius: 8px;
       border: 1px solid var(--line);
     }
+    .privacy-toggle-btn {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+    .privacy-toggle-btn:hover {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: #34d399;
+      color: #fff;
+    }
+    .privacy-toggle-btn.revealed {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+    .privacy-toggle-btn.revealed:hover {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: #f87171;
+      color: #fff;
+    }
+    .zoom-btn {
+      padding: 0 9px;
+      font-size: 14px;
+    }
     .content-area {
       flex: 1;
       display: flex;
@@ -378,12 +419,42 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
       padding: 20px 12px;
       overflow: auto;
     }
+    .page-container {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+      transition: transform 0.15s ease;
+      transform-origin: top center;
+    }
     .page-img {
+      display: block;
       max-width: 100%;
       height: auto;
       border-radius: 8px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
       background: #fff;
+    }
+    .status-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(17, 28, 47, 0.95);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+    }
+    .status-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
   </style>
 </head>
@@ -392,16 +463,134 @@ app.get("/api/archive/:year/documents/:documentId/view", (request, response) => 
     <div class="header-left">
       <span>BacII ${year} — ទំព័រ ${pageNumber} (Page ${pageNumber})</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      ${prevPage ? `<a class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${prevPage}">← មុន (Prev)</a>` : ""}
+    <div class="header-actions">
+      <!-- DoB Privacy Toggle -->
+      <button
+        id="toggleDobBtn"
+        type="button"
+        class="nav-btn privacy-toggle-btn ${hideDob ? "" : "revealed"}"
+        onclick="toggleDob()"
+        title="${hideDob ? "Click to reveal Date of Birth column" : "Click to hide Date of Birth column"}"
+      >
+        <span id="toggleDobIcon">${hideDob ? "🔒" : "👁️"}</span>
+        <span id="toggleDobText">${hideDob ? "លាក់ថ្ងៃខែ (DoB Hidden)" : "បង្ហាញថ្ងៃខែ (DoB Shown)"}</span>
+      </button>
+
+      <!-- Zoom Controls -->
+      <button type="button" class="nav-btn zoom-btn" onclick="zoom(-0.15)" title="Zoom out">−</button>
+      <button type="button" class="nav-btn zoom-btn" onclick="resetZoom()" title="Reset zoom">100%</button>
+      <button type="button" class="nav-btn zoom-btn" onclick="zoom(0.15)" title="Zoom in">+</button>
+
+      <!-- Navigation -->
+      ${prevPage ? `<a id="prevBtn" class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${prevPage}&hide_dob=${hideDob ? 1 : 0}">← មុន (Prev)</a>` : ""}
       <span class="page-indicator">ទំព័រ ${pageNumber}</span>
-      <a class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${nextPage}">បន្ទាប់ (Next) →</a>
+      <a id="nextBtn" class="nav-btn" href="/api/archive/${year}/documents/${documentId}/view?page=${nextPage}&hide_dob=${hideDob ? 1 : 0}">បន្ទាប់ (Next) →</a>
       <a class="nav-btn" href="${downloadPdfUrl}" download style="margin-left:8px;font-size:11.5px;opacity:0.85;">ទាញយក PDF</a>
     </div>
   </header>
   <main class="content-area">
-    <img src="${imageUrl}" alt="Official PDF Page ${pageNumber}" class="page-img" />
+    <div id="pageContainer" class="page-container">
+      <img id="pageImage" src="${imageUrl}" alt="Official PDF Page ${pageNumber}" class="page-img" />
+    </div>
   </main>
+  <div id="toast" class="status-toast"></div>
+
+  <script>
+    const urlNoDob = ${JSON.stringify(imageUrlNoDob)};
+    const urlFull = ${JSON.stringify(imageUrlFull)};
+    let isHidden = ${hideDob};
+    let currentZoom = 1.0;
+
+    // Check localStorage preference on load if user previously chose a setting
+    const savedPref = localStorage.getItem("bacii_pdf_hide_dob");
+    if (savedPref !== null) {
+      const wantHide = savedPref === "1";
+      if (wantHide !== isHidden) {
+        setDobState(wantHide, false);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+
+    function setDobState(hide, notify = true) {
+      isHidden = hide;
+      localStorage.setItem("bacii_pdf_hide_dob", isHidden ? "1" : "0");
+      const img = document.getElementById("pageImage");
+      const btn = document.getElementById("toggleDobBtn");
+      const icon = document.getElementById("toggleDobIcon");
+      const text = document.getElementById("toggleDobText");
+
+      img.src = isHidden ? urlNoDob : urlFull;
+
+      if (isHidden) {
+        btn.classList.remove("revealed");
+        icon.textContent = "🔒";
+        text.textContent = "លាក់ថ្ងៃខែ (DoB Hidden)";
+        btn.title = "Click to reveal Date of Birth column";
+        if (notify) showToast("🔒 DoB column hidden for privacy");
+      } else {
+        btn.classList.add("revealed");
+        icon.textContent = "👁️";
+        text.textContent = "បង្ហាញថ្ងៃខែ (DoB Shown)";
+        btn.title = "Click to hide Date of Birth column";
+        if (notify) showToast("👁️ DoB column visible");
+      }
+
+      // Update Prev / Next links to preserve state
+      const prevBtn = document.getElementById("prevBtn");
+      if (prevBtn) {
+        const u = new URL(prevBtn.href, window.location.origin);
+        u.searchParams.set("hide_dob", isHidden ? "1" : "0");
+        prevBtn.href = u.pathname + u.search;
+      }
+      const nextBtn = document.getElementById("nextBtn");
+      if (nextBtn) {
+        const u = new URL(nextBtn.href, window.location.origin);
+        u.searchParams.set("hide_dob", isHidden ? "1" : "0");
+        nextBtn.href = u.pathname + u.search;
+      }
+
+      // Update current URL without reload
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("hide_dob", isHidden ? "1" : "0");
+      window.history.replaceState({}, "", currentUrl.pathname + currentUrl.search);
+    }
+
+    function toggleDob() {
+      setDobState(!isHidden, true);
+    }
+
+    function zoom(delta) {
+      currentZoom = Math.min(2.5, Math.max(0.6, currentZoom + delta));
+      const container = document.getElementById("pageContainer");
+      container.style.transform = "scale(" + currentZoom + ")";
+    }
+
+    function resetZoom() {
+      currentZoom = 1.0;
+      const container = document.getElementById("pageContainer");
+      container.style.transform = "none";
+    }
+
+    // Keyboard shortcuts: [Left/Right] arrows for prev/next, [H] to toggle DoB
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "ArrowLeft") {
+        const p = document.getElementById("prevBtn");
+        if (p) p.click();
+      } else if (e.key === "ArrowRight") {
+        const n = document.getElementById("nextBtn");
+        if (n) n.click();
+      } else if (e.key.toLowerCase() === "h") {
+        toggleDob();
+      }
+    });
+  </script>
 </body>
 </html>`;
     response.setHeader("Content-Type", "text/html; charset=utf-8");

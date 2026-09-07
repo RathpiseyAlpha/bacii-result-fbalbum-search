@@ -59,14 +59,18 @@ function renderName(pdf: string, page: number, tableNumber: string, output: stri
   });
 }
 
-function renderPage(pdf: string, page: number, output: string) {
+function renderPage(pdf: string, page: number, output: string, hideDob = false) {
   return new Promise<void>((resolvePromise, reject) => {
-    const child = spawn(pythonExecutable(), [
+    const args = [
       resolve("scripts", "render_pdf_page.py"),
       "--pdf", pdf,
       "--page", String(page),
       "--output", output,
-    ], { cwd: process.cwd(), windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
+    ];
+    if (hideDob) {
+      args.push("--hide-dob");
+    }
+    const child = spawn(pythonExecutable(), args, { cwd: process.cwd(), windowsHide: true, stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     child.stderr.setEncoding("utf8");
     child.stderr.on("data", (chunk: string) => { stderr = `${stderr}${chunk}`.slice(-4_000); });
@@ -75,13 +79,13 @@ function renderPage(pdf: string, page: number, output: string) {
   });
 }
 
-export async function getArchivePageImage(year: string, documentId: number, pageNumber: number) {
+export async function getArchivePageImage(year: string, documentId: number, pageNumber: number, hideDob = false) {
   const pdf = getArchivePdf(year, documentId);
   if (!pdf || !Number.isSafeInteger(pageNumber) || pageNumber < 1) return undefined;
   const directory = join(pageCacheRoot, year, String(documentId));
-  const output = join(directory, `${PAGE_CACHE_VERSION}-${pageNumber}.jpg`);
+  const output = join(directory, `${PAGE_CACHE_VERSION}-${pageNumber}${hideDob ? "-nodob" : ""}.jpg`);
   if (existsSync(output)) return output;
-  const key = `page:${year}:${documentId}:${pageNumber}`;
+  const key = `page:${year}:${documentId}:${pageNumber}:${hideDob ? "nodob" : "full"}`;
   const current = inflight.get(key);
   if (current) return current;
   const work = (async () => {
@@ -89,7 +93,7 @@ export async function getArchivePageImage(year: string, documentId: number, page
     try {
       if (existsSync(output)) return output;
       await mkdir(directory, { recursive: true });
-      await renderPage(pdf, pageNumber, output);
+      await renderPage(pdf, pageNumber, output, hideDob);
       return output;
     } finally { release(); }
   })();

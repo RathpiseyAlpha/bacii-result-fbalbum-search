@@ -128,14 +128,14 @@
 .province-ranking button > span { display: grid; gap: 5px; font-size: 12px; font-weight: 700; }
 .province-ranking button > span i { width: 100%; height: 3px; max-width: 100%; border-radius: 4px; background: var(--green); }
 .province-ranking button > strong { font-size: 12px; }
-.archive-search-form { padding: 22px; display: grid; grid-template-columns: 1.05fr 1.4fr .8fr .75fr auto; align-items: end; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+.archive-search-form { padding: 22px; display: grid; grid-template-columns: 140px 1.25fr 1.4fr 1.1fr 1fr; align-items: end; gap: 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
 .archive-search-form label { min-width: 0; display: grid; gap: 8px; }
 .archive-search-form label > span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
 .archive-search-form select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .archive-table-field > div { position: relative; }
 .archive-table-field svg { position: absolute; left: 13px; top: 16px; color: var(--muted); }
 .archive-table-field input { width: 100%; height: 50px; padding: 0 12px 0 40px; background: var(--paper); border-color: var(--line); }
-.archive-search-button { height: 50px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 11px; color: #fff; background: var(--green); cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: 800; }
+.archive-search-button { height: 50px; padding: 0 24px; min-width: 140px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 11px; color: #fff; background: var(--green); cursor: pointer; white-space: nowrap; font-size: 13px; font-weight: 700; transition: all 0.15s ease; }
 .archive-search-button svg { width: 17px; }
 .archive-search-button:disabled { opacity: .45; cursor: not-allowed; }
 .archive-results { margin-top: 24px; }
@@ -4445,7 +4445,7 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 960px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto 20px;
   padding: 4px 4px;
@@ -4539,6 +4539,17 @@ footer { border-top: 1px solid var(--line); padding: 40px 0; }
 .tool-full-view {
   width: 100%;
   padding: 16px 0 48px;
+}
+
+.tool-full-view.shell,
+.archive-tab-panel.shell {
+  width: min(1200px, calc(100% - 40px));
+  max-width: 1200px;
+}
+
+.tool-full-view .workspace-card {
+  width: 100%;
+  max-width: 1200px;
 }
 
 @media (max-width: 640px) {

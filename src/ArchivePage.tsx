@@ -317,13 +317,6 @@ export default function ArchivePage() {
                 <p>{t.intro}</p>
               </div>
 
-              <section className="archive-stats shell" aria-label="Archive summary" style={{ margin: "0 auto 32px", maxWidth: 960 }}>
-                <article><Users /><strong>{numberFormat.format(summary.candidateCount)}</strong><span>{t.candidates}</span></article>
-                <article><MapPin /><strong>{summary.provinceCount}</strong><span>{t.provinces}</span></article>
-                <article><GraduationCap /><strong>{numberFormat.format(summary.centerCount)}</strong><span>{t.centers}</span></article>
-                <article><BookOpen /><strong>{numberFormat.format(summary.pageCount)}</strong><span>{t.pages}</span></article>
-              </section>
-
               <div className="search-menu-cards-grid" style={{ maxWidth: 960, margin: "0 auto" }}>
                 <button type="button" className="search-menu-card" onClick={() => selectSection("archive-map")}>
                   <div className="search-menu-card-icon" style={{ background: "rgba(14, 165, 233, 0.12)", color: "#0284c7" }}>

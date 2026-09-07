@@ -4,26 +4,34 @@ import {
   Archive,
   ArrowUpRight,
   BarChart3,
+  BookOpen,
   Calendar,
+  Check,
   CheckCircle2,
   Clock,
   Compass,
   Database,
   Eye,
+  FileSearch,
   Globe,
+  GraduationCap,
   KeyRound,
   Laptop,
   LoaderCircle,
   Lock,
+  MapPin,
   Monitor,
   Radio,
   RefreshCw,
+  Search,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Square,
   Tablet,
   TrendingUp,
   UploadCloud,
+  UserCheck,
   Users,
 } from "lucide-react";
 
@@ -77,6 +85,65 @@ type VisitorAnalyticsOverview = {
   }>;
 };
 
+type StudentSearchResult = {
+  id: number;
+  tableNumber: string;
+  ocrName: string;
+  rawName: string;
+  isVerified: boolean;
+  gender: string;
+  province: string;
+  examCenter: string;
+  examCenterLabel: string;
+  school: string;
+  grade: string;
+  result: string;
+  pageNumber: number;
+  documentId: number;
+  subjects: Array<{ name: string; score: string }>;
+  nameImageUrl: string;
+};
+
+const PROVINCES_LIST = [
+  { id: "", name: "គ្រប់ខេត្ត/រាជធានី (All Provinces)" },
+  { id: "រាជធានីភ្នំពេញ", name: "រាជធានីភ្នំពេញ" },
+  { id: "កណ្ដាល", name: "កណ្ដាល" },
+  { id: "សៀមរាប", name: "សៀមរាប" },
+  { id: "បាត់ដំបង", name: "បាត់ដំបង" },
+  { id: "កំពង់ចាម", name: "កំពង់ចាម" },
+  { id: "បន្ទាយមានជ័យ", name: "បន្ទាយមានជ័យ" },
+  { id: "កំពង់ធំ", name: "កំពង់ធំ" },
+  { id: "កំពត", name: "កំពត" },
+  { id: "តាកែវ", name: "តាកែវ" },
+  { id: "ព្រៃវែង", name: "ព្រៃវែង" },
+  { id: "ស្វាយរៀង", name: "ស្វាយរៀង" },
+  { id: "កំពង់ស្ពឺ", name: "កំពង់ស្ពឺ" },
+  { id: "កំពង់ឆ្នាំង", name: "កំពង់ឆ្នាំង" },
+  { id: "ពោធិ៍សាត់", name: "ពោធិ៍សាត់" },
+  { id: "ព្រះសីហនុ", name: "ព្រះសីហនុ" },
+  { id: "ត្បូងឃ្មុំ", name: "ត្បូងឃ្មុំ" },
+  { id: "ក្រចេះ", name: "ក្រចេះ" },
+  { id: "រតនគិរី", name: "រតនគិរី" },
+  { id: "ព្រះវិហារ", name: "ព្រះវិហារ" },
+  { id: "ស្ទឹងត្រែង", name: "ស្ទឹងត្រែង" },
+  { id: "ឧត្ដរមានជ័យ", name: "ឧត្ដរមានជ័យ" },
+  { id: "កោះកុង", name: "កោះកុង" },
+  { id: "មណ្ឌលគិរី", name: "មណ្ឌលគិរី" },
+  { id: "ប៉ៃលិន", name: "ប៉ៃលិន" },
+  { id: "កែប", name: "កែប" },
+];
+
+const EXAMPLE_QUERIES = [
+  "សារ៉ាវត្តី",
+  "បញ្ញា",
+  "វឌ្ឍនា",
+  "ម៉េង",
+  "ស្រីពេជ្រ",
+  "សុខ",
+  "ចាន់",
+  "គីម",
+];
+
 async function adminRequest(path: string, token: string, init?: RequestInit) {
   const response = await fetch(apiUrl(path), {
     ...init,
@@ -105,9 +172,11 @@ function formatRelativeTime(timestamp: number): string {
 export default function AdminPage() {
   const [token, setToken] = useState(() => sessionStorage.getItem("bacii-admin-token") || "");
   const [tokenInput, setTokenInput] = useState("");
-  const [tab, setTab] = useState<"visitors" | "importer">(() =>
-    window.location.hash.includes("importer") ? "importer" : "visitors",
-  );
+  const [tab, setTab] = useState<"visitors" | "search" | "importer">(() => {
+    if (window.location.hash.includes("importer")) return "importer";
+    if (window.location.hash.includes("search")) return "search";
+    return "visitors";
+  });
 
   // Importer state
   const [year, setYear] = useState(new Date().getFullYear());
@@ -124,10 +193,26 @@ export default function AdminPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
+  // Name search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchYear, setSearchYear] = useState("2026");
+  const [searchProvince, setSearchProvince] = useState("");
+  const [searchGrade, setSearchGrade] = useState("");
+  const [searchResults, setSearchResults] = useState<StudentSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [ocrRunningId, setOcrRunningId] = useState<number | null>(null);
+  const [searchedKeyword, setSearchedKeyword] = useState("");
+
   // Sync tab with hash
-  function switchTab(nextTab: "visitors" | "importer") {
+  function switchTab(nextTab: "visitors" | "search" | "importer") {
     setTab(nextTab);
-    window.location.hash = nextTab === "importer" ? "#admin/importer" : "#admin/visitors";
+    window.location.hash =
+      nextTab === "importer"
+        ? "#admin/importer"
+        : nextTab === "search"
+        ? "#admin/search"
+        : "#admin/visitors";
   }
 
   // Load analytics when token or days change
@@ -189,6 +274,57 @@ export default function AdminPage() {
     sessionStorage.removeItem("bacii-admin-token");
     setToken("");
     setAnalytics(null);
+    setSearchResults([]);
+  }
+
+  async function handleStudentSearch(overrideQuery?: string) {
+    const q = (overrideQuery ?? searchQuery).trim();
+    if (!q) return;
+    if (overrideQuery !== undefined) setSearchQuery(overrideQuery);
+
+    setSearchLoading(true);
+    setSearchError("");
+    setSearchedKeyword(q);
+
+    try {
+      const params = new URLSearchParams({
+        year: searchYear,
+        query: q,
+      });
+      if (searchProvince) params.set("province", searchProvince);
+      if (searchGrade) params.set("grade", searchGrade);
+
+      const res = await adminRequest(`/api/admin/archive-students/search?${params.toString()}`, token);
+      const data = (await res.json()) as { results: StudentSearchResult[]; count: number };
+      setSearchResults(data.results || []);
+      if (!data.results || data.results.length === 0) {
+        setSearchError(`រកមិនឃើញបេក្ខជនដែលមានឈ្មោះ "${q}" ទេ។ សូមសាកល្បងឈ្មោះផ្សេងទៀត។`);
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Student search failed.");
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
+  async function handleRerunOcr(studentId: number) {
+    setOcrRunningId(studentId);
+    try {
+      const res = await adminRequest(`/api/admin/archive-students/${studentId}/ocr`, token, {
+        method: "POST",
+        body: JSON.stringify({ year: searchYear }),
+      });
+      const data = (await res.json()) as { ocrName: string; studentId: number };
+      if (data.ocrName) {
+        setSearchResults((prev) =>
+          prev.map((s) => (s.id === studentId ? { ...s, ocrName: data.ocrName, isVerified: true } : s)),
+        );
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Khmer OCR failed.");
+    } finally {
+      setOcrRunningId(null);
+    }
   }
 
   async function startImport(event: React.FormEvent) {
@@ -247,6 +383,14 @@ export default function AdminPage() {
             >
               <Users size={16} />
               <span>Visitor Analytics</span>
+            </button>
+            <button
+              type="button"
+              className={`admin-nav-tab ${tab === "search" ? "active" : ""}`}
+              onClick={() => switchTab("search")}
+            >
+              <Search size={16} />
+              <span>Name Search (OCR)</span>
             </button>
             <button
               type="button"
@@ -696,6 +840,235 @@ export default function AdminPage() {
                   </div>
                 </div>
               </>
+            )}
+          </div>
+        ) : tab === "search" ? (
+          /* =========================================================
+             NAME SEARCH (KHMER OCR) PAGE
+             ========================================================= */
+          <div className="name-search-view">
+            <div className="name-search-header">
+              <div className="name-search-title">
+                <h1>ស្វែងរកបេក្ខជនតាមឈ្មោះ (Khmer Name Search & OCR)</h1>
+                <p>
+                  ស្វែងរកបេក្ខជនតាមរយៈឈ្មោះជាអក្សរខ្មែរ ដោយប្រើប្រាស់បច្ចេកវិទ្យា Khmer OCR (Deep Learning) ដើម្បីសម្គាល់ និងបង្កើតឈ្មោះខ្មែរត្រឹមត្រូវ ១០០% ចេញពីឯកសារផ្លូវការ។
+                </p>
+              </div>
+
+              {/* Search Form */}
+              <form
+                className="name-search-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleStudentSearch();
+                }}
+              >
+                <div className="name-search-input-wrap">
+                  <Search size={20} className="search-icon" />
+                  <input
+                    type="text"
+                    className="name-search-input"
+                    placeholder="វាយបញ្ចូលឈ្មោះជាអក្សរខ្មែរ ឬលេខតុ... (ឧ. សារ៉ាវត្តី, បញ្ញា, វឌ្ឍនា, សុខ)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="search-clear-btn"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSearchResults([]);
+                        setSearchError("");
+                      }}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+
+                <div className="name-search-filters">
+                  <div className="filter-item">
+                    <label>ឆ្នាំប្រឡង (Year)</label>
+                    <select value={searchYear} onChange={(e) => setSearchYear(e.target.value)}>
+                      <option value="2026">2026 (សម័យប្រឡង ២០២៦)</option>
+                      <option value="2025">2025 (សម័យប្រឡង ២០២៥)</option>
+                      <option value="2024">2024 (សម័យប្រឡង ២០២៤)</option>
+                      <option value="2023">2023 (សម័យប្រឡង ២០២៣)</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-item">
+                    <label>រាជធានី/ខេត្ត (Province)</label>
+                    <select value={searchProvince} onChange={(e) => setSearchProvince(e.target.value)}>
+                      {PROVINCES_LIST.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="filter-item">
+                    <label>និទ្ទេសទូទៅ (Grade)</label>
+                    <select value={searchGrade} onChange={(e) => setSearchGrade(e.target.value)}>
+                      <option value="">គ្រប់និទ្ទេស (All Grades)</option>
+                      <option value="A">និទ្ទេស A (Grade A)</option>
+                      <option value="B">និទ្ទេស B (Grade B)</option>
+                      <option value="C">និទ្ទេស C (Grade C)</option>
+                      <option value="D">និទ្ទេស D (Grade D)</option>
+                      <option value="E">និទ្ទេស E (Grade E)</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" className="name-search-submit-btn" disabled={searchLoading || !searchQuery.trim()}>
+                    {searchLoading ? <LoaderCircle size={18} className="spin" /> : <Search size={18} />}
+                    <span>ស្វែងរក (Search)</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Quick sample chips */}
+              <div className="search-quick-tags">
+                <span>គំរូស្វែងរក (Quick search):</span>
+                {EXAMPLE_QUERIES.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="quick-tag-btn"
+                    onClick={() => handleStudentSearch(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {searchError && <div className="admin-error">{searchError}</div>}
+
+            {/* Results Section */}
+            {searchResults.length > 0 && (
+              <div className="name-search-results-section">
+                <div className="results-header">
+                  <h2>
+                    លទ្ធផលស្វែងរក: <strong>{searchResults.length}</strong> នាក់
+                    {searchedKeyword && <span> សម្រាប់ពាក្យ &ldquo;{searchedKeyword}&rdquo;</span>}
+                  </h2>
+                  <span className="results-badge">
+                    <Sparkles size={14} /> Khmer OCR Engine v2.0 Active
+                  </span>
+                </div>
+
+                <div className="candidate-cards-grid">
+                  {searchResults.map((student) => (
+                    <div className="candidate-card" key={student.id}>
+                      <div className="candidate-card-top">
+                        <div className="candidate-meta">
+                          <span className="table-badge">
+                            លេខតុ #{student.tableNumber}
+                          </span>
+                          <span className="province-badge">
+                            <MapPin size={12} /> {student.province}
+                          </span>
+                          <span className="gender-badge">
+                            {student.gender}
+                          </span>
+                        </div>
+
+                        <div className={`grade-badge grade-${student.grade}`}>
+                          និទ្ទេស {student.grade}
+                        </div>
+                      </div>
+
+                      {/* Name comparison row: OCR Formed Name vs Official PDF Crop */}
+                      <div className="candidate-name-container">
+                        <div className="name-text-group">
+                          <div className="name-label-row">
+                            <span className="name-label">ឈ្មោះខ្មែរ (Formed Unicode Name)</span>
+                            {student.isVerified && (
+                              <span className="ocr-verified-pill" title="Formed directly using Darayut/khmer-text-recognition deep learning model">
+                                <Check size={12} /> OCR Verified
+                              </span>
+                            )}
+                          </div>
+                          <div className="formed-khmer-name">
+                            {student.ocrName}
+                          </div>
+                        </div>
+
+                        <div className="name-crop-group">
+                          <span className="name-label">រូបភាពដើមចេញពី PDF (Official Crop)</span>
+                          <div className="pdf-crop-preview" title={`PDF Name Crop for #${student.tableNumber}`}>
+                            <img
+                              src={student.nameImageUrl}
+                              alt={`Name crop ${student.tableNumber}`}
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Details: Center & School */}
+                      <div className="candidate-details-grid">
+                        <div className="detail-item">
+                          <span className="detail-title">
+                            <BookOpen size={13} /> មណ្ឌលប្រឡង (Exam Center):
+                          </span>
+                          <span className="detail-content">{student.examCenterLabel}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-title">
+                            <GraduationCap size={13} /> គ្រឹះស្ថានសិក្សា (School):
+                          </span>
+                          <span className="detail-content">{student.school || "វិទ្យាល័យចំណេះទូទៅ"}</span>
+                        </div>
+                      </div>
+
+                      {/* Subject Marks Breakdown */}
+                      {student.subjects.length > 0 && (
+                        <div className="candidate-subjects-row">
+                          <div className="subjects-title">ពិន្ទុតាមមុខវិជ្ជា (Subject Scores):</div>
+                          <div className="subject-chips">
+                            {student.subjects.map((sub, idx) => (
+                              <span className="subject-chip" key={idx}>
+                                <span className="sub-name">{sub.name}</span>
+                                <span className={`sub-score score-${sub.score}`}>{sub.score}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Footer Actions */}
+                      <div className="candidate-actions">
+                        <a
+                          className="action-link-pdf"
+                          href={`/#archive?year=${searchYear}&province=${encodeURIComponent(student.province)}&tableNumber=${student.tableNumber}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <ArrowUpRight size={14} /> បើកមើលក្នុងបណ្ណសារ (Open in Archive)
+                        </a>
+
+                        <button
+                          type="button"
+                          className="action-ocr-btn"
+                          onClick={() => handleRerunOcr(student.id)}
+                          disabled={ocrRunningId === student.id}
+                        >
+                          {ocrRunningId === student.id ? (
+                            <LoaderCircle size={13} className="spin" />
+                          ) : (
+                            <Sparkles size={13} />
+                          )}
+                          <span>{ocrRunningId === student.id ? "Running OCR..." : "Re-run Khmer OCR"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (

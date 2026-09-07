@@ -63,7 +63,7 @@ function assertYear(value: string) {
   return value;
 }
 
-function archiveDirectory(year: string) {
+export function archiveDirectory(year: string) {
   const validYear = assertYear(year);
   const candidates = [
     resolve(archiveRoot, validYear),
@@ -88,7 +88,7 @@ function ensureArchiveIndexes(validYear: string) {
   }
 }
 
-function archiveDatabase(year: string) {
+export function archiveDatabase(year: string) {
   const validYear = assertYear(year);
   const cached = databases.get(validYear);
   if (cached) return cached;
@@ -104,7 +104,7 @@ function archiveDatabase(year: string) {
   return database;
 }
 
-function centerLabels(year: string) {
+export function centerLabels(year: string) {
   const directory = archiveDirectory(year);
   if (!directory) return new Map<string, string>();
   const file = resolve(directory, "labels.json");
@@ -131,7 +131,7 @@ function provinceId(slug: string, year: string) {
   return slug.endsWith(suffix) ? slug.slice(0, -suffix.length) : slug;
 }
 
-function archivePdfFileName(storedPath: string) {
+export function archivePdfFileName(storedPath: string) {
   // Archives may be generated on Windows and later served from Linux.
   // Normalize separators before taking the basename so both platforms resolve
   // the same file under the archive's pdfs directory.

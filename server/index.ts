@@ -17,6 +17,7 @@ import {
   archiveImportJobs, cancelArchiveImport, publicArchiveImport, requireAdmin, startArchiveImport,
 } from "./admin-archive.ts";
 import { getVisitorAnalytics, recordVisit } from "./analytics.ts";
+import { ocrSingleStudentName, searchStudentsAdmin } from "./admin-name-search.ts";
 import type { Photo } from "./types.ts";
 
 const app = express();
@@ -108,6 +109,37 @@ app.get("/api/admin/analytics/overview", requireAdmin, (request, response) => {
     response.json(getVisitorAnalytics(days));
   } catch (error) {
     response.status(500).json({ error: error instanceof Error ? error.message : "Failed to load visitor analytics." });
+  }
+});
+
+app.get("/api/admin/archive-students/search", requireAdmin, async (request, response) => {
+  try {
+    const year = String(request.query.year || "2026");
+    const query = String(request.query.query || "").trim();
+    const province = String(request.query.province || "").trim() || undefined;
+    const grade = String(request.query.grade || "").trim() || undefined;
+    const limit = request.query.limit ? Number(request.query.limit) : 25;
+
+    if (!query) {
+      return response.json({ results: [], count: 0 });
+    }
+
+    const results = await searchStudentsAdmin({ year, query, province, grade, limit });
+    response.setHeader("Cache-Control", "private, no-store");
+    response.json({ results, count: results.length });
+  } catch (error) {
+    response.status(400).json({ error: error instanceof Error ? error.message : "Search failed." });
+  }
+});
+
+app.post("/api/admin/archive-students/:id/ocr", requireAdmin, async (request, response) => {
+  try {
+    const year = String(request.body?.year || "2026");
+    const studentId = Number(request.params.id);
+    const result = await ocrSingleStudentName(year, studentId);
+    response.json(result);
+  } catch (error) {
+    response.status(400).json({ error: error instanceof Error ? error.message : "OCR failed." });
   }
 });
 

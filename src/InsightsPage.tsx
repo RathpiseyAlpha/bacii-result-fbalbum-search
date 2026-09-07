@@ -44,6 +44,7 @@ import {
   Users,
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
+import SiteFooter from "./components/SiteFooter";
 
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -4422,7 +4423,7 @@ export default function InsightsPage() {
             </div>
           )}
 
-          <footer className="insights-footer shell">{t.source}</footer>
+          <SiteFooter language={language} />
         </>
       )}
       </section>

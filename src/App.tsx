@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
 import ArchiveSearchPanel from "./components/ArchiveSearchPanel";
+import SiteFooter from "./components/SiteFooter";
 
 type Photo = {
   id: string;
@@ -1031,13 +1032,7 @@ function App() {
         </>
       )}
 
-      <footer>
-        <div className="shell footer-inner">
-          <div><a className="brand" href="#top"><span className="brand-mark"><GraduationCap size={20} strokeWidth={2.2} /></span><span>{t("brandName")}</span></a><p>{t("tagline")}</p></div>
-          <p className="legal">{t("legal")}</p>
-          <a className="source-link" href="#top">{t("backTop")} <ChevronRight size={15} /></a>
-        </div>
-      </footer>
+      <SiteFooter language={language} />
 
       {viewingPhoto && (
         <div className="photo-modal" role="dialog" aria-modal="true" aria-label={t("preview")} onClick={() => setViewingPhoto(null)}>

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import MobileBottomNav from "./MobileBottomNav";
 import ArchiveSearchPanel from "./components/ArchiveSearchPanel";
+import SiteFooter from "./components/SiteFooter";
 
 type Theme = "light" | "dark";
 type Language = "en" | "km";
@@ -520,7 +521,7 @@ export default function ArchivePage() {
       </div>
     )}
 
-        <footer className="archive-footer shell"><p>{t.sourceNote}</p><a href="https://github.com/VictorCazanave/svg-maps/tree/master/packages/cambodia" target="_blank" rel="noreferrer">{t.mapCredit} · CC BY 4.0 <ExternalLink size={13} /></a></footer>
+        <SiteFooter language={language} />
       </>)}
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav currentRoute="archive" language={language} />

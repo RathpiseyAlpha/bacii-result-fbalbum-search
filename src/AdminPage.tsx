@@ -3,8 +3,10 @@ import {
   Activity,
   Archive,
   ArrowUpRight,
+  Award,
   BarChart3,
   BookOpen,
+  Building2,
   Calendar,
   Check,
   CheckCircle2,
@@ -23,6 +25,7 @@ import {
   Monitor,
   Radio,
   RefreshCw,
+  School,
   Search,
   ShieldCheck,
   Smartphone,
@@ -96,12 +99,37 @@ type StudentSearchResult = {
   examCenter: string;
   examCenterLabel: string;
   school: string;
+  schoolClean?: string;
+  schoolRaw?: string;
   grade: string;
   result: string;
   pageNumber: number;
   documentId: number;
   subjects: Array<{ name: string; score: string }>;
   nameImageUrl: string;
+};
+
+type SchoolSearchResult = {
+  name: string;
+  branch?: string;
+  schoolType: "public" | "private";
+  sampleStudentId: number;
+  province: string;
+  provinceId: string;
+  candidateCount: number;
+  femaleCount: number;
+  scienceCount: number;
+  socialScienceCount: number;
+  gradeA: number;
+  gradeB: number;
+  gradeC: number;
+  gradeD: number;
+  gradeE: number;
+  grades: { A: number; B: number; C: number; D: number; E: number };
+  gradeAPercent: number;
+  passRate: number;
+  rank: number;
+  schoolImageUrl: string;
 };
 
 const PROVINCES_LIST = [
@@ -142,6 +170,17 @@ const EXAMPLE_QUERIES = [
   "សុខ",
   "ចាន់",
   "គីម",
+];
+
+const EXAMPLE_SCHOOL_QUERIES = [
+  "បាក់ទូក",
+  "ព្រះយុគន្ធរ",
+  "ទួលទំពូង",
+  "ជា ស៊ីម សាមគ្គី",
+  "ព្រះស៊ីសុវត្ថិ",
+  "ហ៊ុន សែន ភ្នំពេញថ្មី",
+  "ប៊ែលធី",
+  "អន្តរទ្វីប អាមេរិកាំង",
 ];
 
 async function adminRequest(path: string, token: string, init?: RequestInit) {
@@ -193,8 +232,12 @@ export default function AdminPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
-  // Name search state
+  // Search sub-mode: "student" or "school"
+  const [searchMode, setSearchMode] = useState<"student" | "school">("student");
+
+  // Name / Student search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchSchoolFilter, setSearchSchoolFilter] = useState("");
   const [searchYear, setSearchYear] = useState("2026");
   const [searchProvince, setSearchProvince] = useState("");
   const [searchGrade, setSearchGrade] = useState("");
@@ -203,6 +246,16 @@ export default function AdminPage() {
   const [searchError, setSearchError] = useState("");
   const [ocrRunningId, setOcrRunningId] = useState<number | null>(null);
   const [searchedKeyword, setSearchedKeyword] = useState("");
+
+  // School search state
+  const [schoolSearchQuery, setSchoolSearchQuery] = useState("");
+  const [schoolSearchYear, setSchoolSearchYear] = useState("2026");
+  const [schoolSearchProvince, setSchoolSearchProvince] = useState("");
+  const [schoolSearchType, setSchoolSearchType] = useState("");
+  const [schoolSearchResults, setSchoolSearchResults] = useState<SchoolSearchResult[]>([]);
+  const [schoolSearchLoading, setSchoolSearchLoading] = useState(false);
+  const [schoolSearchError, setSchoolSearchError] = useState("");
+  const [searchedSchoolKeyword, setSearchedSchoolKeyword] = useState("");
 
   // Sync tab with hash
   function switchTab(nextTab: "visitors" | "search" | "importer") {
@@ -277,20 +330,23 @@ export default function AdminPage() {
     setSearchResults([]);
   }
 
-  async function handleStudentSearch(overrideQuery?: string) {
-    const q = (overrideQuery ?? searchQuery).trim();
-    if (!q) return;
+  async function handleStudentSearch(overrideQuery?: string, overrideSchool?: string) {
+    const q = (overrideQuery !== undefined ? overrideQuery : searchQuery).trim();
+    const sch = (overrideSchool !== undefined ? overrideSchool : searchSchoolFilter).trim();
+    if (!q && !sch) return;
     if (overrideQuery !== undefined) setSearchQuery(overrideQuery);
+    if (overrideSchool !== undefined) setSearchSchoolFilter(overrideSchool);
 
     setSearchLoading(true);
     setSearchError("");
-    setSearchedKeyword(q);
+    setSearchedKeyword([q, sch].filter(Boolean).join(" | "));
 
     try {
       const params = new URLSearchParams({
         year: searchYear,
-        query: q,
       });
+      if (q) params.set("query", q);
+      if (sch) params.set("school", sch);
       if (searchProvince) params.set("province", searchProvince);
       if (searchGrade) params.set("grade", searchGrade);
 
@@ -298,13 +354,52 @@ export default function AdminPage() {
       const data = (await res.json()) as { results: StudentSearchResult[]; count: number };
       setSearchResults(data.results || []);
       if (!data.results || data.results.length === 0) {
-        setSearchError(`រកមិនឃើញបេក្ខជនដែលមានឈ្មោះ "${q}" ទេ។ សូមសាកល្បងឈ្មោះផ្សេងទៀត។`);
+        setSearchError(q ? `រកមិនឃើញបេក្ខជនដែលមានឈ្មោះ "${q}" ទេ។ សូមសាកល្បងឈ្មោះផ្សេងទៀត។` : `រកមិនឃើញបេក្ខជនក្នុងសាលានេះទេ។`);
       }
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : "Student search failed.");
     } finally {
       setSearchLoading(false);
     }
+  }
+
+  async function handleSchoolSearch(overrideQuery?: string) {
+    const q = (overrideQuery !== undefined ? overrideQuery : schoolSearchQuery).trim();
+    if (overrideQuery !== undefined) setSchoolSearchQuery(overrideQuery);
+
+    setSchoolSearchLoading(true);
+    setSchoolSearchError("");
+    setSearchedSchoolKeyword(q || "គ្រប់វិទ្យាល័យ");
+
+    try {
+      const params = new URLSearchParams({
+        year: schoolSearchYear,
+      });
+      if (q) params.set("query", q);
+      if (schoolSearchProvince) params.set("province", schoolSearchProvince);
+      if (schoolSearchType) params.set("schoolType", schoolSearchType);
+
+      const res = await adminRequest(`/api/admin/archive-schools/search?${params.toString()}`, token);
+      const data = (await res.json()) as { results: SchoolSearchResult[]; count: number };
+      setSchoolSearchResults(data.results || []);
+      if (!data.results || data.results.length === 0) {
+        setSchoolSearchError(q ? `រកមិនឃើញវិទ្យាល័យដែលត្រូវនឹង "${q}" ទេ។ សូមសាកល្បងឈ្មោះផ្សេងទៀត។` : "រកមិនឃើញវិទ្យាល័យទេ។");
+      }
+    } catch (err) {
+      setSchoolSearchError(err instanceof Error ? err.message : "School search failed.");
+    } finally {
+      setSchoolSearchLoading(false);
+    }
+  }
+
+  function handleViewSchoolStudents(school: SchoolSearchResult) {
+    setSearchMode("student");
+    setSearchSchoolFilter(school.name);
+    setSearchQuery("");
+    setSearchYear(schoolSearchYear);
+    const provVal = school.provinceId === "phnompenh" ? "រាជធានីភ្នំពេញ" : school.province !== "ទូទាំងប្រទេស" ? school.province : "";
+    setSearchProvince(provVal);
+    handleStudentSearch("", school.name);
   }
 
   async function handleRerunOcr(studentId: number) {
@@ -390,7 +485,7 @@ export default function AdminPage() {
               onClick={() => switchTab("search")}
             >
               <Search size={16} />
-              <span>Name Search (OCR)</span>
+              <span>Name & School Search</span>
             </button>
             <button
               type="button"
@@ -844,231 +939,531 @@ export default function AdminPage() {
           </div>
         ) : tab === "search" ? (
           /* =========================================================
-             NAME SEARCH (KHMER OCR) PAGE
+             NAME & SCHOOL SEARCH VIEW
              ========================================================= */
           <div className="name-search-view">
-            <div className="name-search-header">
-              <div className="name-search-title">
-                <h1>ស្វែងរកបេក្ខជនតាមឈ្មោះ (Khmer Name Search & OCR)</h1>
-                <p>
-                  ស្វែងរកបេក្ខជនតាមរយៈឈ្មោះជាអក្សរខ្មែរ ដោយប្រើប្រាស់បច្ចេកវិទ្យា Khmer OCR (Deep Learning) ដើម្បីសម្គាល់ និងបង្កើតឈ្មោះខ្មែរត្រឹមត្រូវ ១០០% ចេញពីឯកសារផ្លូវការ។
-                </p>
-              </div>
+            {/* Top Mode Switcher */}
+            <div className="search-mode-nav">
+              <button
+                type="button"
+                className={`search-mode-nav-btn ${searchMode === "student" ? "active" : ""}`}
+                onClick={() => setSearchMode("student")}
+              >
+                <GraduationCap size={18} />
+                <div>
+                  <div className="mode-btn-title">ស្វែងរកបេក្ខជន & OCR</div>
+                  <div className="mode-btn-subtitle">Candidate Name & Marks Search</div>
+                </div>
+              </button>
 
-              {/* Search Form */}
-              <form
-                className="name-search-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleStudentSearch();
+              <button
+                type="button"
+                className={`search-mode-nav-btn ${searchMode === "school" ? "active" : ""}`}
+                onClick={() => {
+                  setSearchMode("school");
+                  if (schoolSearchResults.length === 0 && !schoolSearchLoading) {
+                    handleSchoolSearch();
+                  }
                 }}
               >
-                <div className="name-search-input-wrap">
-                  <Search size={20} className="search-icon" />
-                  <input
-                    type="text"
-                    className="name-search-input"
-                    placeholder="វាយបញ្ចូលឈ្មោះជាអក្សរខ្មែរ ឬលេខតុ... (ឧ. សារ៉ាវត្តី, បញ្ញា, វឌ្ឍនា, សុខ)"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    autoFocus
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      className="search-clear-btn"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setSearchResults([]);
-                        setSearchError("");
-                      }}
-                    >
-                      &times;
-                    </button>
-                  )}
+                <Building2 size={18} />
+                <div>
+                  <div className="mode-btn-title">ស្វែងរកវិទ្យាល័យ</div>
+                  <div className="mode-btn-subtitle">High School Performance & Stats</div>
                 </div>
-
-                <div className="name-search-filters">
-                  <div className="filter-item">
-                    <label>ឆ្នាំប្រឡង (Year)</label>
-                    <select value={searchYear} onChange={(e) => setSearchYear(e.target.value)}>
-                      <option value="2026">2026 (សម័យប្រឡង ២០២៦)</option>
-                      <option value="2025">2025 (សម័យប្រឡង ២០២៥)</option>
-                      <option value="2024">2024 (សម័យប្រឡង ២០២៤)</option>
-                      <option value="2023">2023 (សម័យប្រឡង ២០២៣)</option>
-                    </select>
-                  </div>
-
-                  <div className="filter-item">
-                    <label>រាជធានី/ខេត្ត (Province)</label>
-                    <select value={searchProvince} onChange={(e) => setSearchProvince(e.target.value)}>
-                      {PROVINCES_LIST.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-item">
-                    <label>និទ្ទេសទូទៅ (Grade)</label>
-                    <select value={searchGrade} onChange={(e) => setSearchGrade(e.target.value)}>
-                      <option value="">គ្រប់និទ្ទេស (All Grades)</option>
-                      <option value="A">និទ្ទេស A (Grade A)</option>
-                      <option value="B">និទ្ទេស B (Grade B)</option>
-                      <option value="C">និទ្ទេស C (Grade C)</option>
-                      <option value="D">និទ្ទេស D (Grade D)</option>
-                      <option value="E">និទ្ទេស E (Grade E)</option>
-                    </select>
-                  </div>
-
-                  <button type="submit" className="name-search-submit-btn" disabled={searchLoading || !searchQuery.trim()}>
-                    {searchLoading ? <LoaderCircle size={18} className="spin" /> : <Search size={18} />}
-                    <span>ស្វែងរក (Search)</span>
-                  </button>
-                </div>
-              </form>
-
-              {/* Quick sample chips */}
-              <div className="search-quick-tags">
-                <span>គំរូស្វែងរក (Quick search):</span>
-                {EXAMPLE_QUERIES.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className="quick-tag-btn"
-                    onClick={() => handleStudentSearch(tag)}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
+              </button>
             </div>
 
-            {searchError && <div className="admin-error">{searchError}</div>}
+            {searchMode === "student" ? (
+              /* =======================
+                 STUDENT SEARCH MODE
+                 ======================= */
+              <>
+                <div className="name-search-header">
+                  <div className="name-search-title">
+                    <h1>ស្វែងរកបេក្ខជនតាមឈ្មោះ (Khmer Name Search & OCR)</h1>
+                    <p>
+                      ស្វែងរកបេក្ខជនតាមរយៈឈ្មោះជាអក្សរខ្មែរ លេខតុ ឬតាមវិទ្យាល័យ ដោយប្រើប្រាស់បច្ចេកវិទ្យា Khmer OCR (Deep Learning) ដើម្បីសម្គាល់ និងបង្កើតឈ្មោះខ្មែរត្រឹមត្រូវ ១០០% ចេញពីឯកសារផ្លូវការ។
+                    </p>
+                  </div>
 
-            {/* Results Section */}
-            {searchResults.length > 0 && (
-              <div className="name-search-results-section">
-                <div className="results-header">
-                  <h2>
-                    លទ្ធផលស្វែងរក: <strong>{searchResults.length}</strong> នាក់
-                    {searchedKeyword && <span> សម្រាប់ពាក្យ &ldquo;{searchedKeyword}&rdquo;</span>}
-                  </h2>
-                  <span className="results-badge">
-                    <Sparkles size={14} /> Khmer OCR Engine v2.0 Active
-                  </span>
-                </div>
-
-                <div className="candidate-cards-grid">
-                  {searchResults.map((student) => (
-                    <div className="candidate-card" key={student.id}>
-                      <div className="candidate-card-top">
-                        <div className="candidate-meta">
-                          <span className="table-badge">
-                            លេខតុ #{student.tableNumber}
-                          </span>
-                          <span className="province-badge">
-                            <MapPin size={12} /> {student.province}
-                          </span>
-                          <span className="gender-badge">
-                            {student.gender}
-                          </span>
-                        </div>
-
-                        <div className={`grade-badge grade-${student.grade}`}>
-                          និទ្ទេស {student.grade}
-                        </div>
-                      </div>
-
-                      {/* Name comparison row: OCR Formed Name vs Official PDF Crop */}
-                      <div className="candidate-name-container">
-                        <div className="name-text-group">
-                          <div className="name-label-row">
-                            <span className="name-label">ឈ្មោះខ្មែរ (Formed Unicode Name)</span>
-                            {student.isVerified && (
-                              <span className="ocr-verified-pill" title="Formed directly using Darayut/khmer-text-recognition deep learning model">
-                                <Check size={12} /> OCR Verified
-                              </span>
-                            )}
-                          </div>
-                          <div className="formed-khmer-name">
-                            {student.ocrName}
-                          </div>
-                        </div>
-
-                        <div className="name-crop-group">
-                          <span className="name-label">រូបភាពដើមចេញពី PDF (Official Crop)</span>
-                          <div className="pdf-crop-preview" title={`PDF Name Crop for #${student.tableNumber}`}>
-                            <img
-                              src={student.nameImageUrl}
-                              alt={`Name crop ${student.tableNumber}`}
-                              loading="lazy"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Details: Center & School */}
-                      <div className="candidate-details-grid">
-                        <div className="detail-item">
-                          <span className="detail-title">
-                            <BookOpen size={13} /> មណ្ឌលប្រឡង (Exam Center):
-                          </span>
-                          <span className="detail-content">{student.examCenterLabel}</span>
-                        </div>
-                        <div className="detail-item">
-                          <span className="detail-title">
-                            <GraduationCap size={13} /> គ្រឹះស្ថានសិក្សា (School):
-                          </span>
-                          <span className="detail-content">{student.school || "វិទ្យាល័យចំណេះទូទៅ"}</span>
-                        </div>
-                      </div>
-
-                      {/* Subject Marks Breakdown */}
-                      {student.subjects.length > 0 && (
-                        <div className="candidate-subjects-row">
-                          <div className="subjects-title">ពិន្ទុតាមមុខវិជ្ជា (Subject Scores):</div>
-                          <div className="subject-chips">
-                            {student.subjects.map((sub, idx) => (
-                              <span className="subject-chip" key={idx}>
-                                <span className="sub-name">{sub.name}</span>
-                                <span className={`sub-score score-${sub.score}`}>{sub.score}</span>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Footer Actions */}
-                      <div className="candidate-actions">
-                        <a
-                          className="action-link-pdf"
-                          href={`/#archive?year=${searchYear}&province=${encodeURIComponent(student.province)}&tableNumber=${student.tableNumber}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ArrowUpRight size={14} /> បើកមើលក្នុងបណ្ណសារ (Open in Archive)
-                        </a>
-
+                  {/* Search Form */}
+                  <form
+                    className="name-search-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleStudentSearch();
+                    }}
+                  >
+                    <div className="name-search-input-wrap">
+                      <Search size={20} className="search-icon" />
+                      <input
+                        type="text"
+                        className="name-search-input"
+                        placeholder="វាយបញ្ចូលឈ្មោះជាអក្សរខ្មែរ ឬលេខតុ... (ឧ. សារ៉ាវត្តី, បញ្ញា, វឌ្ឍនា, សុខ)"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        autoFocus
+                      />
+                      {searchQuery && (
                         <button
                           type="button"
-                          className="action-ocr-btn"
-                          onClick={() => handleRerunOcr(student.id)}
-                          disabled={ocrRunningId === student.id}
+                          className="search-clear-btn"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSearchResults([]);
+                            setSearchError("");
+                          }}
                         >
-                          {ocrRunningId === student.id ? (
-                            <LoaderCircle size={13} className="spin" />
-                          ) : (
-                            <Sparkles size={13} />
-                          )}
-                          <span>{ocrRunningId === student.id ? "Running OCR..." : "Re-run Khmer OCR"}</span>
+                          &times;
                         </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
+
+                    <div className="name-search-filters">
+                      <div className="filter-item">
+                        <label>គ្រឹះស្ថានសិក្សា/វិទ្យាល័យ (School)</label>
+                        <input
+                          type="text"
+                          className="filter-school-input"
+                          placeholder="ច្រោះតាមវិទ្យាល័យ (ឧ. បាក់ទូក)..."
+                          value={searchSchoolFilter}
+                          onChange={(e) => setSearchSchoolFilter(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="filter-item">
+                        <label>ឆ្នាំប្រឡង (Year)</label>
+                        <select value={searchYear} onChange={(e) => setSearchYear(e.target.value)}>
+                          <option value="2026">2026 (សម័យប្រឡង ២០២៦)</option>
+                          <option value="2025">2025 (សម័យប្រឡង ២០២៥)</option>
+                          <option value="2024">2024 (សម័យប្រឡង ២០២៤)</option>
+                          <option value="2023">2023 (សម័យប្រឡង ២០២៣)</option>
+                        </select>
+                      </div>
+
+                      <div className="filter-item">
+                        <label>រាជធានី/ខេត្ត (Province)</label>
+                        <select value={searchProvince} onChange={(e) => setSearchProvince(e.target.value)}>
+                          {PROVINCES_LIST.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="filter-item">
+                        <label>និទ្ទេសទូទៅ (Grade)</label>
+                        <select value={searchGrade} onChange={(e) => setSearchGrade(e.target.value)}>
+                          <option value="">គ្រប់និទ្ទេស (All Grades)</option>
+                          <option value="A">និទ្ទេស A (Grade A)</option>
+                          <option value="B">និទ្ទេស B (Grade B)</option>
+                          <option value="C">និទ្ទេស C (Grade C)</option>
+                          <option value="D">និទ្ទេស D (Grade D)</option>
+                          <option value="E">និទ្ទេស E (Grade E)</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="name-search-submit-btn"
+                        disabled={searchLoading || (!searchQuery.trim() && !searchSchoolFilter.trim())}
+                      >
+                        {searchLoading ? <LoaderCircle size={18} className="spin" /> : <Search size={18} />}
+                        <span>ស្វែងរក (Search)</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Quick sample chips */}
+                  <div className="search-quick-tags">
+                    <span>គំរូស្វែងរក (Quick search):</span>
+                    {EXAMPLE_QUERIES.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        className="quick-tag-btn"
+                        onClick={() => handleStudentSearch(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+
+                {searchError && <div className="admin-error">{searchError}</div>}
+
+                {/* Results Section */}
+                {searchResults.length > 0 && (
+                  <div className="name-search-results-section">
+                    <div className="results-header">
+                      <h2>
+                        លទ្ធផលស្វែងរក: <strong>{searchResults.length}</strong> នាក់
+                        {searchedKeyword && <span> សម្រាប់ &ldquo;{searchedKeyword}&rdquo;</span>}
+                      </h2>
+                      <span className="results-badge">
+                        <Sparkles size={14} /> Khmer OCR Engine v2.0 Active
+                      </span>
+                    </div>
+
+                    <div className="candidate-cards-grid">
+                      {searchResults.map((student) => (
+                        <div className="candidate-card" key={student.id}>
+                          <div className="candidate-card-top">
+                            <div className="candidate-meta">
+                              <span className="table-badge">
+                                លេខតុ #{student.tableNumber}
+                              </span>
+                              <span className="province-badge">
+                                <MapPin size={12} /> {student.province}
+                              </span>
+                              <span className="gender-badge">
+                                {student.gender}
+                              </span>
+                            </div>
+
+                            <div className={`grade-badge grade-${student.grade}`}>
+                              និទ្ទេស {student.grade}
+                            </div>
+                          </div>
+
+                          {/* Name comparison row: OCR Formed Name vs Official PDF Crop */}
+                          <div className="candidate-name-container">
+                            <div className="name-text-group">
+                              <div className="name-label-row">
+                                <span className="name-label">ឈ្មោះខ្មែរ (Formed Unicode Name)</span>
+                                {student.isVerified && (
+                                  <span className="ocr-verified-pill" title="Formed directly using Darayut/khmer-text-recognition deep learning model">
+                                    <Check size={12} /> OCR Verified
+                                  </span>
+                                )}
+                              </div>
+                              <div className="formed-khmer-name">
+                                {student.ocrName}
+                              </div>
+                            </div>
+
+                            <div className="name-crop-group">
+                              <span className="name-label">រូបភាពដើមចេញពី PDF (Official Crop)</span>
+                              <div className="pdf-crop-preview" title={`PDF Name Crop for #${student.tableNumber}`}>
+                                <img
+                                  src={student.nameImageUrl}
+                                  alt={`Name crop ${student.tableNumber}`}
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Details: Center & School */}
+                          <div className="candidate-details-grid">
+                            <div className="detail-item">
+                              <span className="detail-title">
+                                <BookOpen size={13} /> មណ្ឌលប្រឡង (Exam Center):
+                              </span>
+                              <span className="detail-content">{student.examCenterLabel}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-title">
+                                <GraduationCap size={13} /> គ្រឹះស្ថានសិក្សា (School):
+                              </span>
+                              <div className="detail-school-wrap">
+                                <span className="detail-content highlight-school">
+                                  {student.schoolClean || student.school || "វិទ្យាល័យចំណេះទូទៅ"}
+                                </span>
+                                {student.schoolClean && (
+                                  <button
+                                    type="button"
+                                    className="filter-by-school-chip"
+                                    onClick={() => {
+                                      setSearchMode("school");
+                                      setSchoolSearchQuery(student.schoolClean || "");
+                                      handleSchoolSearch(student.schoolClean || "");
+                                    }}
+                                    title="ស្វែងរកព័ត៌មានវិទ្យាល័យនេះ"
+                                  >
+                                    <Building2 size={11} /> ពត៌មានសាលា
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Subject Marks Breakdown */}
+                          {student.subjects.length > 0 && (
+                            <div className="candidate-subjects-row">
+                              <div className="subjects-title">ពិន្ទុតាមមុខវិជ្ជា (Subject Scores):</div>
+                              <div className="subject-chips">
+                                {student.subjects.map((sub, idx) => (
+                                  <span className="subject-chip" key={idx}>
+                                    <span className="sub-name">{sub.name}</span>
+                                    <span className={`sub-score score-${sub.score}`}>{sub.score}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Footer Actions */}
+                          <div className="candidate-actions">
+                            <a
+                              className="action-link-pdf"
+                              href={`/#archive?year=${searchYear}&province=${encodeURIComponent(student.province)}&tableNumber=${student.tableNumber}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <ArrowUpRight size={14} /> បើកមើលក្នុងបណ្ណសារ (Open in Archive)
+                            </a>
+
+                            <button
+                              type="button"
+                              className="action-ocr-btn"
+                              onClick={() => handleRerunOcr(student.id)}
+                              disabled={ocrRunningId === student.id}
+                            >
+                              {ocrRunningId === student.id ? (
+                                <LoaderCircle size={13} className="spin" />
+                              ) : (
+                                <Sparkles size={13} />
+                              )}
+                              <span>{ocrRunningId === student.id ? "Running OCR..." : "Re-run Khmer OCR"}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* =======================
+                 SCHOOL SEARCH MODE
+                 ======================= */
+              <>
+                <div className="name-search-header">
+                  <div className="name-search-title">
+                    <h1>ស្វែងរកតាមឈ្មោះវិទ្យាល័យ (High School Search & Analytics)</h1>
+                    <p>
+                      ស្វែងរក និងវិភាគស្ថិតិគ្រឹះស្ថានមធ្យមសិក្សាទុតិយភូមិ (វិទ្យាល័យរដ្ឋ និងឯកជន) តាមឈ្មោះ រាជធានី-ខេត្ត អត្រាប្រឡងជាប់ ចំនួនបេក្ខជន និងការបែងចែកនិទ្ទេស A ដល់ E។
+                    </p>
+                  </div>
+
+                  {/* School Search Form */}
+                  <form
+                    className="name-search-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSchoolSearch();
+                    }}
+                  >
+                    <div className="name-search-input-wrap">
+                      <Building2 size={20} className="search-icon" />
+                      <input
+                        type="text"
+                        className="name-search-input"
+                        placeholder="វាយបញ្ចូលឈ្មោះវិទ្យាល័យ... (ឧ. បាក់ទូក, ព្រះយុគន្ធរ, ទួលទំពូង, ប៊ែលធី, ហ៊ុន សែន)"
+                        value={schoolSearchQuery}
+                        onChange={(e) => setSchoolSearchQuery(e.target.value)}
+                        autoFocus
+                      />
+                      {schoolSearchQuery && (
+                        <button
+                          type="button"
+                          className="search-clear-btn"
+                          onClick={() => {
+                            setSchoolSearchQuery("");
+                            setSchoolSearchResults([]);
+                            setSchoolSearchError("");
+                          }}
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="name-search-filters">
+                      <div className="filter-item">
+                        <label>ឆ្នាំប្រឡង (Year)</label>
+                        <select value={schoolSearchYear} onChange={(e) => setSchoolSearchYear(e.target.value)}>
+                          <option value="2026">2026 (សម័យប្រឡង ២០២៦)</option>
+                          <option value="2025">2025 (សម័យប្រឡង ២០២៥)</option>
+                          <option value="2024">2024 (សម័យប្រឡង ២០២៤)</option>
+                          <option value="2023">2023 (សម័យប្រឡង ២០២៣)</option>
+                        </select>
+                      </div>
+
+                      <div className="filter-item">
+                        <label>រាជធានី/ខេត្ត (Province)</label>
+                        <select value={schoolSearchProvince} onChange={(e) => setSchoolSearchProvince(e.target.value)}>
+                          {PROVINCES_LIST.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="filter-item">
+                        <label>ប្រភេទគ្រឹះស្ថាន (Type)</label>
+                        <select value={schoolSearchType} onChange={(e) => setSchoolSearchType(e.target.value)}>
+                          <option value="">គ្រប់ប្រភេទ (All Types)</option>
+                          <option value="public">🏛️ វិទ្យាល័យរដ្ឋ (Public)</option>
+                          <option value="private">⭐ វិទ្យាល័យឯកជន (Private)</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="name-search-submit-btn"
+                        disabled={schoolSearchLoading}
+                      >
+                        {schoolSearchLoading ? <LoaderCircle size={18} className="spin" /> : <Search size={18} />}
+                        <span>ស្វែងរកវិទ្យាល័យ</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Quick sample chips for schools */}
+                  <div className="search-quick-tags">
+                    <span>គំរូវិទ្យាល័យ (Quick search):</span>
+                    {EXAMPLE_SCHOOL_QUERIES.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        className="quick-tag-btn"
+                        onClick={() => handleSchoolSearch(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {schoolSearchError && <div className="admin-error">{schoolSearchError}</div>}
+
+                {/* School Results Section */}
+                {schoolSearchResults.length > 0 && (
+                  <div className="name-search-results-section">
+                    <div className="results-header">
+                      <h2>
+                        លទ្ធផលវិទ្យាល័យ: <strong>{schoolSearchResults.length}</strong> សាលា
+                        {searchedSchoolKeyword && <span> សម្រាប់ &ldquo;{searchedSchoolKeyword}&rdquo;</span>}
+                      </h2>
+                      <span className="results-badge">
+                        <Building2 size={14} /> Official MoEYS School Directory
+                      </span>
+                    </div>
+
+                    <div className="school-cards-grid">
+                      {schoolSearchResults.map((school, index) => (
+                        <div className="school-admin-card" key={`${school.name}-${school.branch || ""}-${school.province}-${index}`}>
+                          <div className="school-admin-card-top">
+                            <div className="school-admin-meta">
+                              <span className="school-rank-badge">
+                                #{school.rank}
+                              </span>
+                              <span className={`school-type-pill ${school.schoolType}`}>
+                                {school.schoolType === "private" ? "⭐ ឯកជន" : "🏛️ រដ្ឋ"}
+                              </span>
+                              <span className="school-province-pill">
+                                <MapPin size={12} /> {school.province}
+                              </span>
+                            </div>
+
+                            <div className="school-pass-rate-pill">
+                              ជាប់ {school.passRate}%
+                            </div>
+                          </div>
+
+                          {/* School Name & Official PDF Crop */}
+                          <div className="school-identity-box">
+                            <div className="school-text-info">
+                              <h3 className="school-main-title">{school.name}</h3>
+                              {school.branch && (
+                                <span className="school-branch-tag">{school.branch}</span>
+                              )}
+                            </div>
+
+                            {school.schoolImageUrl && (
+                              <div className="school-crop-box" title={`Official PDF School Name for ${school.name}`}>
+                                <span className="crop-tag">រូបភាពដើម PDF:</span>
+                                <img
+                                  src={apiUrl(school.schoolImageUrl)}
+                                  alt={`Crop for ${school.name}`}
+                                  loading="lazy"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Candidate counts & Track breakdown */}
+                          <div className="school-metrics-panel">
+                            <div className="school-metric-stat">
+                              <span className="metric-label">បេក្ខជនសរុប</span>
+                              <span className="metric-val">{school.candidateCount.toLocaleString()} នាក់</span>
+                              <span className="metric-sub">ស្រី: {school.femaleCount} នាក់</span>
+                            </div>
+
+                            <div className="school-metric-stat">
+                              <span className="metric-label">និទ្ទេស A សរុប</span>
+                              <span className={`metric-val ${school.gradeA > 0 ? "grade-a-highlight" : ""}`}>
+                                {school.gradeA} នាក់
+                              </span>
+                              <span className="metric-sub">
+                                {school.gradeAPercent > 0 ? `${school.gradeAPercent}% នៃសិស្ស` : "គ្មាននិទ្ទេស A"}
+                              </span>
+                            </div>
+
+                            <div className="school-metric-stat">
+                              <span className="metric-label">ផ្នែកសិក្សា</span>
+                              <span className="metric-val-small">
+                                វិទ្យាសាស្ត្រ: {school.scienceCount}
+                              </span>
+                              <span className="metric-sub">
+                                សង្គម: {school.socialScienceCount}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Grade Distribution A-E */}
+                          <div className="school-grades-row">
+                            <span className="grades-row-label">និទ្ទេស:</span>
+                            <div className="grades-pill-group">
+                              <span className="g-pill g-a">A: {school.gradeA}</span>
+                              <span className="g-pill g-b">B: {school.gradeB}</span>
+                              <span className="g-pill g-c">C: {school.gradeC}</span>
+                              <span className="g-pill g-d">D: {school.gradeD}</span>
+                              <span className="g-pill g-e">E: {school.gradeE}</span>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="school-card-actions">
+                            <button
+                              type="button"
+                              className="action-view-students-btn"
+                              onClick={() => handleViewSchoolStudents(school)}
+                            >
+                              <Users size={14} />
+                              <span>មើលបញ្ជីសិស្ស ({school.candidateCount})</span>
+                            </button>
+
+                            <a
+                              className="action-link-insights"
+                              href={`/#insights?year=${schoolSearchYear}&school=${encodeURIComponent(school.name)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <ArrowUpRight size={14} /> Insights
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (

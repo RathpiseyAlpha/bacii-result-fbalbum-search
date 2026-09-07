@@ -17,7 +17,7 @@ import {
   archiveImportJobs, cancelArchiveImport, publicArchiveImport, requireAdmin, startArchiveImport,
 } from "./admin-archive.ts";
 import { getVisitorAnalytics, recordVisit } from "./analytics.ts";
-import { ocrSingleStudentName, searchStudentsAdmin } from "./admin-name-search.ts";
+import { ocrSingleStudentName, searchSchoolsAdmin, searchStudentsAdmin } from "./admin-name-search.ts";
 import type { Photo } from "./types.ts";
 
 const app = express();
@@ -116,19 +116,36 @@ app.get("/api/admin/archive-students/search", requireAdmin, async (request, resp
   try {
     const year = String(request.query.year || "2026");
     const query = String(request.query.query || "").trim();
+    const school = String(request.query.school || "").trim() || undefined;
     const province = String(request.query.province || "").trim() || undefined;
     const grade = String(request.query.grade || "").trim() || undefined;
     const limit = request.query.limit ? Number(request.query.limit) : 25;
 
-    if (!query) {
+    if (!query && !school) {
       return response.json({ results: [], count: 0 });
     }
 
-    const results = await searchStudentsAdmin({ year, query, province, grade, limit });
+    const results = await searchStudentsAdmin({ year, query, school, province, grade, limit });
     response.setHeader("Cache-Control", "private, no-store");
     response.json({ results, count: results.length });
   } catch (error) {
     response.status(400).json({ error: error instanceof Error ? error.message : "Search failed." });
+  }
+});
+
+app.get("/api/admin/archive-schools/search", requireAdmin, (request, response) => {
+  try {
+    const year = String(request.query.year || "2026");
+    const query = String(request.query.query || "").trim() || undefined;
+    const province = String(request.query.province || "").trim() || undefined;
+    const schoolType = String(request.query.schoolType || "").trim() || undefined;
+    const limit = request.query.limit ? Number(request.query.limit) : 30;
+
+    const results = searchSchoolsAdmin({ year, query, province, schoolType, limit });
+    response.setHeader("Cache-Control", "private, no-store");
+    response.json({ results, count: results.length });
+  } catch (error) {
+    response.status(400).json({ error: error instanceof Error ? error.message : "School search failed." });
   }
 });
 

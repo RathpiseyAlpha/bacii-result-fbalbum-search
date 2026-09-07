@@ -10,7 +10,9 @@ import {
   archivePdfFileName,
   centerLabels,
   getArchiveNameLocator,
+  getArchiveSchools,
   listArchiveYears,
+  resolveSchoolBranch,
 } from "./archive.ts";
 
 database.exec(`
@@ -104,12 +106,37 @@ export type AdminStudentSearchResult = {
   examCenter: string;
   examCenterLabel: string;
   school: string;
+  schoolClean: string;
+  schoolRaw: string;
   grade: string;
   result: string;
   pageNumber: number;
   documentId: number;
   subjects: Array<{ name: string; score: string }>;
   nameImageUrl: string;
+};
+
+export type AdminSchoolSearchResult = {
+  name: string;
+  branch?: string;
+  schoolType: "public" | "private";
+  sampleStudentId: number;
+  province: string;
+  provinceId: string;
+  candidateCount: number;
+  femaleCount: number;
+  scienceCount: number;
+  socialScienceCount: number;
+  gradeA: number;
+  gradeB: number;
+  gradeC: number;
+  gradeD: number;
+  gradeE: number;
+  grades: { A: number; B: number; C: number; D: number; E: number };
+  gradeAPercent: number;
+  passRate: number;
+  rank: number;
+  schoolImageUrl: string;
 };
 
 type RawStudentRow = {
@@ -215,20 +242,117 @@ async function runBatchOcr(
   return resultMap;
 }
 
+const schoolFilterCache = new Map<string, Array<{ school_raw: string; exam_center_raw: string | null; province: string }>>();
+
+function getDistinctSchoolRows(db: any, year: string) {
+  let cached = schoolFilterCache.get(year);
+  if (!cached) {
+    cached = db.prepare(`
+      SELECT DISTINCT school_raw, exam_center_raw, province
+      FROM students
+      WHERE TRIM(COALESCE(school_raw, '')) != ''
+    `).all() as Array<{ school_raw: string; exam_center_raw: string | null; province: string }>;
+    schoolFilterCache.set(year, cached);
+  }
+  return cached;
+}
+
+export function getSchoolRawValuesForFilter(db: any, year: string, filter: string): string[] {
+  const clean = filter.trim().toLowerCase();
+  if (!clean) return [];
+
+  const rows = getDistinctSchoolRows(db, year);
+  const matched = new Set<string>();
+
+  for (const r of rows) {
+    const resolved = resolveSchoolBranch(r.school_raw || "", r.exam_center_raw || "", r.province || "");
+    const baseMatch = resolved.baseName.toLowerCase().includes(clean);
+    const branchMatch = resolved.branch ? resolved.branch.toLowerCase().includes(clean) : false;
+    const fullMatch = `${resolved.baseName} ${resolved.branch || ""}`.toLowerCase().includes(clean);
+    if (baseMatch || branchMatch || fullMatch) {
+      matched.add(r.school_raw);
+    }
+  }
+
+  // Fallback to legacy font variants if no direct match found
+  if (matched.size === 0) {
+    const variants = buildKhmerSearchVariants(filter);
+    for (const r of rows) {
+      for (const v of variants) {
+        if (r.school_raw && r.school_raw.includes(v)) {
+          matched.add(r.school_raw);
+          break;
+        }
+      }
+    }
+  }
+
+  return [...matched];
+}
+
 /**
- * Searches students in an annual BacII archive by Khmer name or table number,
+ * Searches high schools in an annual BacII archive with aggregated metrics.
+ */
+export function searchSchoolsAdmin(params: {
+  year: string;
+  query?: string;
+  province?: string;
+  schoolType?: string;
+  limit?: number;
+}): AdminSchoolSearchResult[] {
+  const year = params.year || "2026";
+  const schools = getArchiveSchools(year, {
+    province: params.province && params.province !== "all" ? params.province : undefined,
+    schoolType: params.schoolType && params.schoolType !== "all" ? (params.schoolType as "public" | "private") : undefined,
+    search: params.query?.trim() || undefined,
+    groupByBrand: false,
+  });
+
+  const limit = Math.max(1, Math.min(params.limit || 30, 100));
+  return schools.slice(0, limit).map((s) => ({
+    name: s.name,
+    branch: s.branch,
+    schoolType: s.schoolType,
+    sampleStudentId: s.sampleStudentId,
+    province: s.province,
+    provinceId: s.provinceId,
+    candidateCount: s.candidateCount,
+    femaleCount: s.femaleCount,
+    scienceCount: s.scienceCount,
+    socialScienceCount: s.socialScienceCount,
+    gradeA: s.gradeA,
+    gradeB: s.gradeB,
+    gradeC: s.gradeC,
+    gradeD: s.gradeD,
+    gradeE: s.gradeE,
+    grades: s.grades,
+    gradeAPercent: s.gradeAPercentage,
+    passRate: s.passRate,
+    rank: s.rank,
+    schoolImageUrl: `/api/archive/${year}/students/${s.sampleStudentId}/school-image`,
+  }));
+}
+
+/**
+ * Searches students in an annual BacII archive by Khmer name, table number, or school name,
  * forming accurate Unicode Khmer names with the deep learning OCR model.
  */
 export async function searchStudentsAdmin(params: {
   year: string;
-  query: string;
+  query?: string;
+  school?: string;
   province?: string;
   grade?: string;
   limit?: number;
 }): Promise<AdminStudentSearchResult[]> {
   const year = params.year || "2026";
-  const query = params.query.trim();
+  const query = (params.query || "").trim();
+  const schoolFilter = (params.school || "").trim();
   const limit = Math.max(1, Math.min(params.limit || 25, 50));
+
+  if (!query && !schoolFilter) {
+    return [];
+  }
 
   const years = listArchiveYears();
   if (!years.includes(year)) {
@@ -244,7 +368,7 @@ export async function searchStudentsAdmin(params: {
 
   // 2. Fetch any already-cached OCR records matching the query
   const cachedOcrMatches = new Map<number, string>();
-  if (!isTableNumber && query.length >= 2) {
+  if (query && !isTableNumber && query.length >= 2) {
     try {
       const ocrRows = database.prepare(`
         SELECT student_id, ocr_name FROM student_name_ocr
@@ -263,27 +387,40 @@ export async function searchStudentsAdmin(params: {
   const whereClauses: string[] = [];
   const queryArgs: Array<string | number> = [];
 
-  if (isTableNumber) {
-    whereClauses.push("s.table_number = ?");
-    queryArgs.push(Number(query));
-  } else {
-    // Generate font variants
-    const variants = buildKhmerSearchVariants(query);
-    const orClauses: string[] = [];
+  if (query) {
+    if (isTableNumber) {
+      whereClauses.push("s.table_number = ?");
+      queryArgs.push(Number(query));
+    } else {
+      // Generate font variants
+      const variants = buildKhmerSearchVariants(query);
+      const orClauses: string[] = [];
 
-    // Also include any cached student IDs
-    if (cachedOcrMatches.size > 0) {
-      const ids = [...cachedOcrMatches.keys()].slice(0, 50);
-      orClauses.push(`s.id IN (${ids.map(() => "?").join(",")})`);
-      queryArgs.push(...ids);
+      // Also include any cached student IDs
+      if (cachedOcrMatches.size > 0) {
+        const ids = [...cachedOcrMatches.keys()].slice(0, 50);
+        orClauses.push(`s.id IN (${ids.map(() => "?").join(",")})`);
+        queryArgs.push(...ids);
+      }
+
+      for (const v of variants.slice(0, 6)) {
+        orClauses.push("s.name_raw LIKE ?");
+        queryArgs.push(`%${v}%`);
+      }
+
+      whereClauses.push(`(${orClauses.join(" OR ")})`);
     }
+  }
 
-    for (const v of variants.slice(0, 6)) {
-      orClauses.push("s.name_raw LIKE ?");
-      queryArgs.push(`%${v}%`);
+  if (schoolFilter) {
+    const matchedRaws = getSchoolRawValuesForFilter(db, year, schoolFilter);
+    if (matchedRaws.length > 0) {
+      whereClauses.push(`s.school_raw IN (${matchedRaws.map(() => "?").join(",")})`);
+      queryArgs.push(...matchedRaws);
+    } else {
+      whereClauses.push("s.school_raw LIKE ?");
+      queryArgs.push(`%${schoolFilter}%`);
     }
-
-    whereClauses.push(`(${orClauses.join(" OR ")})`);
   }
 
   if (params.province) {
@@ -395,6 +532,11 @@ export async function searchStudentsAdmin(params: {
       .map((score, idx) => ({ name: cleanSubjectName(headers[idx] || `មុខវិជ្ជា ${idx + 1}`), score: score || "-" }))
       .filter((s) => s.score !== "-");
 
+    const resolvedSchool = resolveSchoolBranch(row.school_raw || "", centerRaw, row.province);
+    const cleanSchoolName = resolvedSchool.baseName
+      ? (resolvedSchool.branch ? `${resolvedSchool.baseName} (${resolvedSchool.branch})` : resolvedSchool.baseName)
+      : (row.school_raw || "");
+
     return {
       id: row.id,
       tableNumber: String(row.table_number),
@@ -405,7 +547,9 @@ export async function searchStudentsAdmin(params: {
       province: row.province,
       examCenter: centerRaw,
       examCenterLabel,
-      school: row.school_raw || "",
+      school: cleanSchoolName || "វិទ្យាល័យចំណេះទូទៅ",
+      schoolClean: cleanSchoolName || "",
+      schoolRaw: row.school_raw || "",
       grade: row.grade_raw || "-",
       result: row.result_raw || "ជាប់",
       pageNumber: row.page_number,
